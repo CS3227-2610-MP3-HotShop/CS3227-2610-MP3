@@ -1,0 +1,263 @@
+package hotshop.ui;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.Objects;
+import java.util.UUID;
+
+import hotshop.ApplicationRuntime;
+import hotshop.model.User;
+import hotshop.service.PublicProfile;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.ButtonBar.ButtonData;
+import javafx.scene.control.ButtonType;
+import javafx.scene.control.ScrollPane;
+import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
+
+/** Application shell and guarded navigation. Business operations belong to the runtime services. */
+public final class MarketplaceUi {
+    static final int INITIAL_WIDTH = 1100;
+    static final int INITIAL_HEIGHT = 750;
+    static final int MINIMUM_WIDTH = 960;
+    static final int MINIMUM_HEIGHT = 640;
+    final ApplicationRuntime runtime;
+    final Stage stage;
+    final SearchState searchState = new SearchState();
+    final ListingPages listings;
+    final OfferPages offers;
+    final SalePages sales;
+    final ChatPages chats;
+    final MeetupPages meetups;
+    private final BorderPane root = new BorderPane();
+    private final Deque<Runnable> history = new ArrayDeque<>();
+    private final AccountPages accounts;
+    private UiPage current;
+    private Runnable route;
+    private UUID userId;
+    private ScrollPane content;
+    private Button conversationsLink;
+
+    /**
+     * Installs the initial logged-out scene; the caller owns showing and closing the runtime.
+     *
+     * @param stage the primary JavaFX window
+     * @param runtime the initialized application services and resources
+     */
+    public MarketplaceUi(Stage stage, ApplicationRuntime runtime) {
+        this.stage = stage;
+        this.runtime = runtime;
+        accounts = new AccountPages(this);
+        listings = new ListingPages(this);
+        offers = new OfferPages(this);
+        sales = new SalePages(this);
+        chats = new ChatPages(this);
+        meetups = new MeetupPages(this);
+        Scene scene = new Scene(root, INITIAL_WIDTH, INITIAL_HEIGHT);
+        scene.getStylesheets().add(stylesheet());
+        stage.setTitle("HotShop");
+        stage.setScene(scene);
+        stage.setWidth(INITIAL_WIDTH);
+        stage.setHeight(INITIAL_HEIGHT);
+        stage.setMinWidth(MINIMUM_WIDTH);
+        stage.setMinHeight(MINIMUM_HEIGHT);
+        stage.setOnCloseRequest(event -> {
+            if (!canLeave()) {
+                event.consume();
+            }
+        });
+        login("");
+    }
+
+    /**
+     * The shared stylesheet, also used by windows shown outside the marketplace scene.
+     *
+     * @return the external URL of the shared stylesheet
+     */
+    public static String stylesheet() {
+        return Objects.requireNonNull(MarketplaceUi.class.getResource("/hotshop/styles.css"),
+                "Missing styles.css").toExternalForm();
+    }
+
+    UUID userId() {
+        return userId;
+    }
+
+    boolean isCurrent(UiPage page) {
+        return current == page;
+    }
+
+    UiPage page(String title) {
+        current = new UiPage(this, title);
+        content = new ScrollPane(current);
+        content.setFitToWidth(true);
+        content.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        root.setCenter(content);
+        return current;
+    }
+
+    /** A page that fills the window without scrolling as a whole; its own parts scroll instead. */
+    UiPage fixedPage(String title) {
+        current = new UiPage(this, title);
+        current.fillHeight();
+        content = null;
+        root.setCenter(current);
+        return current;
+    }
+
+    ScrollPane scroll() {
+        return content;
+    }
+
+    void message(String text) {
+        current.message(text);
+    }
+
+    void navigate(Runnable next) {
+        if (!canLeave()) {
+            return;
+        }
+        if (current != null) {
+            current.leave();
+        }
+        if (route != null) {
+            history.push(route);
+        }
+        route = next;
+        next.run();
+        refreshUnreadCount();
+    }
+
+    void back() {
+        if (!history.isEmpty() && canLeave()) {
+            current.leave();
+            route = history.pop();
+            route.run();
+            refreshUnreadCount();
+        }
+    }
+
+    boolean hasHistory() {
+        return !history.isEmpty();
+    }
+
+    void replace(Runnable next) {
+        route = next;
+        next.run();
+        refreshUnreadCount();
+    }
+
+    /**
+     * Shows the unread total on the sidebar's Conversations link. The single service worker runs
+     * this after the page load just queued, so a conversation opened by that load already counts as read.
+     */
+    private void refreshUnreadCount() {
+        Button link = conversationsLink;
+        if (link == null || userId == null) {
+            return;
+        }
+        runtime.getChats().getUnreadCount().whenComplete((count, failure) -> Platform.runLater(() -> {
+            if (failure == null && link == conversationsLink) {
+                link.setText(count > 0 ? "Conversations (" + count + ")" : "Conversations");
+            }
+        }));
+    }
+
+    Button profileLink(PublicProfile profile, String id) {
+        Button button = UiControls.button(profile.displayName(), id,
+                () -> navigate(() -> accounts.profile(profile.id())));
+        button.setGraphic(UiImages.display(profile.profileImage().isEmpty() ? null
+                : () -> runtime.getProfileImagePath(profile.profileImage().orElseThrow()), 36, 36));
+        return button;
+    }
+
+    boolean canLeave() {
+        if (current == null) {
+            return true;
+        }
+        if (current.isBusy()) {
+            return false;
+        }
+        return !current.isDirty() || confirm("Discard Changes", "Your unsaved changes will be lost.");
+    }
+
+    boolean confirm(String action, String consequence) {
+        ButtonType accept = new ButtonType(action, ButtonData.OK_DONE);
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, consequence, ButtonType.CANCEL, accept);
+        alert.initOwner(stage);
+        UiDialogs.theme(this, alert);
+        alert.setGraphic(null);
+        alert.setTitle(action);
+        alert.setHeaderText(action + "?");
+        alert.getDialogPane().setId("confirmation-dialog");
+        return alert.showAndWait().filter(accept::equals).isPresent();
+    }
+
+    void loggedIn(User user) {
+        userId = user.getId();
+        searchState.reset();
+        history.clear();
+        root.setLeft(sidebar());
+        route = this::search;
+        search();
+        refreshUnreadCount();
+    }
+
+    void login(String username) {
+        userId = null;
+        conversationsLink = null;
+        searchState.reset();
+        history.clear();
+        root.setLeft(null);
+        route = () -> accounts.login(username);
+        route.run();
+    }
+
+    private void logout() {
+        if (canLeave()) {
+            current.perform(runtime.getAccounts()::logout, ignored -> login(""));
+        }
+    }
+
+    private ScrollPane sidebar() {
+        VBox links = new VBox(8, UiControls.label("HotShop", "brand"));
+        links.getStyleClass().add("sidebar");
+        links.setPrefWidth(225);
+        links.getChildren().add(nav("Search", "search", this::search));
+        links.getChildren().add(UiControls.label("BUYING", "nav-heading"));
+        links.getChildren().addAll(nav("My Offers", "offers", offers::mine),
+                nav("My Purchases", "purchases", () -> sales.list(false)));
+        links.getChildren().add(UiControls.future("Wishlist", "nav-wishlist"));
+        links.getChildren().add(UiControls.label("SELLING", "nav-heading"));
+        links.getChildren().addAll(nav("Dashboard", "dashboard", sales::dashboard),
+                nav("My Listings", "listings", listings::mine), nav("My Sales", "sales", () -> sales.list(true)));
+        conversationsLink = nav("Conversations", "conversations", chats::list);
+        links.getChildren().addAll(conversationsLink,
+                nav("My Profile", "profile", () -> accounts.profile(userId)),
+                UiControls.button("Log out", "nav-logout", this::logout));
+        ScrollPane sidebar = new ScrollPane(links);
+        sidebar.setId("navigation");
+        sidebar.getStyleClass().add("navigation");
+        sidebar.setFitToWidth(true);
+        sidebar.setFitToHeight(true);
+        links.setMinHeight(VBox.USE_PREF_SIZE);
+        sidebar.setPrefWidth(245);
+        sidebar.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        return sidebar;
+    }
+
+    private Button nav(String text, String id, Runnable destination) {
+        Button button = UiControls.button(text, "nav-" + id, () -> navigate(destination));
+        button.getStyleClass().add("nav-button");
+        button.setMaxWidth(Double.MAX_VALUE);
+        return button;
+    }
+
+    void search() {
+        new SearchPage(this);
+    }
+}
