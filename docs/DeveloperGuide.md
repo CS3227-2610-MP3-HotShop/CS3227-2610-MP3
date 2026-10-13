@@ -58,6 +58,54 @@ Targeted development checks:
 .\gradlew.bat test --tests hotshop.ApplicationRuntimeTest --tests hotshop.database.DatabaseTest
 ```
 
+### Product specification workflow
+
+Use the `manage-product-spec` agent skill in
+`.agents/skills/manage-product-spec/SKILL.md` to clarify a new product or proposed
+change before design and implementation. It interviews the user, resolves
+material ambiguities, and creates or updates `workflow/PRODUCT-SPEC.md` with
+agreed requirements, UI expectations, acceptance criteria, and scope. Unresolved
+product decisions are recorded in a draft. Using the skill does not implement
+the feature or authorize later workflow stages.
+
+### Technical specification workflow
+
+Use the `manage-technical-spec` agent skill in
+`.agents/skills/manage-technical-spec/SKILL.md` after establishing the product
+specification. It reads `workflow/PRODUCT-SPEC.md` and creates or updates
+`workflow/TECHNICAL-SPEC.md` with requirement traceability, data and interface
+contracts, security mechanisms, failure handling, and planned verification.
+Ambiguities and discrepancies are referred to the user before dependent design
+decisions are finalized. Unresolved blockers keep the document in draft status;
+the skill does not implement the design.
+
+### Implementation planning workflow
+
+Use the `plan-implementation` agent skill in
+`.agents/skills/plan-implementation/SKILL.md` to turn the technical specification
+into `workflow/PLAN.md`. The plan lists ordered tasks with IDs, prerequisites,
+descriptions, steps, and acceptance criteria, traced to the specification.
+Tests normally come first, followed by implementation and verification for each
+behavior slice. Necessary test setup and manual-check exceptions are explained
+explicitly. Unresolved design decisions keep the plan in draft status; planning
+does not execute the tasks.
+
+Each task has a `Completed:` section for progress across sessions. New tasks
+start at `No`; execution changes this to `Yes` after the task's acceptance
+criteria are satisfied. Subsequent planning preserves completed entries
+unchanged. Specification changes requiring edits to their code or tests receive
+new follow-up tasks with fresh IDs.
+
+### Task implementation workflow
+
+Use the `implement-task` skill at `.agents/implement-task/SKILL.md` with explicit
+task IDs or unique task names from `workflow/PLAN.md`. It implements only those
+tasks. Missing tasks or incomplete prerequisites cause a read-only rejection;
+ambiguities and instructions delegating design decisions to the agent stop
+implementation for user clarification. A task is marked complete only after all
+acceptance criteria are met. Completed entries remain unchanged, and revised
+work requires a new planned task and an explicit implementation request.
+
 ## Acknowledgements
 
 See [Acknowledgements](developerGuide/Acknowledgements.html) for the sources of
