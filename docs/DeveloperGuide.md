@@ -106,6 +106,20 @@ implementation for user clarification. A task is marked complete only after all
 acceptance criteria are met. Completed entries remain unchanged, and revised
 work requires a new planned task and an explicit implementation request.
 
+### Documentation upkeep
+
+Every completed feature or change includes updates to both
+[AGENTS.md](../AGENTS.md) and this Developer Guide before completion is reported.
+AGENTS.md retains the instructions and documentation pointers future agents need;
+this guide explains the resulting behaviour, design, setup, and workflow, with
+relevant verification and limitations. Update the existing sections so they
+reflect the current implementation. Record detailed interaction history in a
+separate task log under `logs/`.
+
+This applies to application changes, agent configuration, documentation changes,
+and newly agreed workflow rules. Explanatory conversations without a completed
+change do not require edits. User-facing changes also update the User Guide.
+
 ### Presentation workflow experiment
 
 The [mini-presentation record](MiniPresentation.md) and
