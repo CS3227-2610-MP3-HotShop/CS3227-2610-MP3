@@ -106,6 +106,15 @@ implementation for user clarification. A task is marked complete only after all
 acceptance criteria are met. Completed entries remain unchanged, and revised
 work requires a new planned task and an explicit implementation request.
 
+### Presentation workflow experiment
+
+The [mini-presentation record](MiniPresentation.md) and
+[agent specifications](miniPresentation/AgentSpecifications.md) document the
+agreed single-agent and multi-agent comparison roles, review checkpoints,
+correction approvals, and evidence requirements. They are documentation briefs,
+not installed agents. Feature selection, run configuration, behavioural checks,
+and compatibility with the implementation skill remain pending before execution.
+
 ## Acknowledgements
 
 See [Acknowledgements](developerGuide/Acknowledgements.html) for the sources of
