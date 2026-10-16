@@ -14,6 +14,51 @@ Describe how the agreed product requirements will be implemented. Ground the des
 - Treat the product spec as the source of agreed product intent. Do not silently rewrite its requirements to accommodate a technical design.
 - Do not generate either specification when the task is to create or edit this skill itself.
 
+## Migration design and shared contracts
+
+For migration design, read [the migration workflow](../../../workflow/MIGRATION-WORKFLOW.md)
+and the approved inventory/feature references in the product specification.
+Keep the whole-document status separate from per-feature design readiness. Record
+selected approved product IDs and versions, required shared foundations, dependent
+features, open decisions, and human approval references. Unrelated draft features
+do not block independent design; unresolved shared decisions block their dependents.
+Do not bypass the approved inventory-first product-discovery sequence.
+
+Design frontend/backend boundaries against one shared contract. For each feature,
+identify frontend, backend, shared, and integration responsibilities; requests,
+responses, field semantics and units, validation, errors, identity/permissions,
+and state changes must agree across both sides. Include contract versions and
+representative fixtures sufficient for parallel work. Both human owners approve
+shared-interface changes before dependent implementation; record the decision and
+update affected feature designs and issue links. Owner names can remain unassigned
+during drafting, but ownership gaps block implementation assignments.
+
+Distinguish the legacy JavaFX architecture from the proposed TypeScript/Next.js
+web design. Explain necessary changes to desktop-only assumptions such as local
+files, one active user, serialized operations, and window lifecycle. Preserve
+business invariants and server-side access checks; do not assume the desktop
+execution model supplies concurrency guarantees to the web application.
+
+Initial delivery is a resettable demo with fresh seed data; durable storage and
+PostgreSQL integration are deferred. Specify the interim state mechanism, sharing
+between users/requests, seed/reset lifecycle, images, deployment limitations, and
+behaviour when state resets. Resettable scope is not approval of any particular
+storage mechanism or browser-only simulation. Verify proposed deployment/runtime
+assumptions against applicable documentation before treating them as feasible.
+PostgreSQL remains later work requiring its own application wiring and validation.
+
+Apply the agreed selective test layers: unit tests for rules/validation, integration
+tests for server/storage/authorisation effects, and Playwright for critical real
+frontend/backend journeys and browser risks. Specify deterministic independent
+fixtures/reset support and explain non-applicable layers. Mocked frontend checks
+are not final integrated acceptance; demo-storage tests do not establish PostgreSQL
+correctness. Keep test ownership and review gates consistent with the role briefs.
+
+Use existing approved decisions before asking questions; discuss remaining material
+choices one at a time. Design readiness enables planning within that scope, not
+execution. Issues link to requirements, contracts, and later plan tasks without
+becoming a second authoritative technical specification.
+
 ## 1. Read the product spec and establish the baseline
 
 Begin by reading `workflow/PRODUCT-SPEC.md` in full. If it is missing, ask the user to provide or establish the product spec before deriving an implementation design. Do not invent requirements from the build prompt or architecture documentation as a substitute.
@@ -38,7 +83,7 @@ Wait for the answer before finalizing dependent sections. Continue independent a
 
 Record unresolved items explicitly as open questions and mark affected design sections as blocked. If the user stops early or defers a decision, save useful agreed content as a draft and identify the consequences of the deferral. Do not fill gaps with unconfirmed assumptions or present proposals as committed designs.
 
-If clarification changes product intent, identify the required product-spec update and obtain or reuse explicit authorization to make it. Otherwise leave that source unchanged and report that synchronization is needed. Do not mark the technical spec ready while it contradicts its source. A draft product spec can support work on settled requirements, but unresolved dependencies keep the technical spec in draft status.
+If clarification changes product intent, identify the required product-spec update and obtain or reuse explicit authorization to make it. Otherwise leave that source unchanged and report that synchronization is needed. Do not mark the technical spec ready while it contradicts its source. A draft product spec can support design of explicitly approved feature requirements. Unresolved dependencies keep affected designs blocked and the overall document in draft status; independently approved feature designs retain their recorded readiness.
 
 ## 3. Design and write the technical spec
 
@@ -48,7 +93,7 @@ Include the following sections. Adapt an existing document's organization while 
 
 ### Overview, scope, and source baseline
 
-State the implementation objective, included and excluded changes, source product-spec version, revision date, and status: draft or ready for implementation. Identify affected components, established constraints, and implementation compatibility requirements. Distinguish proposed design from current implemented behavior.
+State the implementation objective, included and excluded changes, source product-spec version, revision date, and document status plus per-feature design readiness and approval references. Identify affected components, established constraints, and implementation compatibility requirements. Distinguish proposed design from current implemented behavior.
 
 ### Requirements traceability
 
@@ -109,6 +154,6 @@ Read the written file and inspect the diff. Check that:
 - No unconfirmed choice, ambiguity, discrepancy, or blocking question is disguised as a finalized design.
 - The source baseline is current, links resolve, and unaffected content is preserved.
 
-Consult the user about gaps found during review. Mark the document ready for implementation only when blocking decisions are resolved and product-spec alignment is established. Follow applicable repository documentation and interaction logging requirements. Application tests are not evidence for a prose-only design unless actually executed; report any verification performed accurately.
+Consult the user about gaps found during review. Mark a feature design ready for planning only when its blocking decisions and shared dependencies are resolved, required approvals are recorded, and product-spec alignment is established. Mark the whole document ready only when that holds for all in-scope designs. Follow applicable repository documentation and interaction logging requirements. Application tests are not evidence for a prose-only design unless actually executed; report any verification performed accurately.
 
-Finish by linking the technical spec, summarizing the design and requirement coverage, stating readiness, and listing unresolved questions or agreed deferrals. Creating the spec does not itself authorize implementation.
+Finish by linking the technical spec, summarizing the design and requirement coverage, stating feature-level and overall readiness separately, and listing unresolved questions or agreed deferrals. Creating the spec does not itself authorize implementation.
