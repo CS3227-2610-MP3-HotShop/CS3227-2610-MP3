@@ -1,0 +1,21 @@
+{
+  "sourceFilesChecked": 255,
+  "sourceChanged": [],
+  "exerciseChanges": [
+    "AGENTS.md",
+    "docs/DeveloperGuide.md",
+    "docs/UserGuide.md",
+    "logs/exercise-controlled-fault.md",
+    "logs/exercise-implementation-review.md",
+    "logs/exercise-implementation-setup.md",
+    "logs/exercise-implementation.md",
+    "logs/exercise-readiness-review.md",
+    "logs/exercise-sdd-summary.md",
+    "logs/exercise-security-review.md",
+    "logs/exercise-testing.md",
+    "src/cart-total.mts",
+    "tests/cart-total.test.mts",
+    "workflow/EXERCISE.md",
+    "workflow/PLAN.md"
+  ]
+}

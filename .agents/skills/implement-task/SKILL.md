@@ -1,77 +1,155 @@
 ---
 name: implement-task
-description: Execute only explicitly requested tasks from workflow/PLAN.md after confirming they exist and their prerequisites are completed. Pause for unclear instructions or delegated decisions, and mark completion only after every acceptance criterion is met.
+description: Execute selected eligible tasks from workflow/PLAN.md under direct user approval or an approved coordinator scope, respecting role ownership, correction approvals, and evidence-based completion.
 ---
 
 # Implement Task
 
-Implement exactly the plan tasks explicitly selected by the user. Treat the plan as execution instructions, not permission to choose tasks, resolve design questions, or expand the work.
+Execute eligible plan tasks within recorded user authorisation. A request may
+select task IDs or unique names, or approve a bounded set/milestone mapped to
+specific tasks for coordinator selection. Neither mode authorises extra scope.
+Editing this skill does not invoke implementation.
 
-## Scope and paths
+## 1. Establish authority and role
 
-- Resolve `workflow/PLAN.md` and its referenced specifications relative to the repository root.
-- An explicit task ID or a name that uniquely identifies a task selects that task. If selection is unclear, ask for clarification before making changes. Never infer authorization for the next task, dependencies, or related work from a request for one task.
-- Creating or editing this skill does not invoke task implementation.
+Read applicable repository instructions, `workflow/PLAN.md`, and the referenced
+product/technical specifications. Paths are relative to the repository root.
+For the migration, read [the migration workflow](../../../workflow/MIGRATION-WORKFLOW.md).
+For a role-based assignment, read the
+[common contract and assigned role](../../../docs/agents/AgentSpecifications.md).
 
-## 1. Validate the request before any implementation
+Record selected task IDs, approved scope and specification versions, assigned
+role, allowed files, human approver, verification requirements, and shared
+correction-cycle state. A milestone must map to identifiable tasks and acceptance
+criteria. Missing authority or an ambiguous scope blocks dependent work.
 
-Read applicable repository instructions and `workflow/PLAN.md`. Match every requested task to exactly one plan entry. Read the complete entry, including dependencies, description, steps, acceptance criteria, specification references, and `Completed:` section.
+The coordinator selects and delegates; it never writes application code or tests.
+Workers execute their assigned eligible tasks. This skill does not authorise a worker
+to start other plan tasks or spawn agents beyond its role's permitted routing.
 
-Before making edits or running implementation or verification commands, check:
+## 2. Validate eligibility per task
 
-- The plan exists and every requested task exists uniquely.
-- The requested tasks contain usable instructions and acceptance criteria.
-- Each requested task has a clear completion state.
-- Every prerequisite exists and is explicitly marked `Completed: Yes`. Inspect the prerequisite chain for missing, ambiguous, self-referencing, or cyclic dependencies. Missing completion evidence or contradictory status must not be treated as completion.
+Read each complete task entry, including dependencies, instructions, acceptance
+criteria, references, and completion state. Verify that every prerequisite exists,
+has `Completed: Yes`, and has supporting evidence. Detect missing, ambiguous,
+self-referencing, or cyclic dependencies before dependent implementation.
 
-If the plan or a requested task is missing, or any prerequisite is incomplete, report the exact task IDs and blocking condition and stop with no further action. Do not implement the prerequisite, create a replacement task, edit the plan, run tests, or proceed with another requested task. Validate a multi-task request as a whole before starting; do not partially execute a request containing a blocked task.
+A blocked task pauses that task and its dependents. Report exact IDs and blockers;
+the coordinator may continue independent eligible work already inside approved
+scope. A worker may continue only independent work already assigned to it and
+must report the partial blocker. If scope, plan, or ownership is globally missing,
+all work relying on it remains blocked. Follow repository logging obligations;
+logging is not permission to edit the blocked implementation or invent plan entries.
 
-Requesting an incomplete prerequisite and its dependent in the same call does not bypass this check: dependencies must already be completed before implementation begins. The user can request the prerequisite separately, then request the dependent after completion.
+Selecting a prerequisite and its dependent together does not make the dependent
+eligible. Complete and verify the prerequisite first; then the coordinator may
+dispatch the dependent within the existing approved scope, rechecking eligibility.
+A request for one task alone does not authorise its prerequisites or next task.
 
-If a requested entry is already completed, report that status and leave it unchanged. Do not reopen or redo it. Changes to its tests or code require a new follow-up task in the plan and an explicit request to implement that new task.
+Completed task entries remain immutable. Changed requirements or corrections to
+completed work need a fresh follow-up task through planning, linked to the original
+entry. The follow-up must be explicitly included in authorised scope; a correction
+plan can identify and authorise it. Do not silently reopen entries or create tasks
+as a workaround inside this execution skill.
 
-If task identity, completion status, dependency declarations, or required fields are ambiguous, pause and ask for clarification. Do not guess. A failed initial validation is read-only: report it without creating logs or other files in that blocked invocation.
+## 3. Resolve gaps at the appropriate level
 
-## 2. Check instructions for gaps and decisions
+Inspect relevant code, tests, interfaces, architecture, and existing conventions;
+preserve user edits. Use judgment for names, private helpers, and comparable local
+choices within approved behaviour and design. This is not permission for unrelated
+refactoring or changes to public APIs, architecture, dependencies, or requirements.
 
-For eligible tasks, read their referenced technical and product specification sections and inspect relevant code, tests, and architecture before changing anything. Preserve existing user edits. Determine whether the task and its references specify the behavior and implementation sufficiently to execute without choosing a design on the user's behalf.
+For material ambiguity or a specification conflict, pause affected work and give
+the coordinator or human approver the task, disputed requirement, evidence, and
+impact. Preserve partial work and leave the task incomplete. Independent approved
+work may continue where it does not share the blocker or overlapping files.
 
-If any ambiguity, missing instruction, conflict, or gap appears at any point, immediately pause implementation and ask the user for clarification. Identify the task ID, relevant instruction or reference, the missing decision, and its impact. Do not continue independent implementation while waiting, fill gaps with assumptions, or silently select an option. Prior explicit user decisions remain valid.
+Migration corrections confined to one assigned area use that area's human owner.
+Shared-interface or cross-area changes require both owners' explicit agreement,
+recorded against the contract and tasks before edits. Missing ownership blocks
+affected assignments. Reviewer disagreements always go to the human approver(s)
+with both positions and specification/test evidence; agents do not adjudicate them.
 
-Never make design or implementation decisions for the user. Execute choices already established in the task, referenced specifications, explicit repository conventions, or prior user clarification. If execution requires a new choice among unspecified alternatives, ask first, even if one option seems preferable.
+## 4. Execute the assigned TDD phase and ownership
 
-If the task description or any instruction it incorporates directs the agent to decide, choose an approach, or use its own judgment to settle an implementation or design choice, report that instruction and cease implementation. Do not comply with the delegation or rewrite the task to remove it. Resume only after the user supplies the decision or clarifies the instructions; revalidate eligibility before resuming.
+- Testing tasks: the testing agent writes tests/fixtures within its assignment and
+  records meaningful behavioural failures. Compiler/setup failures are not red
+  evidence. Report already-passing behaviour honestly; never manufacture failure.
+- Test readiness: obtain the specification/coverage review before the corresponding
+  production task. Resolve affected findings through the correction gate below.
+- Production tasks: the implementer edits production code and runs tests, but never
+  edits, deletes, disables, or weakens tests, fixtures, or test configuration.
+  Suspected test defects return to the assigned testing agent with evidence and
+  coordinator visibility. Route via the coordinator if direct invocation is unavailable.
+- Review tasks: reviewers may run permitted checks but cannot edit code or tests.
+  Review implementation and coverage after production work; perform security review
+  against the stable final candidate as defined by the role specifications.
 
-If a gap is discovered after edits have begun, preserve the partial work, report what changed and where implementation paused, and leave `Completed: No`. Do not discard user work or mark the task complete. Record partial progress only in the requested unfinished task's completion section as appropriate; do not modify task definitions or other tasks to work around the gap.
+Required documentation and logs are part of the task's
+repository obligations; coordinate ownership of shared files. A separately planned
+out-of-scope prerequisite is still a blocker, not implicit implementation authority.
 
-## 3. Execute only the selected eligible tasks
+## 5. Gate failed-loop corrections
 
-Follow the specified steps and agreed design, maintaining the task's scope. Do not implement any unrequested task, including a setup, refactoring, documentation, or verification task listed separately in the plan. Perform required checks and repository obligations that apply to the requested work, but if those obligations require implementing another task or introduce an unresolved scope conflict, pause and ask the user.
+Expected initial TDD red permits the approved initial green task after readiness
+review. For any unexpected failed review/verification loop requiring code or test
+edits, stop those edits and preserve failure evidence. Diagnosis and permitted
+reproduction may continue. Do not automatically fix even an obvious in-scope defect.
 
-Respect the plan's TDD phase:
+The coordinator drafts a concrete change plan identifying requirements, failed
+snapshot, checks/results, cause or uncertainty, proposed edits and owners, impacts,
+verification, paused/continuing work, and cycle count. Obtain explicit approval from the appropriate human
+owner(s) before implementation; silence and original feature approval do not suffice.
+Further edits outside the approved plan require revised approval.
 
-- For a test-writing task, write the specified tests and verify the intended behavioral failures. Do not implement production behavior just to make them pass. Compiler or environment failures do not establish a meaningful red result.
-- For an implementation task, make the specified change and run the relevant tests to establish green. Do not weaken valid tests, invent behavior to satisfy an unclear assertion, or extend implementation to unrelated features.
-- Perform refactoring only if specified within the requested task and its intended result is unambiguous. Otherwise do not add it as discretionary work.
+Use one shared maximum of two correction cycles per reviewed task/batch across
+readiness, tests, production, implementation review, and final security review.
+A cycle is an approved fix set plus re-review; initial scheduled assessments do
+not consume a cycle. Preserve the count across phases, agents, and follow-up tasks
+for the same corrective work. At exhaustion, pause unresolved affected work and ask
+for explicit direction; change-plan approval alone does not extend the limit.
 
-Follow repository build tools, test frameworks, style requirements, and documentation/logging obligations for work that proceeds. Existing execution permissions still apply; selecting a task does not grant additional permission for deployment or other external actions.
+Never disable checks or weaken valid tests to claim completion. Classify unrelated
+failures and environment limitations honestly without fixing outside approved scope.
 
-If a check fails, determine whether the cause is in the requested task, unrelated existing work, or the environment. Correct only failures whose resolution is specified and within the selected task. For an unclear fix or work belonging to another task, pause and report the issue instead of choosing a solution. Never disable verification to claim completion.
+## 6. Verify and record acceptance
 
-## 4. Verify acceptance and record completion
+Assess each criterion using actual evidence and run applicable verification for
+the assigned phase and stack. Migration test layers and completion gates are in
+the migration workflow; Java-source checks continue to apply to Java changes.
+Report intended red results as expected failures, not passing suites. If mandatory
+checks conflict with a planned red task, clarify the conflict rather than bypassing
+checks or implementing an unassigned green task.
 
-Assess every acceptance criterion individually using actual evidence. Run the task's specified checks and applicable repository verification. Report commands, outcomes, and limitations accurately. An intentional failing test can satisfy a red-task criterion, but must be reported as an expected failure rather than a passing test suite. If mandatory repository checks conflict with the task's intended red state, seek clarification rather than silently waive them or implement an unrequested green task.
+A worker handoff does not establish final feature acceptance. Resolve the reviews
+and integrated checks required by the task/feature before claiming that level of
+completion. Preserve distinctions between test readiness, implementation readiness,
+and final reviewed feature completion.
 
-Mark the task complete only when all its acceptance criteria are met and required checks are resolved. If any criterion is unverified, failed, ambiguous, or blocked, retain `Completed: No` and record concise partial progress and outstanding checks. Do not equate performing the steps with satisfying acceptance.
+Workers return task-completion evidence to the coordinator and do not edit plan status. The coordinator alone records completion/progress in the shared plan. Immediately before recording completion, the coordinator re-reads task scope and dependencies.
+Update only the selected task's `Completed:` section with `Yes`, date, and concise
+acceptance/check evidence when every criterion and required gate is satisfied.
+Keep all task definitions and previous completed entries unchanged. Failed,
+unverified, ambiguous, or blocked criteria retain `Completed: No` with partial
+progress and outstanding actions. Coordinate writes to the shared plan file.
 
-Immediately before recording completion, re-read the task and its dependencies to catch intervening changes. If instructions or scope changed, pause for clarification rather than applying a stale completion result. Preserve unrelated edits and all previously completed entries.
+## 7. Report and progress
 
-For a task completed in this invocation, update only its `Completed:` section to `Yes`, with the completion date and concise evidence for acceptance and verification. Preserve its ID, name, dependencies, description, steps, acceptance criteria, and references. Do not mark any unrequested task complete even if its code or checks overlap.
+Return task IDs, role, specification/snapshot references, changes, actual checks,
+criterion evidence, review findings, approvals, cycle state, blockers, and next
+action. Record timing and available usage; otherwise `N/A`.
 
-Once completion is recorded, leave that entry immutable on later invocations. Revised specifications require new follow-up tasks, created through planning, before their implementation can be explicitly requested.
+The coordinator reports progression and may select the next eligible task within
+approved scope. A worker returns its handoff and awaits another assignment. Scope
+expansion, altered requirements, and external actions such as deployment retain
+their existing authorisation requirements.
 
-## 5. Report and stop
+### Interpreting baseline evidence
 
-For successful work, report the requested task IDs, changes, acceptance evidence, actual verification outcomes, and completion state. For paused work, state the exact blocker or needed clarification and identify partial changes and unmet criteria. For an initial missing-task or incomplete-dependency rejection, report the situation and stop without further action.
-
-Do not automatically proceed to the next plan task, create follow-up tasks, revise specifications, or implement inferred requirements.
+Apply the common contract's test-first evidence policy per criterion. Missing or
+incorrect behaviour needs meaningful behavioural red before production changes.
+Already-satisfied behaviour requires implementation-path and passing-test evidence
+confirmed by the specification reviewer; green alone is insufficient. Unexpected
+passes must be investigated. Setup failures stay unverified; classify mixed tasks
+separately and never use source JavaFX checks as proof of target Next.js behaviour.
+Preserve the approved task scope, all review gates and correction approvals.

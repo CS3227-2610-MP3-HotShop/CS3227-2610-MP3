@@ -25,6 +25,12 @@ Do not assume that a feature exists merely because it is described as part of th
 ---
 
 ## Project Specifications
+
+The Java/Gradle/JUnit versions, Java source directories, Java coding conventions,
+and Gradle verification commands below apply to the existing JavaFX application.
+For the TypeScript/Next.js migration, use the approved migration testing policy
+and target setup. Record exact target commands and source locations before
+implementation; do not apply Java-only tooling to TypeScript changes.
 - Java version 25
 - Gradle version 9.1.0
 - Testing framework: JUnit 5
@@ -108,6 +114,70 @@ Do not:
 If an unrelated problem is discovered, report it separately rather than fixing it as part of the current task unless it prevents completion of the requested work.
 
 ---
+
+## Migration collaboration
+
+For configured worker names and coordinator startup, read
+[AgentConfiguration.md](docs/agents/AgentConfiguration.md). Files alone
+do not prove instruction loading or behavioural validation; use the recorded smoke-test evidence and remaining readiness gates. Record external test reports with their provenance and distinguish them from checks executed in this chat.
+
+For authorised task execution, use the aligned
+[implement-task skill](.agents/skills/implement-task/SKILL.md). It supports
+coordinator selection within approved scope and per-task blocker handling;
+completed entries remain immutable and corrective edits require explicit approval.
+For task decomposition, use the aligned
+[planning skill](.agents/skills/plan-implementation/SKILL.md) to record ownership,
+contract dependencies, review/integration gates, and separate readiness from approval.
+Use the aligned product/technical specification skills for inventory-first discovery
+and feature-level approval. Shared contracts require both area owners; unresolved
+shared foundations block dependent designs and implementation, not unrelated work.
+
+Before assigning frontend/backend migration work or approving corrections, read
+[the migration workflow](workflow/MIGRATION-WORKFLOW.md).
+Review and obtain approval of the complete feature inventory before detailing
+features individually; inventory approval alone does not authorise implementation.
+Inventory coverage was approved on 2026-10-17 for the 17 groups, feature list only.
+The migration source baseline is frozen at commit 1d812ef. Specify behaviour as it
+exists at that commit. If the JavaFX source changes later, propose a re-baseline with a
+diff and obtain explicit approval; do not specify or implement against newer source
+without it.
+Use .github/ISSUE_TEMPLATE/feature.md for feature issues and .github/ISSUE_TEMPLATE/task.md for linked frontend/backend/integration tasks. Task creation and assignment do not authorise implementation. Record unknowns and add tasks incrementally; require approved detail and prerequisites for the task about to start, without demanding exhaustive upfront decomposition.
+Use Backlog, Ready, In progress, Review, and Done for task stages. Keep Paused and Blocked as separate flags with reasons and resumption conditions; follow the migration workflow for transition gates.
+Track split frontend/backend tasks as separate GitHub issues linked to a parent feature; follow the migration workflow for ownership and parent completion gates.
+Use [the feature inventory](workflow/FEATURE-INVENTORY.md) to track guide-derived
+features and their evidence status. Consult workflow/FEATURE-EVIDENCE.md for the
+pinned source paths, representative assertions and unresolved source ambiguities.
+Static assertion inspection is not a passing-test result or inventory approval.
+Verify documented claims against code/tests
+before calling them implementation-verified; distinguish future work from parity.
+Assign human owners before implementation. Each owner approves correction plans
+within their area; shared-interface changes require both owners' explicit
+agreement before implementation. Record approvals against the affected contract
+and tasks. Existing correction limits and test ownership remain in force.
+Superseded on 2026-10-17: the web application has no reset feature and uses a hosted
+PostgreSQL database from the start. PostgreSQL is used in every environment including
+automated tests; each environment has its own database, and tests never run against the
+demo database. Dropping and recreating a development or test database is ordinary
+practice, not the reset the application excludes. Domain timestamps come from an
+injectable application clock, never from the database clock or a column default, or the
+meetup and dashboard time boundaries cannot be tested. Seeding is an idempotent
+provisioning step, not an application route. Reset was a local-disk concern of the JavaFX app and
+has no web equivalent. Data persists; seeding runs once at provisioning rather than on a
+schedule or on demand. Fresh demo data is still approved, so existing accounts, records
+and images are not imported. Preserve functional state and access rules; specify the
+seed content and the provisioning path before implementing storage-dependent tasks. Do
+not plan interim in-memory or ephemeral server state: on a serverless host it disappears
+between deployments and cold starts, which users experience as an uncontrolled reset.
+The web target supports concurrent multi-user access; the desktop single-logged-in-user
+constraint and its single-worker serialisation are not carried over, so database
+integrity constraints protect the marketplace invariants instead. The desktop minimum
+window size and fixed layout units are not target criteria. Platform and data
+foundations are tracked as INV-17 in the feature inventory. Do not reintroduce a
+superseded desktop constraint because a guide chapter still describes it; the affected
+User Guide wording changes with its feature.
+For migration features, follow the workflow's agreed unit/integration/Playwright
+testing policy and completion gates. These target-stack rules supplement the
+Java-source checks; executable Next.js commands remain to be established.
 
 ## Architecture and Design
 
@@ -202,6 +272,10 @@ Do not:
 
 When an existing user-facing feature changes, update its existing User Guide documentation as part of the same task.
 
+### Feature completion record
+
+Before declaring a feature Done, update docs/UserGuide.md, docs/DeveloperGuide.md, AGENTS.md, and its feature-level SDD interaction summary. Follow docs/agents/SDDInteractionSummary.md and link supporting task logs. Intermediate task completion does not waive parent-feature documentation gates.
+
 ### Developer Documentation
 
 For every completed feature or change, update both `AGENTS.md` and
@@ -223,7 +297,7 @@ When external code, ideas, designs, or documentation are reused or adapted, ensu
 ---
 
 ## Testing
-All automated tests for this project will be written using JUnit5.
+Java automated tests use JUnit 5. The web migration uses the agreed unit/integration tests and Playwright browser tests; its unit/integration runners and commands must be chosen during target setup.
 
 New behaviour should be accompanied by appropriate tests unless the behavious cannot reasonably be tested automatically.
 
@@ -279,6 +353,11 @@ Determine whether the implementation or the test is incorrect before making chan
 ---
 
 ## Build and Verification
+
+The Gradle requirements in this section apply to Java implementation tasks.
+For web changes, run the configured target checks required by the migration
+workflow; exact commands remain a setup prerequisite. Mixed changes require
+applicable checks for both stacks.
 After modifying Java source code, run the relevant verification tasks.
 
 At minimum:
@@ -309,6 +388,11 @@ If verification fails:
 Do not disable tests, Checkstyle, or other verification mechanisms merely to make the build succeed.
 
 ## Logging Agent Interactions
+
+After every agreed decision, update docs/InteractionRecord.md before ending the turn, including discussion-only turns. Record the decision, reason when known, affected scope, and any superseded decision. Maintain a current handoff covering workspace/branch, completed work, unverified work, blockers, and next authorised step. Distinguish proposals from approvals and planned checks from executed checks. Keep personal decisions in their separate external record.
+
+
+Maintain [docs/InteractionRecord.md](docs/InteractionRecord.md) for project decisions and outcomes. Keep personal conversation records and unrelated material outside the repository. For mixed requests, record the project-relevant task summary here and preserve the original conversation separately; this overrides the verbatim-prompt logging requirement for such requests. Preserve the separate project task logs required below.
 At the end of every workflow task performed by the LLM, create a new Markdown file under:
 ```
 logs/
@@ -410,3 +494,42 @@ When completing a task, provide a concise summary containing:
 - any limitations or unresolved issues.
 
 Never report a test, build, Checkstyle check, application run, or other verification as successful unless it was actually executed successfully.
+
+## Documentation assignment
+
+For role-based work, follow the documentation ownership table in
+docs/agents/AgentSpecifications.md. Assign one writer per shared file at a time.
+The coordinator owns AGENTS.md, workflow documentation, decision records and feature
+SDD summaries; implementers own assigned user/design/setup guide updates.
+The specification reviewer independently checks final feature documentation.
+Each agent supplies its own task log; read-only assignments return content for
+authorised consolidation. Feature Done requires the documented checks and evidence.
+
+Only the coordinator updates workflow/PLAN.md completion/progress fields from worker
+evidence and required gates. Workers report results without changing plan status.
+Keep completed entries immutable and create authorised follow-up work through planning.
+
+For role-based TDD, follow the common contract's per-criterion baseline evidence
+policy: meaningful red for missing/incorrect behaviour; independently reviewed
+implementation-path and passing-test evidence for already-satisfied behaviour.
+Never manufacture failure, count setup errors as red, or treat legacy Java tests
+as proof of target web behaviour. Preserve readiness and final acceptance gates.
+
+For workflow-validation evidence and its limits, read docs/agents/WorkflowExercise.md.
+When advancing a correction cycle, reconcile the current plan, handoff and SDD-summary
+counters in the same transition; preserve prior stage counts as historical evidence.
+A successful synthetic exercise does not establish migration-feature correctness.
+
+Keep current readiness/status summaries aligned with recorded exercise evidence.
+Distinguish native configuration loading, generic-dispatch observations and unexercised
+controls; preserve historical reports rather than rewriting prior outcomes.
+
+For the current assistant transition, read docs/CLAUDE-HANDOFF.md after these
+instructions; recheck repository state and preserve uncommitted inventory evidence.
+
+Before reading or writing GitHub issues/PRs, read docs/agents/issue-tracker.md
+for the MP3 target and execution gates. Before triaging, read
+docs/agents/triage-labels.md. Preserve concurrent feature-specification work.
+
+Tracking choice agreed 2026-10-17: use GitHub issues and labels; Projects is
+explicitly deferred. Follow docs/agents/issue-tracker.md for stage/flag updates.

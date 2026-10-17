@@ -1,0 +1,8 @@
+{
+  "src/cart-total.mts": "f7cc65aa944c18b8eae018f42d9130f2865ad112feaea476576213e3ff0689a3",
+  "tests/cart-total.test.mts": "ea6047802612dc83ea79a3b453295c05b935649432a9a94dc970a42dba80ddce",
+  "docs/UserGuide.md": "e3fa9103613d9073115fa81994d7001533ee8cddc394df5cc6288637caed5c4f",
+  "docs/DeveloperGuide.md": "2457298391ddb52e4e70c28592c3b1af8ed3b9fca89c7b8bdebd63b5cda205e5",
+  "AGENTS.md": "413a3fa6049d23eaabaf8101219b13b34895a845d0aabc59e0ca0f2c41c3da8d",
+  "logs/exercise-sdd-summary.md": "11cf0ca12f23da447b01ce26ccb26518bd34b56c5958f5a4b0245ecfca18b671"
+}
