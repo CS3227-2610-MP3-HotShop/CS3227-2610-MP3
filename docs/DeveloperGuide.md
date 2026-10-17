@@ -168,9 +168,9 @@ change do not require edits. User-facing changes also update the User Guide.
 
 The [migration workflow](../workflow/MIGRATION-WORKFLOW.md) records agreed scope,
 frontend/backend ownership and approval rules, shared-interface handoffs, and
-integration requirements. The full document is still under discussion in
+integration requirements. The agreed policy and remaining implementation gates are tracked in
 [issue #3](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/issues/3).
-Use its issue links for setup/discovery tracking and its open-decision section
+Use its issue links for setup/discovery tracking and its remaining implementation prerequisites
 before starting dependent work. Setup issues are published; feature discovery has started with a documentation pass. Worker configuration files are written and four custom types launched in the supplied smoke-test report. Generic-dispatch behaviour was exercised; native loading after instruction edits and migration implementation remain unverified or pending.
 The agreed sequence is to review and approve the full feature inventory first,
 then develop detailed specifications feature by feature. The inventory establishes
@@ -181,7 +181,7 @@ traces all 16 audited groups to implementation paths and representative existing
 assertions at commit 1d812ef; no tests or manual walkthrough were executed in that
 inspection. A later guide-derived recheck on 2026-10-17 removed no group and added
 INV-17, platform and data foundations, which covers web session and authentication,
-concurrent access control, demo data lifecycle and reset, atomic changes and the
+concurrent access control, demo data lifecycle, atomic changes and the
 refusal-message standard. INV-17 has no source trace because it is not an existing
 JavaFX screen feature. Two scope decisions were agreed the same day: the web
 application supports concurrent multi-user access instead of one logged-in user at a
@@ -198,8 +198,7 @@ Superseded on 2026-10-17: the web application has no reset feature and uses a ho
 PostgreSQL database from the start. Reset was a property of the desktop app's local data
 folder and has no web equivalent, and interim ephemeral server state would vanish between
 deployments and cold starts, which users would experience as an uncontrolled reset. Fresh
-demo data still applies, so existing accounts, records and images are not imported. A
-reset leaves seeded accounts and a spread of listings and no seeded offers, sales or
+demo data still applies, so existing accounts, records and images are not imported. Provisioning creates seeded accounts and a spread of listings and no seeded offers, sales or
 meetups, so every deal state a viewer sees was produced by the real flow. The technical
 specification will define the database choice, seed provisioning and image handling
 before storage-dependent implementation.
@@ -243,7 +242,7 @@ Task stages are Backlog, Ready, In progress, Review, and Done. Paused denotes a
 deliberate hold; Blocked denotes an unresolved dependency or decision. Both are
 flags preserving the task stage, with a reason and resumption condition recorded.
 See the migration workflow for stage gates. The task template contains these fields;
-GitHub Project fields and labels have not yet been configured.
+Stage, flag and triage labels are now configured. GitHub Projects is explicitly deferred; issues and labels provide current tracking.
 ### Feature completion documentation
 
 A feature is Done only after the User Guide, this Developer Guide, AGENTS.md, and
@@ -301,6 +300,14 @@ The [Claude handoff](CLAUDE-HANDOFF.md) records the migration stopping point,
 local changes, approvals still needed and verification limits. Markdown workflow
 roles remain the reference; client-specific configuration loading must be checked
 in the receiving environment.
+
+### MP3 tracker operation
+
+Use [tracker instructions](agents/issue-tracker.md) and [triage labels](agents/triage-labels.md)
+for the MP3 repository, stage/flag meanings, parent completion gates and branches.
+Workflow approvals and smoke-test evidence are already recorded. The user selected issues and labels on 2026-10-17 and deferred the board.
+No additional Projects permission is needed. Issue #6 records publication evidence for the
+tracker documentation.
 
 ## Acknowledgements
 

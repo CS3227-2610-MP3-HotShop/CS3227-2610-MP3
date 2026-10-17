@@ -1,7 +1,8 @@
 # MP3 migration workflow
 
-Status: draft under discussion; agreed decisions are recorded below, but the
-complete workflow is not yet approved. Last updated: 2026-10-17 (SGT).
+Status: workflow policy agreed through the recorded user discussions; setup
+publication/closure is tracked by #2–#7. Feature implementation still requires its
+own approvals and prerequisites. Reconciled 2026-10-17 (SGT).
 
 Tracking: [W1: workflow and completion gates](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/issues/3).
 Parent: [migration workflow setup](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/issues/2).
@@ -32,8 +33,9 @@ contains the JavaFX implementation and additional specifications. Freeze an
 exact reference commit before extracting the feature inventory. Target all
 existing features in a TypeScript/Next.js application developed on a dedicated
 migration branch. Existing accounts, records, and images do not need transferring;
-the web application starts with demo data. PostgreSQL is deferred until after
-the two-day delivery target. On 2026-10-17 the user approved a resettable demo for this initial delivery; durable storage is deferred to the PostgreSQL phase.
+the web application starts with demo data. The later 2026-10-17 decision supersedes
+the interim resettable proposal: hosted PostgreSQL from the start, no application
+reset feature, and idempotent provisioning seeds. See the current policy below.
 
 ### Parallel ownership
 
@@ -45,7 +47,8 @@ authorisation, and persistence. Both participate in end-to-end integration.
 
 Use separate checkouts and short-lived feature/side branches targeting the
 migration integration branch. The proposed integration branch is
-`codex/nextjs-migration`; it has not been created by this documentation task.
+`codex/nextjs-migration`; it now exists locally. Remote publication must be checked
+before opening implementation PRs against it.
 Designate one owner at a time for shared configuration, dependencies, schemas,
 and contract files. Coordinators must not assign overlapping edits independently.
 
@@ -81,7 +84,7 @@ where those require separate tracking. Issues identify owners, blockers, and
 progress; specifications define requirements and contracts; the implementation
 plan retains executable task IDs and evidence. Link these artifacts instead of
 maintaining competing requirements. Actual feature issues follow source discovery;
-setup and discovery issues are now posted; feature issues and a Project board remain pending; feature/task/PR templates are drafted locally.
+setup and discovery issues are now posted; feature issues follow discovery and GitHub Projects is deferred; feature/task/PR templates are published on the workflow branch in PR #9.
 
 Use the [task template](../.github/ISSUE_TEMPLATE/task.md) for frontend, backend, and integration issues; link each task to its feature parent and implementation-plan IDs.
 Each frontend/backend task that is split out has its own issue, owner, dependencies,
@@ -111,7 +114,7 @@ not grant authority, reset correction cycles, or reopen completed plan entries.
 
 Parent feature completion still requires all required tasks and integrated feature
 acceptance; task stage changes alone do not complete a feature. These conventions
-are documented locally; GitHub Project fields and labels have not been configured.
+are documented locally; Stage, flag and triage labels are configured; GitHub Projects is explicitly deferred; current tracking uses issues and labels.
 
 #### Incremental issue planning — agreed 2026-10-17
 
@@ -134,7 +137,9 @@ both side-specific tasks alone is insufficient. Changes to requirements or share
 interfaces must be reflected in the linked specifications and task records.
 
 Workflow setup is being developed on `codex/migration-workflow`, based on the
-existing specs branch. Worker TOML files are written and the user-supplied smoke test reports four successful custom-type launches. Isolated loading, full behavioural validation, subsequent instruction changes, the frozen source baseline and demo-state implementation remain unverified or pending. The Java-specific rules elsewhere describe the current source
+existing specs branch. Worker TOML files are written and the user-supplied smoke test reports four successful custom-type launches. Custom-type launches were reported by the user; the generic-dispatch exercise
+validated its documented scenarios. Native loading after edits remains unverified.
+The source baseline is frozen at 1d812ef; migration implementation remains pending. The Java-specific rules elsewhere describe the current source
 application; target-specific implementation rules must be established before
 Next.js implementation begins.
 
@@ -152,33 +157,29 @@ requirements, relevant shared foundations and interfaces, and eligible tasks.
 Resolve uncertain source behaviour with evidence and user input. Do not silently
 defer features or infer approval from an issue or board status.
 
-## Resettable initial delivery — agreed 2026-10-17
+## Data foundations — superseding decision 2026-10-17
 
-The initial delivery may use resettable demo data. Retaining user-created data
-across restarts, redeployments, or resets is not a completion requirement for this
-phase. Durable database storage is deferred to the later PostgreSQL integration.
-Existing JavaFX data does not need importing.
+Hosted PostgreSQL is required from initial delivery, including separate databases
+for development, automated tests and demo use. Tests must never use demo data.
+The app has no reset feature. Fresh accounts and available listings are seeded by
+an idempotent provisioning step; no existing JavaFX data import is required.
+Ordinary recreation of isolated development/test databases is distinct from an
+application reset. Inject an application clock for domain time boundaries.
 
-This changes the durability requirement, not the required marketplace behaviour.
-Accounts, listings, images, offers, messages, sales, and meetups still need coherent
-state during the supported demo flow. Ownership checks, state transitions, and
-frontend/backend contracts continue to apply. PostgreSQL integration will include
-application storage wiring and verification; it is not automatically supplied by
-choosing a database.
+This replaces the earlier resettable/interim-storage agreement. Define provisioning,
+seed content, images, permissions and database integrity before dependent work.
+Concurrent web users replace the desktop global session/single worker; preserve
+atomic operations and ownership rules with target-appropriate mechanisms.
+See the current approved product scope and draft technical specification for details.
 
-The technical specification must define the demo-state mechanism, who shares
-that state, reset triggers, demo seed data, image handling, and any deployment
-limitations. Resettable delivery does not itself select in-memory server state,
-browser-only storage, or a database. Record the agreed reset behaviour in the
-User Guide when implemented. Demo verification must exercise connected user
-journeys, not only static screens.
+## Remaining implementation prerequisites
 
-## Decisions to settle one at a time
-
-1. Confirm whether the inspected local source snapshot is the final frozen baseline and how to handle later changes.
-2. Demo-state mechanism and reset lifecycle during technical specification; resettable delivery is approved.
-3. Select executable target-stack check commands during setup; completion gates and layered testing are agreed below.
-4. Human owners and shared-file ownership before implementation assignments.
+1. Source baseline is frozen at 1d812ef. Later source changes require a proposed
+   re-baseline with a diff and explicit approval.
+2. Approve affected detailed specifications and shared contracts before implementation.
+3. Establish exact target runtime, dependencies, commands and environment provisioning;
+   stack choices in the decision record are not evidence of installed tools.
+4. Assign human owners and one writer per shared file before implementation assignments.
 
 ## Feature completion evidence — agreed 2026-10-17
 
@@ -216,8 +217,8 @@ against approved feature criteria rather than treating this list as a test count
 Provide deterministic seed/reset support and independent test state. Tests must
 not depend on another test or a human's earlier actions. Browser mocks can support
 frontend development but do not establish integrated feature completion.
-Verification against demo storage does not prove PostgreSQL integration works;
-that later phase requires its own storage verification.
+Run storage integration checks against isolated PostgreSQL test databases, never
+the demo database. Schema/transaction/permission verification remains required.
 
 The testing agent owns tests and fixtures. The implementer owns production code.
 The specification/coverage reviewer checks whether the selected layers provide
@@ -229,9 +230,11 @@ or any tests have passed.
 
 ## Verification and completion of this workflow document
 
-W1 remains open until its decisions and completion gates receive user approval,
-references are consistent, and remaining feature-specific decisions have clear
-blocking stages. Documentation checks alone do not validate agent behaviour.
+The workflow decisions and completion gates were agreed incrementally with the
+user. Setup closure records those approvals and evidence; it does not require
+repeating the discussion. Remaining prerequisites above block dependent feature
+implementation, not acceptance of the workflow policy. Documentation checks alone
+do not validate agent behaviour.
 
 ## Source confirmation and documentation pass — 2026-10-17
 
@@ -263,3 +266,10 @@ missing-versus-existing behaviour policy. Require meaningful red for missing or
 incorrect behaviour, or independent reviewer confirmation of implementation-path
 and passing-test evidence for each already-satisfied criterion. Green alone does
 not waive readiness, integration, security, documentation or final acceptance gates.
+
+## Tracker setup
+
+Use [MP3 tracker instructions](../docs/agents/issue-tracker.md) for repository,
+stage/flag/triage meanings and branch conventions. The user selected issues and labels on 2026-10-17; GitHub Projects is deferred.
+The earlier token-scope limitation no longer blocks setup. Issue #6 records tracker
+publication evidence; parent #2 tracks setup completion.

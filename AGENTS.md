@@ -526,3 +526,10 @@ controls; preserve historical reports rather than rewriting prior outcomes.
 
 For the current assistant transition, read docs/CLAUDE-HANDOFF.md after these
 instructions; recheck repository state and preserve uncommitted inventory evidence.
+
+Before reading or writing GitHub issues/PRs, read docs/agents/issue-tracker.md
+for the MP3 target and execution gates. Before triaging, read
+docs/agents/triage-labels.md. Preserve concurrent feature-specification work.
+
+Tracking choice agreed 2026-10-17: use GitHub issues and labels; Projects is
+explicitly deferred. Follow docs/agents/issue-tracker.md for stage/flag updates.

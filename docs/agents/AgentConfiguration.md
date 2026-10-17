@@ -45,9 +45,9 @@ Custom agents inherit parent permissions. Review-only instructions are behaviour
 constraints, not separate enforced read-only sandboxes. No config here changes
 sandbox or approval policy. See [official subagent documentation](https://learn.chatgpt.com/docs/agent-configuration/subagents).
 
-The disposable exercise in issue #7 must verify discovery, loaded role instructions,
-correct handoffs, ownership boundaries, correction approval, and reporting before
-claiming the workflow is behaviourally validated. No feature implementation was started by writing these files.
+The smoke-test report and subsequent exercise establish different evidence:
+reported native launches and instruction receipt versus observed generic-dispatch
+handoffs, ownership, correction approval and reporting. Preserve these boundaries. No feature implementation was started by writing these files.
 
 The CLI diagnostic could not load configuration because CODEX_HOME could not be
 resolved in this shell. Agent discovery was therefore not verified by that check.
@@ -76,3 +76,14 @@ handoffs and a human-approved correction using the current saved instructions.
 Workers used generic dispatch, so these results do not replace native custom-type
 discovery evidence. One actual cycle and scripted routing/limit scenarios were exercised;
 the report distinguishes observations, resolved bookkeeping defects and untested paths.
+
+## Setup acceptance scope
+
+Issue #5 covers the four migration worker types and main-chat coordinator.
+Single-agent comparison entry instructions are outside the current migration scope.
+The reported four-type smoke test satisfies the launch check with its stated
+self-report/provenance limits; a new isolated loading experiment is not silently
+added as a setup requirement. Revalidate native loading when configuration changes
+affect a future execution environment. Available concurrency is runtime-dependent;
+this coordinator session exposes four total active slots including the coordinator,
+so schedule at most three simultaneous workers here. Recheck limits in other clients.

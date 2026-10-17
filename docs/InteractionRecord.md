@@ -528,3 +528,17 @@ polling, session, available-only seeding and no-anonymous-browsing decisions sta
 
 Updated workflow/PRODUCT-SPEC.md, AGENTS.md and the technical specification skill.
 No code, tests, commits, pushes or remote changes.
+
+## 2026-10-17 — Tracker publication and board decision
+
+The user selected repository issues and labels and explicitly deferred GitHub Projects.
+Stages and Paused/Blocked flags are configured; no extra Projects token scope is needed.
+Setup issues #3, #4, #5 and #7 are closed with evidence and limits. The user authorised
+committing and publishing the remaining tracker documentation, followed by closure of
+#6 and parent #2 once remote publication is verified.
+
+Publication is isolated on codex/migration-workflow; Claude continues separately on
+codex/nextjs-migration. Only setup documents and task logs are included; the active
+product/technical specs, web source and mixed Claude handoff/history edits are excluded.
+No merge or issue #8 change is authorised by this publication. See the setup issues for
+actual final remote status. The published source baseline remains 1d812ef.
