@@ -39,20 +39,26 @@ files, one active user, serialized operations, and window lifecycle. Preserve
 business invariants and server-side access checks; do not assume the desktop
 execution model supplies concurrency guarantees to the web application.
 
-Initial delivery is a resettable demo with fresh seed data; durable storage and
-PostgreSQL integration are deferred. Specify the interim state mechanism, sharing
-between users/requests, seed/reset lifecycle, images, deployment limitations, and
-behaviour when state resets. Resettable scope is not approval of any particular
-storage mechanism or browser-only simulation. Verify proposed deployment/runtime
-assumptions against applicable documentation before treating them as feasible.
-PostgreSQL remains later work requiring its own application wiring and validation.
+Initial delivery uses fresh seed data on a persistent hosted PostgreSQL database, with
+no reset feature. PostgreSQL is used in every environment including tests, each with its
+own database; tests never target the demo database. Specify connection pooling for the
+serverless runtime, an injectable application clock rather than database time, idempotent
+seeding as a provisioning step, and per-run test database isolation. The six JavaFX
+SQLite migrations are a reference for intent, not files to port. This superseded the earlier resettable-demo and deferred-PostgreSQL
+constraint on 2026-10-17. Specify the database choice and provisioning, schema and
+migration approach, sharing between users and requests, seed content and when seeding
+runs, image storage, and deployment limitations. Do not specify interim in-memory or
+file-on-disk server state for a serverless host: it disappears between deployments and
+cold starts, which users experience as an uncontrolled reset. Verify proposed
+deployment and runtime assumptions against applicable documentation before treating
+them as feasible.
 
 Apply the agreed selective test layers: unit tests for rules/validation, integration
 tests for server/storage/authorisation effects, and Playwright for critical real
 frontend/backend journeys and browser risks. Specify deterministic independent
-fixtures/reset support and explain non-applicable layers. Mocked frontend checks
-are not final integrated acceptance; demo-storage tests do not establish PostgreSQL
-correctness. Keep test ownership and review gates consistent with the role briefs.
+fixtures and teardown, and explain non-applicable layers. Mocked frontend checks
+are not final integrated acceptance; tests against a substitute store do not establish
+correctness against the deployed database. Keep test ownership and review gates consistent with the role briefs.
 
 Use existing approved decisions before asking questions; discuss remaining material
 choices one at a time. Design readiness enables planning within that scope, not

@@ -86,8 +86,8 @@ the skill does not implement the design.
 
 The technical spec records per-feature design readiness, shared-contract versions,
 frontend/backend responsibilities, and both owners' agreement to interface changes.
-It defines the resettable demo's state lifecycle and deployment assumptions while
-keeping PostgreSQL integration deferred. Verification plans include the agreed unit,
+It defines the persistent store's lifecycle, seed provisioning and deployment
+assumptions. PostgreSQL is no longer deferred; see the migration collaboration section. Verification plans include the agreed unit,
 integration, and Playwright layers. Unresolved shared foundations block dependents;
 independent approved designs can proceed to planning. Readiness is not permission
 to implement. These skills are updated instructions, not completed specifications.
@@ -176,10 +176,33 @@ The agreed sequence is to review and approve the full feature inventory first,
 then develop detailed specifications feature by feature. The inventory establishes
 scope; implementation still requires approved details and satisfied prerequisites.
 See the [initial feature inventory](../workflow/FEATURE-INVENTORY.md) for documented
-feature groups, deferred functionality, and evidence still requiring verification.
-Initial delivery may use resettable demo data; durable storage follows in the
-PostgreSQL phase. The technical specification will define shared demo state, seed
-data, image handling, and reset behaviour before storage-dependent implementation.
+feature groups and deferred functionality. The [source evidence](../workflow/FEATURE-EVIDENCE.md)
+traces all 16 audited groups to implementation paths and representative existing
+assertions at commit 1d812ef; no tests or manual walkthrough were executed in that
+inspection. A later guide-derived recheck on 2026-10-17 removed no group and added
+INV-17, platform and data foundations, which covers web session and authentication,
+concurrent access control, demo data lifecycle and reset, atomic changes and the
+refusal-message standard. INV-17 has no source trace because it is not an existing
+JavaFX screen feature. Two scope decisions were agreed the same day: the web
+application supports concurrent multi-user access instead of one logged-in user at a
+time, so the database integrity constraints replace the desktop service worker's
+serialisation; and the 960 x 640 minimum window size and fixed layout units are not
+target criteria, since the web layout adapts to arbitrary viewport sizes.
+Coverage of the 17 groups was approved on 2026-10-17; that approval covers the feature
+list only and does not authorise implementation. The migration source baseline is frozen
+at commit 1d812ef on the same date. Specifications cite behaviour at that commit, and a
+later JavaFX source change requires a proposed re-baseline with a diff and explicit
+approval before it affects scope. Resolve recorded listing-access, chat-creation
+and meetup UI/service distinctions in the affected detailed specifications.
+Superseded on 2026-10-17: the web application has no reset feature and uses a hosted
+PostgreSQL database from the start. Reset was a property of the desktop app's local data
+folder and has no web equivalent, and interim ephemeral server state would vanish between
+deployments and cold starts, which users would experience as an uncontrolled reset. Fresh
+demo data still applies, so existing accounts, records and images are not imported. A
+reset leaves seeded accounts and a spread of listings and no seeded offers, sales or
+meetups, so every deal state a viewer sees was produced by the real flow. The technical
+specification will define the database choice, seed provisioning and image handling
+before storage-dependent implementation.
 The agreed testing policy combines focused unit tests, server/storage integration
 tests, and Playwright coverage of critical integrated journeys. Use independent
 seeded test state and avoid repeating every edge case in each layer. Feature
@@ -271,6 +294,13 @@ Stale current counters in the plan/SDD summary were caught and corrected. Keep t
 current values aligned at handoffs while preserving historical stage evidence.
 Workers used generic dispatch with saved role instructions; native loading and
 broader application/runtime properties remain outside this exercise's evidence.
+
+### Assistant handoff
+
+The [Claude handoff](CLAUDE-HANDOFF.md) records the migration stopping point,
+local changes, approvals still needed and verification limits. Markdown workflow
+roles remain the reference; client-specific configuration loading must be checked
+in the receiving environment.
 
 ## Acknowledgements
 

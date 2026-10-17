@@ -136,19 +136,45 @@ Before assigning frontend/backend migration work or approving corrections, read
 [the migration workflow](workflow/MIGRATION-WORKFLOW.md).
 Review and obtain approval of the complete feature inventory before detailing
 features individually; inventory approval alone does not authorise implementation.
+Inventory coverage was approved on 2026-10-17 for the 17 groups, feature list only.
+The migration source baseline is frozen at commit 1d812ef. Specify behaviour as it
+exists at that commit. If the JavaFX source changes later, propose a re-baseline with a
+diff and obtain explicit approval; do not specify or implement against newer source
+without it.
 Use .github/ISSUE_TEMPLATE/feature.md for feature issues and .github/ISSUE_TEMPLATE/task.md for linked frontend/backend/integration tasks. Task creation and assignment do not authorise implementation. Record unknowns and add tasks incrementally; require approved detail and prerequisites for the task about to start, without demanding exhaustive upfront decomposition.
 Use Backlog, Ready, In progress, Review, and Done for task stages. Keep Paused and Blocked as separate flags with reasons and resumption conditions; follow the migration workflow for transition gates.
 Track split frontend/backend tasks as separate GitHub issues linked to a parent feature; follow the migration workflow for ownership and parent completion gates.
 Use [the feature inventory](workflow/FEATURE-INVENTORY.md) to track guide-derived
-features and their evidence status. Verify documented claims against code/tests
+features and their evidence status. Consult workflow/FEATURE-EVIDENCE.md for the
+pinned source paths, representative assertions and unresolved source ambiguities.
+Static assertion inspection is not a passing-test result or inventory approval.
+Verify documented claims against code/tests
 before calling them implementation-verified; distinguish future work from parity.
 Assign human owners before implementation. Each owner approves correction plans
 within their area; shared-interface changes require both owners' explicit
 agreement before implementation. Record approvals against the affected contract
 and tasks. Existing correction limits and test ownership remain in force.
-For initial migration delivery, resettable demo data is approved; durable storage
-is deferred to PostgreSQL. Preserve functional state and access rules during the
-specified demo flow; define reset behaviour before implementing storage-dependent tasks.
+Superseded on 2026-10-17: the web application has no reset feature and uses a hosted
+PostgreSQL database from the start. PostgreSQL is used in every environment including
+automated tests; each environment has its own database, and tests never run against the
+demo database. Dropping and recreating a development or test database is ordinary
+practice, not the reset the application excludes. Domain timestamps come from an
+injectable application clock, never from the database clock or a column default, or the
+meetup and dashboard time boundaries cannot be tested. Seeding is an idempotent
+provisioning step, not an application route. Reset was a local-disk concern of the JavaFX app and
+has no web equivalent. Data persists; seeding runs once at provisioning rather than on a
+schedule or on demand. Fresh demo data is still approved, so existing accounts, records
+and images are not imported. Preserve functional state and access rules; specify the
+seed content and the provisioning path before implementing storage-dependent tasks. Do
+not plan interim in-memory or ephemeral server state: on a serverless host it disappears
+between deployments and cold starts, which users experience as an uncontrolled reset.
+The web target supports concurrent multi-user access; the desktop single-logged-in-user
+constraint and its single-worker serialisation are not carried over, so database
+integrity constraints protect the marketplace invariants instead. The desktop minimum
+window size and fixed layout units are not target criteria. Platform and data
+foundations are tracked as INV-17 in the feature inventory. Do not reintroduce a
+superseded desktop constraint because a guide chapter still describes it; the affected
+User Guide wording changes with its feature.
 For migration features, follow the workflow's agreed unit/integration/Playwright
 testing policy and completion gates. These target-stack rules supplement the
 Java-source checks; executable Next.js commands remain to be established.
@@ -497,3 +523,6 @@ A successful synthetic exercise does not establish migration-feature correctness
 Keep current readiness/status summaries aligned with recorded exercise evidence.
 Distinguish native configuration loading, generic-dispatch observations and unexercised
 controls; preserve historical reports rather than rewriting prior outcomes.
+
+For the current assistant transition, read docs/CLAUDE-HANDOFF.md after these
+instructions; recheck repository state and preserve uncommitted inventory evidence.

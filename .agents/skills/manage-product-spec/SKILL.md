@@ -37,10 +37,11 @@ draft while specified features are approved; independent approved features may
 proceed to design without implying approval of unresolved shared foundations.
 
 Use the agreed target constraints: TypeScript/Next.js, a separate migration branch,
-all existing features, fresh demo data, and resettable initial delivery with
-PostgreSQL deferred. Existing-data import and durable initial storage are not
-required. Still specify coherent marketplace behaviour, permissions, image use,
-and observable reset effects; do not choose a storage provider or mechanism here.
+all existing features, fresh demo data, and persistent storage on hosted PostgreSQL
+from the start. Existing-data import is not required. The web application has no reset
+feature; that decision superseded the earlier resettable-demo and deferred-PostgreSQL
+constraint on 2026-10-17. Specify coherent marketplace behaviour, permissions, image
+use and seed content; do not choose a database provider or schema here.
 
 Frontend/backend separation is implementation ownership, not two competing product
 specifications. One set of acceptance criteria governs the integrated feature.
