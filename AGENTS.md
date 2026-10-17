@@ -203,11 +203,20 @@ Do not:
 When an existing user-facing feature changes, update its existing User Guide documentation as part of the same task.
 
 ### Developer Documentation
-Changes that materially affect architecture, design, dependencies, setup, development workflows, or major implementation decisions must also be reflected in:
-```
-docs/DeveloperGuide.md
-```
-Do not update the Developer Guide for trivial implementation details that do not affect developers' understanding of the system.
+
+For every completed feature or change, update both `AGENTS.md` and
+`docs/DeveloperGuide.md` as part of the same task, before reporting completion.
+This includes changes to agent configuration, workflow, and documentation.
+
+- In `AGENTS.md`, maintain the relevant durable instructions, constraints, or a
+  concise pointer to the updated developer documentation for future agents.
+- In the Developer Guide, describe the resulting behaviour, design, setup, or
+  workflow and relevant verification or limitations. For a small change, use a
+  brief note in the relevant section.
+- Update existing guidance in place and remove superseded statements. Keep
+  detailed interaction history and command output in the task's `logs/` file.
+- Explanatory conversations that complete no change do not require edits to
+  these two documents. Newly agreed standing rules count as workflow changes.
 
 When external code, ideas, designs, or documentation are reused or adapted, ensure that any acknowledgement required by the project is recorded in the Developer Guide's acknowledgement section.
 
@@ -377,7 +386,7 @@ A task is complete only when all applicable conditions below are satisfied:
 - [ ] Checkstyle passes for modified Java code.
 - [ ] The project builds successfully.
 - [ ] User-facing changes are reflected in docs/UserGuide.md.
-- [ ] Material design/development changes are reflected in docs/DeveloperGuide.md.
+- [ ] AGENTS.md and docs/DeveloperGuide.md are updated for the completed feature or change.
 - [ ] No credentials or sensitive information were introduced.
 - [ ] No temporary/debugging code remains.
 - [ ]The final diff has been inspected for unrelated changes.
