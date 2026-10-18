@@ -1,0 +1,22 @@
+:root {
+  --ink: #302c28;
+  --muted: #6b6259;
+  --accent: #a9431e;
+  --border: #ddd5cb;
+  --soft: #f5eee5;
+  --surface: #fff;
+  --on-accent: #fff;
+  --page: #faf7f2;
+  --pressed: #eee1d4;
+  --danger: #a12d2d;
+  --success: #32633d;
+  --sidebar-width: 245px;
+  --page-padding: 24px;
+  --page-gap: 16px;
+  font-family: system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--page);
+  line-height: 1.45;
+  color-scheme: light;
+}
