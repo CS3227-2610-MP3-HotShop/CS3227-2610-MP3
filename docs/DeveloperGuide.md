@@ -58,6 +58,21 @@ Targeted development checks:
 .\gradlew.bat test --tests hotshop.ApplicationRuntimeTest --tests hotshop.database.DatabaseTest
 ```
 
+### Frontend source organization
+
+The frontend copy-in structure approved on 2026-10-19 is documented in
+[PROJECT-STRUCTURE.md](../workflow/PROJECT-STRUCTURE.md), including every incoming
+source destination, route group responsibilities, and deferred wiring. Reusable
+components have been copied into `web/src/app/` and adapted to Next.js links,
+navigation, dynamic parameters, children composition and client boundaries. Both
+original migration folders remain unchanged. Account and marketplace page locations
+are reserved with README files; the carried listing components are not mounted yet.
+`ApplicationBoundary` requires real client-provided bindings, and the copied CSS
+is staged for layout imports when that boundary is wired. No backend, fake data,
+new operational page, or feature acceptance is supplied by this change. See the
+[task log](../logs/2026-10-19-nextjs-frontend-copy-in.md) for static verification and
+the explicitly unperformed runtime checks.
+
 ### Product specification workflow
 
 Use the `manage-product-spec` agent skill in

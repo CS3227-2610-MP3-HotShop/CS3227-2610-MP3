@@ -1,5 +1,31 @@
 # Project decisions and interactions
 
+## Current handoff — 2026-10-19 frontend copy-in
+
+- Workspace: `C:/Users/Yeo Jian Ming/y3/cs3227/CS3227-2610-MP3`; branch
+  `codex/nextjs-migration`, verified with Git in this session. Local shell execution
+  is available here; older environment limitations below describe earlier sessions.
+- Approved: adapt both incoming migration groups for Next.js, copy rather than
+  move, and use the structure in
+  [PROJECT-STRUCTURE.md](../workflow/PROJECT-STRUCTURE.md). Preserve all originals
+  until the user confirms the result. Missing pages and backend bindings stay unwired.
+- Completed: documented the approved structure before application edits, copied
+  reusable UI/types/styles, adapted Next.js links/navigation/params/client boundaries,
+  and reserved account/marketplace page locations with README files.
+- Static verification: Next.js route type generation and TypeScript no-emit check
+  passed. The initial no-emit check lacked the existing scaffold's generated
+  `LayoutProps`; generating route types resolved that prerequisite. Runtime navigation,
+  rendering, access controls, backend integration and functionality remain unverified.
+- No functionality tests, application launch, database commands or build were run,
+  per the approved non-operational scope. No feature is declared Done.
+- Pre-existing edits to `web/package-lock.json`, the untracked reuse assessment
+  `workflow/MIGRATION-PLAN.md`, and `workflow/migrations/` are preserved. No dependency,
+  root scaffold, source baseline, feature specification or completed plan entry changed.
+- Next authorised step: user review of the copied structure and adaptations. Keep
+  the originals; mounting pages with real bindings and implementing absent features
+  require further scope. See the
+  [task log](../logs/2026-10-19-nextjs-frontend-copy-in.md).
+
 ## Current development agreement
 
 - MP3 is the migration source; verify all existing features against guides, code, and tests.
@@ -34,7 +60,7 @@ Agreed to update this record after every decision, including discussion-only tur
 
 Next is a read-only custom-agent smoke test before issue #6. Confirm actual configured-type discovery and launch; generic agents with copied instructions do not establish TOML discovery. The suggested issue structure (feature parents with frontend/backend tasks where useful) remains a proposal until agreed.
 
-## Current handoff
+## Historical handoff — 2026-10-17
 
 - Target workspace: E:/CS3227-2610-MP3. The originating chat is attached to MP2; use a fresh MP3 project chat for configuration discovery.
 - Working branch: codex/migration-workflow; verify before changing files.

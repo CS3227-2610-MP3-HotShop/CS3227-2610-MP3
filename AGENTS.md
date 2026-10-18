@@ -117,6 +117,9 @@ If an unrelated problem is discovered, report it separately rather than fixing i
 
 ## Migration collaboration
 
+For the approved frontend copy-in structure, mapping, and integration limits, read
+[workflow/PROJECT-STRUCTURE.md](workflow/PROJECT-STRUCTURE.md). 
+
 For configured worker names and coordinator startup, read
 [AgentConfiguration.md](docs/agents/AgentConfiguration.md). Files alone
 do not prove instruction loading or behavioural validation; use the recorded smoke-test evidence and remaining readiness gates. Record external test reports with their provenance and distinguish them from checks executed in this chat.
