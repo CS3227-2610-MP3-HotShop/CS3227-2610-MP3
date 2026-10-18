@@ -134,6 +134,13 @@ shared foundations block dependent designs and implementation, not unrelated wor
 
 Before assigning frontend/backend migration work or approving corrections, read
 [the migration workflow](workflow/MIGRATION-WORKFLOW.md).
+Before delegating any task to a worker, read
+[the delegation protocol](workflow/DELEGATION-PROTOCOL.md). It is tool-agnostic and applies
+to any harness. It defines the gate ledger that makes a skipped review visible, control-first
+ordering for anything whose job is to prevent something, briefing by section reference rather
+than inlined prose, the mutation verification budget, and the capability tiers used to assign
+work. Write a slice's ledger rows before briefing anything; a gate row still reading No blocks
+every row below it.
 Review and obtain approval of the complete feature inventory before detailing
 features individually; inventory approval alone does not authorise implementation.
 Inventory coverage was approved on 2026-10-17 for the 17 groups, feature list only.

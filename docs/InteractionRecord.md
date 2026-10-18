@@ -41,10 +41,12 @@ Next is a read-only custom-agent smoke test before issue #6. Confirm actual conf
 - Written: migration workflow, guide-derived inventory, aligned SDD skills, five development role briefs, four worker TOML configs, and startup guidance.
 - Checked: documentation links/whitespace; supplied smoke test reports four custom-type launches. The disposable generic-dispatch exercise observed initial handoffs, failure approval, one actual repair cycle and final reviews; isolated/native loading and unexercised paths remain unverified.
 - Current saved role instructions were read by exercise workers through generic dispatch. This does not revalidate native custom-config loading after instruction edits.
-- Current task: INV-17 product specification drafted in workflow/PRODUCT-SPEC.md, awaiting user approval. INV-01 to INV-16 remain inventory-only.
-- Publication plan: publish the accumulated workflow and inventory work on its own branch with a pull request, then start INV-17 implementation on a separate feature branch.
+- Current task: INV-17's logical foundations are implemented and green (142 unit tests in web/). Next is the persistence layer, which needs a database. INV-01 to INV-16 remain inventory-only.
+- Roles: the assistant acts as coordinator and delegates to subagents for tests, production code and review. Human approval remains with the user; human owners are still unassigned.
+- Stack: Next.js App Router with TypeScript, Drizzle over PostgreSQL, zod, Vitest with React Testing Library, Playwright, Tailwind, own sessions table with node:crypto PBKDF2.
+- Published 2026-10-17: commit 7c16bcf on codex/migration-workflow, pushed to origin. Feature branch codex/nextjs-migration created at the same commit and checked out. Pull request status not verified from this session.
 - Storage: hosted PostgreSQL from the start, no reset feature. Supersedes resettable demo data with deferred PostgreSQL.
-- Blocker: the assistant session has no shell on the workspace machine and no valid GitHub credential, so it cannot run Git or gh. Branching, committing, pushing and PR creation are performed by the user; the assistant writes files only. Workflow setup was committed locally as 1d812ef. F1-F4 have documentation corrections; F2 now explicitly distinguishes missing behaviour from independently verified existing behaviour. The covered disposable exercise is now complete; see docs/agents/WorkflowExercise.md for observations and unexercised scenarios. Feature/task/PR templates and stage conventions are written locally; GitHub board/label setup remains pending. Issue #7 exercise results and remaining limits are recorded in docs/agents/WorkflowExercise.md; no remote issue update was performed.
+- Blocker: the assistant session has no shell on the workspace machine and no valid GitHub credential, so it cannot run Git or gh. Branching, committing, pushing and PR creation are performed by the user; the assistant writes files only and verifies Git state by reading .git refs. Workflow setup was committed locally as 1d812ef. F1-F4 have documentation corrections; F2 now explicitly distinguishes missing behaviour from independently verified existing behaviour. The covered disposable exercise is now complete; see docs/agents/WorkflowExercise.md for observations and unexercised scenarios. Feature/task/PR templates and stage conventions are written locally; GitHub board/label setup remains pending. Issue #7 exercise results and remaining limits are recorded in docs/agents/WorkflowExercise.md; no remote issue update was performed.
 - Coverage of the 17 groups was approved on 2026-10-17 (feature list only).
 - Source baseline frozen at 1d812ef on 2026-10-17; re-baselining needs a diff and explicit
   approval.
@@ -542,3 +544,511 @@ codex/nextjs-migration. Only setup documents and task logs are included; the act
 product/technical specs, web source and mixed Claude handoff/history edits are excluded.
 No merge or issue #8 change is authorised by this publication. See the setup issues for
 actual final remote status. The published source baseline remains 1d812ef.
+
+## 2026-10-17 — Workflow branch published and feature branch created
+
+User performed the Git work, which this session cannot execute. Verified by reading
+.git refs rather than by running Git:
+
+- Commit `7c16bcf`, "Record inventory approval, migration scope decisions and draft
+  INV-17 product spec", on `codex/migration-workflow`.
+- `refs/remotes/origin/codex/migration-workflow` matches that commit, so the branch is
+  pushed.
+- `codex/nextjs-migration` created at the same commit and checked out as HEAD.
+
+Pull request status was not verified; this session has no GitHub credential. A pull
+request body was generated for the user to paste, matching
+.github/PULL_REQUEST_TEMPLATE.md, and corrected on review feedback: the plan line now
+states that no implementation plan exists rather than implying an empty
+workflow/PLAN.md, and branch ancestry is called out because `codex/migration-workflow`
+carries bf47d26 and 93dbfc6 from PR #1 on `codex/agent-specifications`, with the
+squash-merge case noted as requiring a rebase.
+
+Separately noted for later correction: AGENTS.md instructs that only the coordinator
+updates workflow/PLAN.md, a file that has not been created.
+
+No code, tests or remote changes were made by this session.
+
+## 2026-10-17 — INV-17 product specification approved
+
+User approved the INV-17 product specification. The feature status table in
+workflow/PRODUCT-SPEC.md records INV-17 as approved 2026-10-17. Approval covers INV-17's
+product intent only. It does not approve INV-01 to INV-16, is not a technical design, and
+does not authorise implementation.
+
+## 2026-10-17 — Role model and stack decisions
+
+Role decision: with one assistant and no assigned human owners, the assistant acts as
+coordinator and delegates to subagents taking the tester, implementer and reviewer roles,
+rather than writing tests and production code itself. This preserves the workflow's role
+separation and its red-then-green evidence requirement. Human approval stays with the
+user. Human owner assignment remains outstanding and still blocks implementation
+assignment.
+
+Stack decisions, taken after comparing current practice against this project's specific
+constraints rather than popularity alone:
+
+- Next.js App Router with TypeScript on Vercel.
+- Drizzle over PostgreSQL. The deciding factor is that five marketplace invariants are
+  enforced by partial unique indexes carried over from the Java schema, and those indexes
+  are now load-bearing because the single service worker is gone. Drizzle expresses a
+  partial unique index directly and emits readable SQL a reviewer can compare with the
+  Java migration. Prisma's schema language has not covered partial unique indexes, so its
+  migration SQL would be hand-edited anyway, and it needs specific configuration for
+  transaction-mode pooling.
+- Zod at the request boundary, with domain invariants staying in the domain layer.
+- Vitest with React Testing Library, and Playwright for browser journeys.
+- Tailwind. The existing warm palette becomes theme tokens rather than a ported stylesheet.
+- Sessions in a database table with an opaque token in an httpOnly cookie. Lucia is
+  discontinued, and Auth.js and Better Auth are built around provider and email identity,
+  which does not fit username login with the existing password policy. A stateless signed
+  cookie could not satisfy FR-1703, which requires logout to end only one session.
+- PBKDF2-HMAC-SHA256 through node:crypto at the source's parameters, avoiding the native
+  modules argon2 and bcrypt need on a serverless runtime.
+
+## 2026-10-17 — INV-17 technical specification drafted
+
+Created workflow/TECHNICAL-SPEC.md as a draft covering INV-17: ten technical decisions
+with rationale, layering that mirrors the source services, the sessions table, the
+partial-index concurrency mechanism, the API surface for sessions, authenticated image
+serving and polling, security including cookie and hashing parameters, edge cases,
+verification strategy by layer, and requirements traceability from FR-1701 to FR-1720.
+
+Recorded explicitly in that document: Row Level Security is not used and the database
+role is privileged, so an authorization bug is not caught by a second layer. This matches
+the source, where services are the only check, and the mitigation is the same.
+
+The domain layer is specified as depending on nothing but TypeScript, which makes it the
+largest body of work that can proceed before any database exists.
+
+Open: the application timezone value, polling intervals, seed counts, the PostgreSQL
+major version pending from provisioning, the package manager and Node version, and human
+owner assignment.
+
+Also drafted, outside the repository, a script that creates one parent feature issue per
+inventory group plus the Supabase provisioning task, for the user to run since this
+session has no GitHub credential.
+
+No code, tests, commits, pushes or remote changes by this session.
+
+## 2026-10-17 — No ORM; Supabase CLI migrations, generated types, direct connection
+
+User challenged the need for an ORM given TypeScript and Supabase. The challenge was
+correct and the earlier Drizzle decision is superseded.
+
+Correction recorded: Drizzle was partly justified on partial unique indexes being
+expressible. That was a weak argument, since hand-written SQL expresses them better and
+the Java migrations already contain them. Its real benefit was typed query results, and
+`supabase gen types typescript` provides those from the live schema without defining the
+schema a second time in TypeScript.
+
+Decision: no ORM. Schema as numbered `.sql` migrations managed by the Supabase CLI, row
+types generated from the schema, and `postgres.js` for queries and transactions.
+
+Why `supabase-js` is not the data path, explained to the user and recorded as TD-02a:
+PostgREST commits each HTTP request before replying and returns the connection to its
+pool, so several writes cannot form one unit. Four operations need that: accepting an
+offer, completing a sale, cancelling a sale, and deleting an enquiry-only listing.
+Accepting an offer alone writes four changes across three tables, and a partial failure
+leaves a listing reserved with no sale, which no screen can repair because releasing a
+listing is something only a sale's cancellation does.
+
+The user asked whether promises or after-the-fact verification could substitute. Recorded
+reasoning: promises order writes but do not make them atomic; catch-and-undo fails when
+the undo itself fails, when the process is killed between writes with no chance to run
+it, when an undo contradicts a rule such as rejected offers staying rejected, and because
+the intermediate state is visible to other users who may act on it; a reconciliation pass
+leaves visible windows of inconsistency and cannot always decide the right repair. Source
+non-functional requirement 1 states every such change is one database transaction, and
+`acceptOffer_saleSaveFailure_rollsBackListingAndOffers` already asserts the rollback, so
+parity requires it.
+
+The alternative of plpgsql functions called by RPC was offered and declined: it gives
+real transactions but moves the hardest rules out of TypeScript and out of reach of the
+unit tests.
+
+`supabase-js` is retained for object storage only. Supabase Auth and Row Level Security
+remain excluded on parity grounds.
+
+Updated workflow/TECHNICAL-SPEC.md: TD-02 replaced, TD-02a and TD-02b added, the
+repository layer, migrations, row types, transactions, dependencies and connection
+management sections revised.
+
+A scaffold task had been prepared with Drizzle and was stopped before it ran, so no code
+was created under the superseded decision. No commits, pushes or remote changes.
+
+## 2026-10-17 — First implementation task: scaffold, test readiness review, FR-1719 narrowed
+
+Work began on INV-17's purely logical parts under the agreed subagent role model: the
+assistant coordinates, subagents take the tester, implementer and reviewer roles.
+
+Scaffold (implementer): Next 16.4.2, React 19.3.1, TypeScript 5.9.3, Vitest 5.0.5,
+Tailwind 4.3.3, postgres.js 3.4.9, zod 4.6.7, Supabase JS 2.118.0, Supabase CLI 2.121.0.
+No ORM, confirmed by `npm ls`. Install, typecheck, test and build all verified passing.
+Delivered to `web/` in the repository; the Java source at `src/main/java` is untouched,
+since Next.js also wants `src/` and the two would otherwise overlap.
+
+Recorded deviations from the scaffold: TypeScript is 5.9.3 rather than the registry's
+7.0.2, because typescript-eslint does not yet support TS 7 and that reaches the project
+through eslint-config-next; the Geist fonts were replaced with a system font stack
+because the assistant's sandbox blocks fonts.googleapis.com, which is an environment
+limitation and not a design decision; and a lint rule now enforces the domain layer's
+purity by blocking imports of next, react, postgres and @supabase/* inside src/domain.
+
+Tests (tester): 102 cases across the refusal taxonomy, the clock and fixed-zone
+formatting. No implementation exists, so they fail.
+
+Test readiness review (specification reviewer) returned NOT READY with five blocking
+findings, three of which were defects that would have passed silently:
+
+- The block intended to prove formatting ignores the host timezone could not catch the
+  most likely wrong implementation, because Intl.DateTimeFormat resolves and caches its
+  timezone at construction, so a module-level formatter without an explicit timeZone
+  locks onto the host zone at import. Demonstrated with actual output in the container.
+- `delete process.env.TZ` resets the process to UTC rather than restoring the host zone,
+  silently weakening every suite declared after it.
+- `messageTooLong` was tested twice with the same limit, so an implementation hardcoding
+  the limit into the template would pass.
+- A taxonomy assertion checked the module's own code list against itself, passing even if
+  the constructor discarded its code argument.
+- `zoneLabel()` was satisfied by returning the IANA identifier rather than a label.
+
+The review also confirmed what was strong: the 60-day horizon boundaries reject both a
+millisecond-arithmetic and a UTC-calendar implementation, and clock injection is enforced
+rather than assumed, verified by substituting Date.now() and watching three tests fail.
+
+All findings were corrected by the tester, who verified the timezone finding by building
+a deliberately broken module and confirming the revised tests fail against it. The
+assistant treated a test-readiness finding as a normal review gate rather than a failed
+loop, so no correction-cycle budget was spent.
+
+Scope decision: FR-1719 narrowed. INV-17 owns the evaluation zone and the date and time
+primitives. The 15-minute start grid, the 15-minute-to-4-hour duration bounds and overlap
+checks move to INV-11 and INV-12. The reviewer had flagged them as untested under INV-17,
+reading the approved wording literally; the narrowing resolves that rather than widening
+the group.
+
+Also recorded: `isRefusal` is brand-based rather than instanceof, because a refusal
+raised in a server action is serialized across the React server component boundary where
+instanceof is false.
+
+Noted as gaps belonging to later features: money and message-length validators. INV-17
+specifies formatters with no range checking, so the 1-cent-to-1,000,000 and
+1-to-1,000-character ranges have no reject-side coverage and must land with the listing,
+offer and message features.
+
+No commits, pushes or remote changes by this session.
+
+## 2026-10-17 — INV-17 foundations: correction cycle and close
+
+The implementation and coverage review returned three blocking defects and four
+improvements, all demonstrated by running code:
+
+- `formatMoney(4000.004)` produced `S$40.0.0039999999999054126`, two decimal points and
+  floating-point noise in a user-facing string.
+- `duplicatePendingOffer(NaN)` produced `S$NaN.NaN` inside a refusal message, a direct
+  FR-1712 breach. The suite's leak guard screened neither NaN nor infinity and ran
+  against three fixtures only.
+- The brand-based refusal survived `JSON.stringify` alone: spread and `Object.assign`
+  dropped the message, because `Error.prototype.message` is non-enumerable, and
+  `structuredClone` dropped the brand and the reason code.
+- An Invalid Date was handled three different ways, the dangerous one being
+  `hasMeetupEnded` returning false, which would leave a sale open forever.
+- `Date.UTC(50, 5, 15)` means 1950, so the day-number helper was off by 693,960 days for
+  years 0 to 99, green only by coincidence.
+- Nothing prevented interpolating a raw Date into a refusal message, which rendered in
+  the host zone and passed all 102 tests.
+- The `Refusal` constructor was public and unsanitised.
+
+The user approved a correction cycle, treated as the normal review-then-fix flow rather
+than an unexpected failed loop, so no correction-cycle budget was spent.
+
+The tester extended the suite from 102 to 142 cases, each finding pinned, 33 failing. It
+resolved the design tension in favour of catalogue-only authoring: the constructor
+becomes module-internal and `Refusal` a type-only export, reasoning that making a breach
+unrepresentable is stronger than forbidding it by convention, with the raw-Date case as
+proof. It also established that the year 0-99 defect was reachable from outside after
+all, through four-digit ISO year strings, and that the bug is invisible when both dates
+sit inside that range because both shift equally.
+
+The implementer made all 142 pass with typecheck, lint and build clean.
+
+Re-review verdict: nothing blocking, the task can close. The horizon rewrite was
+differential-tested against an independently written oracle over 680,000 pairs spanning
+year 1 to 9999 CE with zero mismatches; money formatting over roughly 640,000 values
+against BigInt truth with zero mismatches; the catalogue fuzzed across 45 hostile
+invocations with zero leaks.
+
+Five items carried as follow-ups against INV-17, the first two being claims in code
+comments that are now false:
+
+1. The comment saying a refusal carrying a stack or SQL is "not expressible from outside"
+   is false. `Object.getPrototypeOf(r).constructor` reaches the internal class, and a
+   plain RefusalPayload literal passes `isRefusal` because the brand and codes are
+   exported. Both need deliberate effort, so the accidental-leakage concern is met, but
+   an overstated invariant is its own defect in a spec-driven codebase.
+2. `advanceBy` validates its argument but not the resulting instant, contradicting its
+   own comment. Introduced by the correction cycle.
+3. `requireValidDate` uses instanceof, rejecting a valid cross-realm Date, and a
+   Proxy-wrapped Date leaks a raw engine message rather than the deliberate guard.
+4. `isRefusal` accepts a branded array and a prototype-inherited brand, and its
+   justification comment is incorrect.
+5. Cosmetic: duplicated guard helpers, own-key ordering, an unused return value.
+
+Carried forward unresolved: whether Next.js preserves a thrown refusal across the server
+and client boundary, given it replaces thrown server errors with an opaque digest in
+production. The returned path through `asPayload()` is solid and should be standardised
+before the pattern spreads.
+
+Task log: logs/2026-10-17-inv17-foundations-scaffold-and-primitives.md.
+
+All verification ran in the assistant's cloud workspace. Nothing was run on the user's
+machine, no database exists, no integration or Playwright test was written, nothing was
+deployed, and no Git command was executed by this session.
+
+## 2026-10-17 — INV-17 foundations: follow-up cycle cleared
+
+The user directed that the five re-review follow-ups be cleared before any feature
+imports these modules. Tester pinned them, suite grew from 142 to 168 cases with 21
+failing, implementer made all 168 pass, and a focused re-review confirmed the result.
+
+Notable decisions in this cycle:
+
+- A module-private Symbol authoring token now gates the internal refusal constructor, so
+  the prototype-constructor route is closed. The plain-payload route is not closable
+  while the wire format needs a serializable brand, and the comment that claimed
+  otherwise was corrected rather than defended.
+- `isAuthoredRefusal` was added to answer the question the open route forces: `isRefusal`
+  tells you something is refusal-shaped data, which is all you can know about a value
+  that crossed a wire, while `isAuthoredRefusal` tells you this module's catalogue made
+  it. A module-private WeakSet backs it, chosen over instanceof because instanceof is
+  realm-bound and realm-bound checks were the subject of another finding.
+- `requireValidDate` became `requireInstant` and the formatters now work in epoch
+  milliseconds, which also removed the realm question from the formatting path entirely.
+
+Verification by the focused re-review, all by running rather than asserting: 680,000
+horizon differential pairs across five ranges with zero mismatches, matching the
+pre-refactor baseline; 1,250,000 formatter comparisons against an oracle built in the
+pre-refactor shape, also zero; six distinct construction attacks on the token, all
+closed, with no token leak found by a recursive namespace walk; an exhaustive advanceBy
+boundary table; and confirmation that the stack header survives `super()` taking no
+argument.
+
+Carried as a single INV-17 follow-up: an object carrying `Symbol.toStringTag: 'Date'`
+passes the brand check and then reaches the engine's own error message. It needs a
+deliberately crafted object, so it is not a realistic path, but the guard exists
+precisely to keep engine wording out of refusals.
+
+Recorded as a process observation rather than a defect: this was the third round in which
+a claim written in a code comment reached one step further than the mechanism beneath it.
+Each time the mechanism was sound and the sentence describing it was not. Worth tightening
+the habit as much as the individual lines.
+
+Still open and untouched: whether Next.js preserves a thrown refusal across the server and
+client boundary, given it substitutes an opaque digest in production. The returned path
+through `asPayload()` is solid and should be standardised before the first feature throws
+a refusal out of a server action.
+
+Task log updated: logs/2026-10-17-inv17-foundations-scaffold-and-primitives.md.
+
+## 2026-10-17 — Tracker documentation published
+
+User authorised commit/publication. An isolated codex/migration-workflow checkout
+published commit 78b90de4bbfff44995fcc858570283e39a8020b5; remote SHA verified.
+PR #9 updated and remains unmerged. Issues #6 and #2 were closed with publication
+evidence, so setup issues #2–#7 are closed. Issue #8 is untouched. Checked 49
+documentation links and whitespace; no application tests run.
+
+Claude’s active checkout remains on codex/nextjs-migration. Its original local
+setup-document copies and ongoing feature edits were preserved, so do not blindly
+commit all files: reconcile the published workflow commit before subsequent Git work.
+This outcome note is appended locally for Claude; publication evidence is on GitHub.
+
+## 2026-10-17 — Handoff rewritten
+
+User asked for a handoff to continue the work with Claude in a new session.
+
+docs/CLAUDE-HANDOFF.md was rewritten rather than appended to. It had become layered
+updates on a superseded base, with the original stopping point still stated at the top
+and corrections bolted underneath, which is the pattern AGENTS.md tells us to remove
+rather than extend. Historical narrative stays here, in this append-only record.
+
+The rewrite states repository state, what exists in web/, the decisions in force with
+superseded ones marked so nobody reinstates them, the open decisions, how the subagent
+role model is run, the verification performed and its limits, and the carried follow-ups.
+
+It also records the environment traps that cost real time to discover: there is no shell
+on the workspace machine so no Git command can run, the cloud session has no GitHub
+credential, device_commit_files sometimes reports success without writing and must be
+verified by comparing file size afterwards, work is built and tested in the cloud
+workspace and copied across, and fonts.googleapis.com is blocked there, which is why the
+scaffold's fonts were replaced.
+
+Correction made on the user's prompt: the first draft read as though INV-17 were
+finished. It is not. Five of its twenty requirements are done, being the refusal taxonomy,
+the six reason codes, and fixed-zone display with the scheduling primitives. Everything
+else needs a database: sessions and per-session logout, request identity, persistence and
+the signed-out refusal, seeding, the concurrency invariants, atomic multi-record changes,
+and the polling routes, which are additionally blocked on INV-13 and INV-14 because no
+conversations exist to poll. The handoff now carries that table plus a build order for
+the persistence half.
+
+No code, tests, commits, pushes or remote changes.
+
+## 2026-10-17 — Supabase provisioning details and storage decisions
+
+The user's friend granted access to the Supabase project. Facts established:
+
+- PostgreSQL 17.11.0.003. The assistant's cloud workspace runs 16.15, so local tests
+  and the deployed database are on different major versions. Low risk for what is being
+  built, since partial unique indexes, timestamptz and uuid behave identically, and
+  migrations will be kept free of version-specific syntax. Recorded rather than left to
+  surface at deploy time.
+- Region: Singapore.
+
+Decision: two storage buckets, `profiles` and `listings`, rather than one bucket with
+path prefixes. This mirrors the source's two image namespaces. The deciding argument is
+the delete path: image cleanup is a reconciliation pass that removes storage objects no
+longer referenced in the database, and with a single bucket the only thing keeping it off
+the other kind's files is a prefix filter buried in a query, where a wrong filter still
+looks plausible in review. With two buckets the separator is the bucket argument at the
+call site. The source guards against exactly this failure: "recovery in one namespace
+never processes or deletes the other's files."
+
+Per-bucket settings recorded as defence in depth, not the primary check, since the
+application validates image contents and dimensions before writing as the source does:
+profiles private at 5 MiB, listings private at 10 MiB, both restricted to image/jpeg and
+image/png.
+
+Decision: storage is reached through the native Supabase client, not the S3-compatible
+endpoint. The user initially believed S3 had been chosen, and then that only S3 was
+available because the storage settings page shows S3 configuration. The premise was
+corrected: that page shows S3 because S3 is the part needing configuration, while the
+native API needs none. Both routes genuinely work for put, get and delete. The native
+client costs two environment variables already being set and a dependency already in the
+project; the S3 route would cost `@aws-sdk/client-s3`, four variables and a second set of
+credentials, buying portability to any S3-compatible store. The user chose the native
+client after seeing both. No specification change was needed, since TD-02b already
+records supabase-js for storage only.
+
+Changes to web/.env.example:
+
+- `APP_TIMEZONE` removed. It was dead: the application timezone is a constant in
+  src/domain/time because both participants of a sale must see the same time string, and
+  the domain layer is lint-blocked from reading process.env. Leaving it implied the zone
+  was configurable per deployment, which contradicts why it was fixed. A note in the file
+  records this so it is not reintroduced.
+- `SUPABASE_SERVICE_KEY` renamed `SUPABASE_SECRET_KEY`, matching Supabase's current key
+  naming; `anon` and `service_role` are legacy JWT-based names being deprecated.
+- `SUPABASE_STORAGE_BUCKET` split into `SUPABASE_BUCKET_PROFILES` and
+  `SUPABASE_BUCKET_LISTINGS`.
+- Every variable now carries its reason in a comment, including why there are two
+  connection strings and why they are not interchangeable.
+
+No code, tests, commits, pushes or remote changes.
+
+## 2026-10-18 — INV-17 Slice B, database foundation: reviews, two blockers, and process gaps
+
+### Decisions taken by the user
+
+- **Correction-cycle budget is counted per task/batch**, not across INV-17 as a whole. Never
+  reset for a new assistant or policy. Slice A used two and is closed; Slice B began with a
+  fresh two.
+- **Slice B's first correction cycle is retained despite having run without the required
+  prior approval**, with the gap recorded rather than buried. See process gaps below.
+- **Slice B's second and last correction cycle was approved** for the two security blockers
+  plus cheap hardening: TLS, pool limits, the `%GG` try-placement pin, the trailing-dot FQDN
+  hole, the redactor over-scrub, five incorrect comments and the `atInPassword` DNS
+  assumption.
+- **The actor-carrying seam is adopted as an INV-17 design decision** rather than deferred to
+  INV-01. With RLS off by design and the Supabase secret key full-access, authorization lives
+  entirely in application code, and the foundation currently makes the safe version and the
+  catastrophic version look identical at the call site. Recorded as task INV17-B9, not yet
+  built.
+- **FR-1709 keeps its machinery here and its verification at INV-07.** The transaction helper
+  and unique-violation mapping are tested against a fixture table carrying a partial unique
+  index; FR-1709 is marked verified only when the real `offers` table lands with a genuinely
+  concurrent test. Stated by the assistant, not objected to.
+- **The local database setup goes into the repository** as `docker-compose.yml` plus a
+  documented path for any PostgreSQL, rather than depending on a server started by hand.
+
+### Coordinator process gaps, recorded at the user's direction
+
+Three required gates were missed on Slice B. All three are also written into the Execution
+plan in `workflow/TECHNICAL-SPEC.md`.
+
+1. **No execution plan existed before delegation.** Subagents were briefed from the
+   coordinator's own context, so allowed edits, acceptance criteria, approvers and stopping
+   conditions were never written anywhere the user could check them against. The plan now
+   exists and reconstructs Slices A and B from evidence.
+2. **The test-readiness review, INV17-B2, was never run.** The equivalent gate on Slice A
+   returned NOT READY with five blocking findings, including one proving by execution that
+   the suite's host-timezone guard could not catch the implementation it existed to catch.
+3. **The first correction cycle ran without prior approval.** The user had previously
+   approved exactly this kind of cycle explicitly.
+
+### What the reviews found
+
+The specification review returned four blocking defects, all by executing adversarial code.
+The most serious: the test-isolation guard compared host, port and database, but every
+Supabase project's database is named `postgres` and the three endpoint spellings differ in
+host and port while reaching identical rows, so a test run could `truncate` and `drop table`
+against the production database. The guard was already computing the pooler username, which
+embeds the project ref, and discarding it. A test asserted the hole as intended behaviour.
+
+The tester then found the guard failed in **both** directions: two genuinely different
+Supabase projects share a pooler host and port, so the guard refused the correct setup while
+permitting the dangerous one.
+
+The security review, INV17-B7, the first this feature has had, then found the whole control
+**never executes in the documented configuration**. `resolveTestDatabaseUrl` short-circuits
+when `DATABASE_URL` is empty, and nothing in the test process loaded `.env.local`, which is
+where every other part of the project tells the operator to put it. Demonstrated with a decoy
+database: 95 of 95 green with no refusal, and with a role lacking `CREATEDB` the run executed
+destructive DDL inside the database named by `DATABASE_URL`. Both earlier rounds of fixing
+that guard were reasoning about a control that did not run.
+
+It also found TLS off by default, so the Supabase password and all marketplace data would
+cross the public internet in cleartext, and that the obvious remedy is a trap: postgres.js
+turns `sslmode=require` into `rejectUnauthorized: false`, giving encryption with no
+certificate verification.
+
+### Notable engineering judgements by the workers
+
+- The tester **declined the obvious fix** for the guard, on the grounds that loading
+  `.env.local` into the process would put the production `DATABASE_URL` where `getDb()` reads
+  it, leaving the suite's own `truncate` one forgotten argument away from production. It
+  parses the file into a value instead, checks every candidate rather than the first found,
+  and deletes `DATABASE_URL` from the environment after use so a test that forgets a handle
+  fails loudly.
+- The implementer found that `ssl: resolveSsl(url)` would have silently broken the documented
+  `?sslmode=` escape hatch, because postgres.js merges with `k in o` and `'ssl' in {ssl:
+  undefined}` is true, so a present-but-undefined key beats the query string. An operator who
+  explicitly asked for TLS would have got plaintext.
+- A comment asserting more than the code guaranteed shipped in **four consecutive rounds**.
+  The reviewer's disproof of the last one is the one worth keeping: the necessity of the cast
+  is itself evidence that the sentence beside it is wrong, because if neither branch fired no
+  cast would be needed.
+
+### Outstanding decisions for the user
+
+Slice B's correction budget is now exhausted, so each of these needs explicit direction.
+
+1. **A UTF-8 BOM in `.env.local` blinds the isolation guard again.** `util.parseEnv` does not
+   strip it; Next.js's own loader does, so the application sees the variable and the guard does
+   not. Windows PowerShell writes a BOM by default and the user is on Windows. One line in
+   `readEnvFile`. Held below blocking only because reaching the destructive path now also
+   requires `HOTSHOP_TEST_ALLOW_SHARED_DATABASE=1`.
+2. **The TLS rule duplicated into `scripts/db-check.ts` is pinned by no test.** Removing TLS
+   from the script entirely leaves the suite green. This is the one command pointed at real
+   Supabase credentials.
+3. **An empty `?sslmode=` gives plaintext on a remote host**, because the module defers to the
+   query string and postgres.js reads the empty value as falsy.
+
+### Verification status
+
+350 of 350 tests passing in the assistant's cloud container against PostgreSQL 16.15, with
+typecheck, lint and build clean. Nothing has run on the user's machine, no Git command has been
+executed by any assistant session, and nothing is committed. Branch `codex/nextjs-migration` is
+at `7c16bcf` and has never been pushed. The security reviewer's verdict after the correction
+cycle is safe to commit.

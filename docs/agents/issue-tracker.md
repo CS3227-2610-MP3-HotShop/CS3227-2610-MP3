@@ -50,8 +50,8 @@ Keep owner, parent/dependencies, acceptance evidence and resume conditions on is
 No Project board or additional Projects token scope is required for this workflow.
 A board can be added later by explicit decision using the same existing issues.
 The earlier missing-scope check is historical and no longer blocks setup.
-Setup closure requires published tracker documentation and verified issue evidence.
-Issue #6 tracks publication; parent #2 tracks accepted child deliverables.
+Issue #6 remains open only until the latest tracker documentation is published;
+parent #2 depends on that completion. Do not close either based on local files alone.
 
 ## Current setup scope
 

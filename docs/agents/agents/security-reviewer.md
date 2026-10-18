@@ -64,3 +64,69 @@ for the coordinator's SDD summary. Do not edit the guides, AGENTS.md, shared sum
 or other agents' reports. Your own assigned task log/report is the sole documentation
 write exception under the common contract; read-only assignments return its content.
 Security review does not replace specification review of feature documentation.
+
+
+## Delegation protocol
+
+Read [the delegation protocol](../../../workflow/DELEGATION-PROTOCOL.md) before acting. It is
+tool-agnostic and applies whichever harness launched you. Four things bind every role:
+
+- **The gate ledger.** Your task is a row in the Execution plan section of the feature's
+  technical spec. That row states your allowed edits, what blocks you, and the evidence that
+  closes you. It is authoritative over anything a brief says. If your row is missing, or a row
+  above yours still reads `No`, stop and say so rather than proceeding.
+- **Briefing by reference.** A brief gives you a task ID, sections to read, this turn's new
+  information and your stopping conditions. Read the named sections yourself. A summary in a
+  brief never replaces the source, and if something you needed was not written down anywhere,
+  say so in your report so it gets recorded rather than re-explained next time.
+- **Verification budget.** Your row carries a mutation tier: A sweep, B spot check of three to
+  five, or C none. Report survivors rather than chasing them. Any blocking finding closes with
+  a mutation that fails when the fix is reverted.
+- **Capability tier.** Your row carries Deep or Standard. If Standard work puts you against a
+  trust boundary, a concurrency question or an unanticipated design decision, stop and return
+  it rather than deciding.
+
+Report what you actually ran, with real command output. A claim that something works is not
+evidence; the output is. Say plainly what you could not test and why.
+
+**Control-type tasks.** When your row is marked as a control, its purpose is to prevent
+something. Its first acceptance criterion is an end-to-end test starting from the documented
+operator setup, proving the control fires at all, before any test of its internal logic. A
+control that is correct but never executes is worse than no control, because the next person
+relies on it. This project shipped exactly that: an isolation guard corrected twice before
+anyone checked whether it ran.
+
+
+## What you may block on
+
+Adopted 2026-10-18. INV-17 ran five review rounds on one feature because every round blocked on
+findings outside the acceptance criteria. An adversarial reviewer with an open mandate always
+finds something, so the mandate is now closed.
+
+**You may block on exactly two things:**
+
+1. An acceptance criterion in the ledger row that is not met.
+2. Branch coverage of `src/` below 80%.
+
+**Everything else is a note.** However alarming, however real. Notes go in your report, are
+carried to the outcome summary, and do not stop the slice. You do not get to escalate a note by
+calling it blocking.
+
+**Report at most three notes.** If you have more, you are exploring rather than reviewing. Pick
+the three that most affect the next slice.
+
+**Do not hunt.** Previous briefs told reviewers to attack, to break it, to find what no test
+discriminates. That instruction is withdrawn. Review the artefact against its criteria. Exercise
+the code where a criterion's satisfaction is genuinely unclear from reading, and stop there.
+
+**One exception, and only one.** Where the ledger row is control-type *and* the control prevents
+one account's data reaching another, attack it properly: try to reach the data, by execution,
+not by reading. That is the single failure mode worth unbounded effort in a marketplace. It is
+not a licence to extend the same treatment to the rest of the slice.
+
+**Coverage above 80% ends the conversation.** You may not ask for more tests once a slice is
+above the threshold, even for a behaviour you think deserves one. Record it as a note.
+
+**What has not changed:** a claim in a comment that reaches further than the code beneath it is
+an unmet criterion when a criterion depends on it, and a defect worth a note otherwise. INV-17
+shipped that in four consecutive rounds. It stays worth naming.

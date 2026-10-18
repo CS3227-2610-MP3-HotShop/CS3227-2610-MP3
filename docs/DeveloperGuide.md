@@ -306,8 +306,8 @@ in the receiving environment.
 Use [tracker instructions](agents/issue-tracker.md) and [triage labels](agents/triage-labels.md)
 for the MP3 repository, stage/flag meanings, parent completion gates and branches.
 Workflow approvals and smoke-test evidence are already recorded. The user selected issues and labels on 2026-10-17 and deferred the board.
-No additional Projects permission is needed. Issue #6 records publication evidence for the
-tracker documentation.
+No additional Projects permission is needed. Issue #6 tracks publication of the
+latest tracker documentation.
 
 ## Acknowledgements
 

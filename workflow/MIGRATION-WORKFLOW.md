@@ -84,7 +84,11 @@ where those require separate tracking. Issues identify owners, blockers, and
 progress; specifications define requirements and contracts; the implementation
 plan retains executable task IDs and evidence. Link these artifacts instead of
 maintaining competing requirements. Actual feature issues follow source discovery;
+<<<<<<< HEAD
 setup and discovery issues are now posted; feature issues follow discovery and GitHub Projects is deferred; feature/task/PR templates are published on the workflow branch in PR #9.
+=======
+setup and discovery issues are now posted; feature issues and a Project board remain pending; feature/task/PR templates are published on the workflow branch in PR #9.
+>>>>>>> f36a520e74ffdf72a981cac4293896c9e138f57c
 
 Use the [task template](../.github/ISSUE_TEMPLATE/task.md) for frontend, backend, and integration issues; link each task to its feature parent and implementation-plan IDs.
 Each frontend/backend task that is split out has its own issue, owner, dependencies,
@@ -271,5 +275,5 @@ not waive readiness, integration, security, documentation or final acceptance ga
 
 Use [MP3 tracker instructions](../docs/agents/issue-tracker.md) for repository,
 stage/flag/triage meanings and branch conventions. The user selected issues and labels on 2026-10-17; GitHub Projects is deferred.
-The earlier token-scope limitation no longer blocks setup. Issue #6 records tracker
-publication evidence; parent #2 tracks setup completion.
+The earlier token-scope limitation no longer blocks setup. Issue #6 retains only
+the latest tracker-document publication step.
