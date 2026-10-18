@@ -9,7 +9,8 @@ C2-P complete per prior review evidence; publication_tests recovered its actual
 coverage run: 490 tests/88.38% branches, exit0. Reviews remain prior evidence.
 Full C2 unstarted. A 2/2, B 2/2, B9 1/2, C2-P 0/2 unchanged. No build/browser run.
 Code baseline f36a520 was committed/pushed externally during the interruption;
-remote SHA verified on resume. Documentation publication remains in progress.
+remote SHA verified on resume. Documentation published as cc257f6; remote SHA
+verified. PUB-1 complete; remaining session-contract discussion is next.
 The separate INV-01 worktree and unresolved merge remain untouched.
 
 Owner answered "yes" to the proposed credential-verifier interface shape: INV-01
@@ -200,6 +201,17 @@ Coordinator compared candidate contents to local secret values without printing
 values: zero matches; local environment/Claude outputs files excluded. Final
 documentation staging/commit/push follows under existing owner authorisation.
 Completed implementation gates and correction counters unchanged.
+
+### 2026-10-19 — Partial baseline publication completed
+
+Committed 12 explicitly staged documentation/record files as cc257f6 and pushed
+normally to origin/codex/nextjs-migration. Independent ls-remote returned exact
+cc257f6e69cdb28adc14ec10fc896f1a8cc52b5c. Staged whitespace check passed; staged
+secret-value comparison and excluded-path checks found zero matches. Only preserved
+Claude outputs/ remained untracked. No branch switch, force push, INV-01 merge
+change or production/test edit. PUB-1 closed against actual verification and
+publication evidence. This does not complete INV-17 or authorise INV-02
+implementation; teammate startup is in DeveloperGuide.
 
 ### Earlier development agreement (historical)
 

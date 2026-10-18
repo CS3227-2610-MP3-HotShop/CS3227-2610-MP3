@@ -4,7 +4,7 @@ Platform and data foundations. One of the four authoritative feature records req
 the compact records policy in `workflow/MIGRATION-WORKFLOW.md`. Read this first: it carries
 current status, approvals, the next action, blockers and the shared correction-cycle count.
 
-Last updated 2026-10-19 (SGT), preparing owner-authorised partial-baseline publication.
+Last updated 2026-10-19 (SGT), after verified partial-baseline publication.
 
 ## Current takeover status — 2026-10-19
 
@@ -76,7 +76,10 @@ branches88.38%, typecheck exit0 and lint exit0 (one unused eslint-disable warnin
 in ignored generated coverage/block-navigation.js, zero errors). Only the dedicated
 local test database was used. publication_review found no material workflow-package
 omissions. No code/test edits, build/browser verification or feature Done claim.
-Documentation commit/push remains pending at this snapshot.
+Documentation/workflow records published as cc257f6; remote SHA verified. PUB-1
+complete. Only excluded Claude outputs/ remained untracked. Next authorised work:
+remaining session-contract discussion, not full C2 implementation. INV-02 may
+start specification work from the published baseline.
 Core workflow/skills/roles/templates are tracked. INV-02 has inventory evidence,
 not approved detailed design/implementation tasks here; teammate can start discovery
 and specification, with implementation gated on its own approvals/dependencies.
