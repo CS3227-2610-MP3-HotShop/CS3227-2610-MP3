@@ -1,0 +1,10 @@
+{
+  "src/cart-total.mts": "6f487c16f6f76ddf99140a27185163677c710dd3d8b7721178fe409073817cde",
+  "tests/cart-total.test.mts": "ea6047802612dc83ea79a3b453295c05b935649432a9a94dc970a42dba80ddce",
+  "workflow/EXERCISE.md": "1589593c3a5abc25ab6830927a074f2e90389fbd86ab277c808ae69444b7851b",
+  "workflow/PLAN.md": "4bba1b483d829e2a6a76260025ed58b2b7d892476def798340110196c5767f43",
+  ".codex/agents/hotshop_testing.toml": "29cc9c580e4c522f5156ee4e0179f0dfd29955b9b131c4715836fb29075e79e6",
+  ".codex/agents/hotshop_implementer.toml": "3cba1a1c4824731eb17c91ff75e00c92d1bd808a47616228debb73890d5a2561",
+  ".codex/agents/hotshop_specification_reviewer.toml": "e238a5654694a315fb7c37c66c676ef7303ae595056ee8edfaead9db0ec1879e",
+  ".codex/agents/hotshop_security_reviewer.toml": "2e436644f3113788ac0a30e7b3935c8d59348a1222b1e3ddcbe0203eeb90d8c0"
+}
