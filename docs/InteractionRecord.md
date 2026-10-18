@@ -26,7 +26,220 @@
   require further scope. See the
   [task log](../logs/2026-10-19-nextjs-frontend-copy-in.md).
 
+## Current coordinator handoff — 2026-10-19
+
+Workspace E:/CS3227-2610-MP3, branch codex/nextjs-migration at f36a520 verified
+through Git; existing modified/untracked files preserved. Current status is
+workflow/INV17-OUTCOME.md, Current takeover status, superseding older handoffs below.
+C2-P complete per prior review evidence; publication_tests recovered its actual
+coverage run: 490 tests/88.38% branches, exit0. Reviews remain prior evidence.
+Full C2 unstarted. A 2/2, B 2/2, B9 1/2, C2-P 0/2 unchanged. No build/browser run.
+Code baseline f36a520 was committed/pushed externally during the interruption;
+remote SHA verified on resume. Documentation published as cc257f6; remote SHA
+verified. PUB-1 complete; remaining session-contract discussion is next.
+The separate INV-01 worktree and unresolved merge remain untouched.
+
+Owner answered "yes" to the proposed credential-verifier interface shape: INV-01
+takes username/exact password, trims and case-insensitively looks up username,
+returns only user ID/original-case username/display name on success, uses equivalent
+unknown-user/wrong-password rejection, and distinguishes safe operational errors.
+Verifier creates no session; INV-17 creates it after success. Existing-session
+checks precede verification/creation and preserve "Already signed in." behaviour.
+Reason: preserve INV-01 ownership and approved minimal responses without exposing
+credential storage. Source decisions inspected via Git at INV-01 commit 210fa9e;
+no replacement of its approved behaviours. Contract recorded in technical spec;
+outcome and developer/agent pointers aligned. No application or test edits.
+Next authorised step: publish the partial migration baseline under PUB-1, then
+finish remaining INV-17 cookie/route details before readiness. Cross-site request
+protection is approved as recorded below.
+Session-only no-store/current-database cache policy is now approved below.
+Registration and account UI detail remain with INV-01. Approval is design-only;
+full route work stays blocked. Existing execution ledger is preserved.
+
+Owner subsequently answered "yes thats fine" to the persistent-cookie proposal:
+400-day lifetime renewed during authenticated use, HttpOnly/Secure/SameSite=Lax,
+path `/`, and no server age/inactivity expiry. Browser expiry, clearing data or
+privacy policies may require login while the server session remains valid. This
+clarifies the earlier indefinite browser-persistence wording in FR-1701; it does
+not change server revocation. Chrome's documented 400-day limit informed the
+proposal (https://developer.chrome.com/blog/cookie-max-age-expires); no browser
+experiment was performed. Product/technical specs, outcome and developer/agent
+guidance aligned. No new handoff or duplicate log created. Counters unchanged;
+no production/test edits, database use, build, browser run, commit or push.
+
 ## Current development agreement
+
+### 2026-10-19 — HTTP envelope shape approved
+
+Owner answered "approved" to the proposed shared authentication HTTP envelope:
+`{ ok: true, data: ... }` on success and `{ ok: false, error: ... }` on failure.
+Error preserves existing refusal brand/category code/safe message, adds a specific
+reason and optional fieldErrors. Passwords, hashes and session tokens stay out of
+response bodies. Rationale: preserve INV-01's approved logical responses and allow
+frontend decisions without parsing messages. This approves only the shape, not
+exact reason names/statuses, payloads or changes to completed domain code.
+Technical spec, outcome and developer/agent pointers updated; next discussion is
+reason/status mapping. Branch rechecked as codex/nextjs-migration. Counters and
+completed ledger entries unchanged; full C2 remains unstarted. No production/test
+edits, database connections, test/build/browser runs, commit or push.
+
+### 2026-10-19 — HTTP failure reason/status mapping approved
+
+Owner answered "approved" to the seven-row mapping now recorded in the technical
+spec's C2 HTTP envelope section: validation 400, credential rejection and required
+authentication 401, already signed in 409, unavailable lookup/storage 503, and
+unexpected server failure 500, each with its proposed specific reason identifier.
+Confirmed signed-out session checks return 200; unavailable lookup returns 503
+and preserves the cookie, consistent with INV-01. Broad error categories remain.
+No change to earlier account/session behaviour. Next authorised discussion is
+success-response payloads; remaining transport details still block full C2.
+Technical spec, outcome and developer/agent guidance aligned. No code/test edits,
+database use, application checks, commit or push. Counters and ledger unchanged.
+
+### 2026-10-19 — HTTP success payload/status mapping approved
+
+Owner answered "approved" to registration 201 with username; login and signed-in
+session check 200 with authenticated true and user { id, username, displayName };
+signed-out check and confirmed logout 200 with authenticated false and user null.
+All are inside the approved success envelope. Registered username case is
+preserved; registration creates no session and login sets its cookie separately.
+Already-ended logout succeeds, but unavailable lookup/revocation does not confirm
+termination. Rationale: preserve INV-01's logical responses and use the same login
+and session-check shapes for lost-response recovery. No replacement of existing
+product behaviour. Technical spec, outcome and developer/agent pointers aligned.
+Next authorised discussion: field-error format, then remaining transport details.
+Full C2 unstarted; all counters and completed ledger entries preserved. No code/test
+edits, database use, test/build/browser runs, commit or push.
+
+### 2026-10-19 — Field-error format approved
+
+Owner answered "approve" to fieldErrors mapping affected fields to arrays of safe
+messages, including registration's taken-username field error. Omit unaffected
+fields and omit fieldErrors for general failures. Never echo passwords or submitted
+values. Invalid login credentials remain a general error without identifying which
+credential was wrong. Rationale: support INV-01's agreed inline registration errors
+while preserving uniform credential rejection. Exact message catalogue and request
+field allowlist remain pending. Technical spec, outcome and developer/agent pointers
+aligned; next discussion is category mapping. All counters/ledger gates unchanged;
+full C2 unstarted. No code/test edits, database use, tests/build/browser run, commit
+or push. Documentation whitespace and targeted readback checks performed only.
+
+### 2026-10-19 — Transport-only INTERNAL category approved
+
+Owner answered "approved" to adding INTERNAL only to the HTTP error contract for
+INTERNAL_ERROR/500. Keep the six domain refusal categories unchanged. Unexpected
+failures use a fixed safe message and never expose exception details. Rationale:
+programming failures must not be falsely classified as session/storage problems.
+Exact safe wording, transport type/brand handling and remaining category mappings
+are not approved by this decision. Technical spec, outcome and developer/agent
+guidance aligned; next discussion is remaining reason/category mapping. Completed
+ledger entries and correction counters unchanged; full C2 still unstarted.
+No code/test edits, database use, application tests/build/browser run, commit or
+push. Verification limited to documentation whitespace and targeted readback.
+
+### 2026-10-19 — Remaining reason/category mapping approved
+
+Owner answered "appproved" to VALIDATION_FAILED -> VALIDATION;
+INVALID_CREDENTIALS, AUTHENTICATION_REQUIRED and ALREADY_SIGNED_IN -> SESSION;
+SESSION_LOOKUP_UNAVAILABLE and STORAGE_UNAVAILABLE -> STORAGE. The already-approved
+INTERNAL_ERROR -> transport-only INTERNAL mapping is unchanged. Rationale: lookup
+unavailability is a storage failure, not an invalid session; the specific reason
+still drives INV-01 recovery. Consolidated the technical-spec table without
+changing approved reasons/statuses. Outcome and developer/agent pointers aligned.
+Next discussion: remaining safe messages, preserving INV-01's existing wording.
+No code/test edits or gate/counter changes; full C2 unstarted. No database use,
+application tests/build/browser run, commit or push. Documentation whitespace and
+targeted readback checks only.
+
+### 2026-10-19 — General error messages approved
+
+Owner answered "yup approved" to the four proposed general messages for
+VALIDATION_FAILED, AUTHENTICATION_REQUIRED, STORAGE_UNAVAILABLE and INTERNAL_ERROR,
+now recorded verbatim in the technical spec. Existing INV-01 credential rejection,
+already-signed-in and unavailable-session wording remains unchanged. Logout failure
+retains "Couldn't confirm logout. Please try again." and the current page/unsaved
+input. Rationale: safe actionable feedback without exposing internals or overriding
+approved operation-specific recovery. Technical spec, outcome and developer/agent
+pointers aligned. Next discussion is cache policy, then remaining transport details.
+No code/test edits, gate/counter changes, database use, application tests/build/browser
+run, commit or push. Full C2 remains unstarted. Documentation whitespace and targeted
+readback checks only.
+
+### 2026-10-19 — Return to INV-17 session-route scope
+
+Owner asked whether INV-17 was done and why discussion moved into INV-01. Clarified
+that only internal C2-P is complete, full session routes remain unimplemented, and
+registration/field-message discussion had drifted beyond the needed boundary.
+Owner then said "ok lets return". Active discussion returns to INV-17 session
+routes and their necessary shared dependencies; earlier approvals are preserved.
+Registration/account UI implementation and further registration-only detail remain
+with INV-01. The cache proposal is still unapproved; returning is not approval of
+that proposal or implementation. Outcome, spec scope and developer/agent pointers
+aligned. No code/test edits, delegation, database use, application verification,
+commit or push. Counters and completed gates unchanged. Documentation checks only.
+
+### 2026-10-19 — Session-only cache policy approved
+
+Owner answered "approved." to no-store for every POST/GET/DELETE /api/session
+response including errors, and resolving session checks against current database
+state without a shared application cache. Reason: avoid stale authentication
+results in recovery and logout confirmation. The earlier broader proposal remains
+unapproved; this does not authorise registration caching or frontend refresh work.
+Technical spec, outcome and developer/agent guidance aligned. Next discussion:
+session-route cross-site request protection. Full C2 unstarted; ledger/counters
+unchanged. No code/test edits, database use, tests/build/browser run, commit or push.
+Documentation whitespace and targeted readback checks only.
+
+### 2026-10-19 — Origin policy approval and requested baseline push
+
+Owner approved exact configured-Origin checking for POST/DELETE /api/session:
+reject absent/null/mismatch before credential verification or session changes;
+PERMISSION/ORIGIN_NOT_ALLOWED/403 with the proposed safe message. No trust from
+caller-supplied host headers. Recorded in the technical spec; implementation pending.
+Owner then explicitly requested a push so a friend can start INV-02 and asked if
+necessary workflow files are present. Commit/push now authorised for the partial
+baseline, superseding the earlier prohibition; no INV-01 merge or new code authorised.
+Remote branch check confirmed 1761bc1. Workflow, inventory/evidence, four skills,
+role/configuration files and templates are tracked. No standalone PLAN.md: INV-17
+uses the technical-spec execution ledger. Added teammate startup pointers.
+INV-02 detailed design/implementation approval was not found in this checkout;
+publishing enables specification work, not bypassing feature readiness.
+PUB-1 rows written before tester/reviewer delegation. Existing tracked changes,
+C1/C2-P files, historical handoff and project logs selected; Claude outputs/ and
+all local environment files excluded. No local secret contents printed. Initial
+sandbox remote connection failed; allowed network escalation verified the remote.
+Tests/package review and publication outcome are pending. A/B/B9/C2-P counts remain
+2/2, 2/2, 1/2, 0/2. Separate INV-01 worktree remains untouched.
+
+### 2026-10-19 — Resumed publication verification
+
+After owner said "can you continue", verified code baseline f36a520 and matching
+remote SHA; this commit/push occurred externally during the interruption. Existing
+documentation remained unstaged. publication_tests recovered its actual session
+60316 result: coverage exit0,19 files/490 tests,137/155 branches(88.38%),49.68s.
+It then ran typecheck exit0 and lint exit0: one warning in ignored generated
+coverage/block-navigation.js for unused eslint-disable, zero errors. No corrections.
+The tester confirmed loopback127.0.0.1:55432/test-named base, no shared override;
+no production/demo database used. No build/browser checks.
+publication_review passed workflow-package availability; no material omissions,
+not INV-02 implementation readiness. Core workflow/skills/roles/templates tracked.
+Coordinator compared candidate contents to local secret values without printing
+values: zero matches; local environment/Claude outputs files excluded. Final
+documentation staging/commit/push follows under existing owner authorisation.
+Completed implementation gates and correction counters unchanged.
+
+### 2026-10-19 — Partial baseline publication completed
+
+Committed 12 explicitly staged documentation/record files as cc257f6 and pushed
+normally to origin/codex/nextjs-migration. Independent ls-remote returned exact
+cc257f6e69cdb28adc14ec10fc896f1a8cc52b5c. Staged whitespace check passed; staged
+secret-value comparison and excluded-path checks found zero matches. Only preserved
+Claude outputs/ remained untracked. No branch switch, force push, INV-01 merge
+change or production/test edit. PUB-1 closed against actual verification and
+publication evidence. This does not complete INV-17 or authorise INV-02
+implementation; teammate startup is in DeveloperGuide.
+
+### Earlier development agreement (historical)
 
 - MP3 is the migration source; verify all existing features against guides, code, and tests.
 - Approve the complete feature inventory before detailed feature specifications.
@@ -1078,3 +1291,133 @@ typecheck, lint and build clean. Nothing has run on the user's machine, no Git c
 executed by any assistant session, and nothing is committed. Branch `codex/nextjs-migration` is
 at `7c16bcf` and has never been pushed. The security reviewer's verdict after the correction
 cycle is safe to commit.
+
+## 2026-10-18 - Publish INV-17 and attempt INV-01 integration
+
+User authorised path-scoped staging of web, workflow, docs and AGENTS.md, committing
+with COMMIT_MSG.txt, pushing codex/nextjs-migration, deleting the scratch message,
+and merging that branch into codex/inv01-accounts in the separate INV-01 worktree.
+Executed: commit 1761bc1; push succeeded and upstream tracking is configured;
+COMMIT_MSG.txt deleted. Ignore check returned web/.gitignore:25 for web/.env.local.
+76 files were staged; no .env.local or node_modules paths were staged. A corrected
+local environment-value comparison found no values of 16+ characters in the staged
+diff. The first comparison used the wrong worktree and is not verification evidence.
+No application tests ran; existing test claims remain external reports.
+
+Current handoff: E:/CS3227-2610-MP3 on codex/nextjs-migration is published at 1761bc1.
+Untracked pre-existing logs and Claude outputs remain excluded. This record and the
+publication task log are local follow-up evidence, not part of that commit.
+E:/CS3227-2610-MP3-INV01 remains on codex/inv01-accounts with a merge in progress.
+Nine conflicts: AGENTS.md, docs/CLAUDE-HANDOFF.md, docs/DeveloperGuide.md,
+docs/InteractionRecord.md, docs/agents/agents/coordinator.md,
+docs/agents/issue-tracker.md, workflow/MIGRATION-WORKFLOW.md,
+workflow/PRODUCT-SPEC.md, workflow/TECHNICAL-SPEC.md.
+Automatic approval review rejected a broad resolution script due to possible loss
+of incoming workflow/specification changes. No resolution edits were applied.
+Next step: review and resolve each conflict preserving both feature designs and
+histories, then verify and commit the merge. INV-01 readiness is not yet established.
+
+## 2026-10-18 — Continue INV-17 from HANDOFF-INV17
+
+User requested takeover from docs/HANDOFF-INV17.md. Read its task ledger/protocol
+and checked Git/environment without altering Claude's code or the INV-01 merge.
+Corrected current outcome/handoff status: 1761bc1 committed; C1 migration files
+untracked; 486 tests/88.23% are Claude cloud evidence only. Reconciled the stale
+sessions FK table entry with the already-approved C1 no-FK decision.
+Local clean dependency installation failed EUSAGE on missing coverage lock entries.
+Recorded ENV-1 and requested approval before corrective edits. Docker/PostgreSQL
+commands and .env.test.local absent; asked for dedicated test DB availability.
+No database accessed, tests run, production edits, commits or pushes.
+
+Owner approved scoped ENV-1 lockfile repair. Asked whether production DB could be
+used for tests; explained that the integration bootstrap has destructive provisioning/
+truncation paths and production is excluded. No production DB testing is authorised
+by this question. Dedicated test DB remains pending; independent unit checks proceed.
+
+Owner selected local disposable PostgreSQL setup. Official PostgreSQL Windows
+download page links EDB binary archives; selected PostgreSQL 17.11 (EDB file
+1260616), matching the target major version. Downloading to a dedicated directory
+under local application data; no system service or production connection planned.
+Test data will be loopback-only with a dedicated local role and per-run databases.
+
+ENV-1 testing agent changed only lockfile (+104 lines; coverage-v8 5.0.5 plus seven
+transitives). Clean install passed with scripts disabled; typecheck and lint passed.
+Unit baseline: 293 passed, 12 skipped, 1 suite failed on virtual fixture lookup.
+Owner approved ENV-2 Windows fixture normalisation only, preserving assertions,
+with focused/full unit rerun and independent review. No database tests run yet.
+
+ENV-2 worker normalised PROJECT_ROOT separators in actor-seam-compile.test.ts;
+assertions and fixtures unchanged. Focused 12/12 passed; removing only the fix
+reproduced the original setup failure; restored full unit baseline 305/305 passed,
+8 files, no skips. Independent review pending. No production edits or DB tests.
+
+ENV-2-R passed: independent focused 12/12, unchanged assertions/fixtures, no existing
+lock entries changed. Local PostgreSQL 17.11 ready at 127.0.0.1:55432 using
+E:/HotShopTestPostgres17/data; C: initialisation failed on WAL rename. Download
+used official EDB binary link; no system service installed. ENV-DB test configuration
+and single integration baseline delegated next; production database untouched.
+
+ENV-DB local baseline: 9 integration files passed, 1 failed; 164 passed/13 failed.
+All failures in db-check-script subprocess suite; harmless direct npm execFile probe
+returned ENOENT on Windows. Migrations and remaining suites passed. Owner approved
+ENV-3 to launch same npm CLI via Node, only editing that test file, preserving all
+assertions and production script; focused/integration reruns and independent review.
+
+ENV-3 launched actual npm command: focused 31 passed/1 failed; reverting invocation
+reproduced failure of reachable-database positive control. Remaining success fixture
+replaces real local password with synthetic value; authentication correctly fails.
+Requested scoped fixture correction, preserving actual test credentials internally
+and checking non-disclosure without printing them. No authentication weakening.
+Read-only C2 triage found credential-verifier interface, cookie persistence and HTTP
+encoding unresolved; lifecycle primitives are separable but full route tests are not
+ready. C2-T remains unstarted; no scope silently invented from the handoff.
+
+Owner explicitly approved amended ENV-3 positive-connection password fixture fix
+in the same test file, with focused/integration reruns and independent review.
+
+Owner approved bounded internal session slice. Recorded C2-P-v1 internal interface
+and C2-P0/PT/PR1/PS/PI/PR2 gates before delegation. Real login routes, credential
+verification, cookie lifetime and HTTP mapping remain pending; no full C2 completion
+is implied. C2-P starts only after ENV-3-R baseline acceptance.
+
+Amended ENV-3 returned: focused 32/32 and full integration177/177 (10 files) pass.
+Both invocation-only and fixture-only revert probes reproduce failures; corrected
+file restored. No production/auth edits. Independent ENV-3-R is next before C2-P0.
+
+ENV-3-R independently passed focused32/32 and reviewed invocation/fixture diff;
+no blocking findings. Full integration177/177 is tester evidence. Environment
+baseline gates now satisfied for C2-P0. User approved the internal slice earlier;
+login/routes/cookie persistence/HTTP encoding remain pending.
+
+C2-P0 returned: only sessions.ts API stubs and safe error class, no lifecycle logic.
+Lint/typecheck passed; sandbox generated-types write needed elevated rerun. Stub
+SHA256 begins6594E2D5. C2-P correction count0/2. C2-PT may now establish red.
+
+C2-PT: one136-line test file, eight cases P1–P6; focused run all8 fail on
+lifecycle stubs after real migration/seed success, not imports/setup. Typecheck
+and lint passed. Independent readiness review follows; production unchanged.
+
+C2-PR1 ready: independent8/8 behavioural red and P1–P6 coverage confirmed; no
+blocking findings. Final review must inspect cryptographic RNG, since format and
+distinctness alone do not prove entropy. C2-PS security readiness is next.
+
+C2-PS security readiness passed by inv17_session_security, inspection only; token
+boundary/hash storage/error/isolation tests accepted. Actual RNG, parameterised
+queries and token-restricted operations remain final checks. C2-PI now eligible;
+correction count0/2 and full HTTP scope remains pending.
+
+C2-PI returned: sessions.ts implements the approved internal lifecycle. Focused8/8 and combined coverage run490/490 passed (305 unit,185 integration); source branch88.38%, sessions100%. Typecheck/lint passed; no test edits. Counter0/2. C2-PR2 final evidence review is now eligible; full C2 remains incomplete.
+
+C2-PR2 completed: independent specification/coverage review and security inspection
+passed without blockers. Source coverage137/155 branches (88.38%); session module
+2/2 branches and all statements/functions covered. Security worker ran two isolated
+scratch mutations: removing lookup restriction produced P1/P4 failures (6 pass),
+removing deletion restriction produced P4 failure (7 pass). Both were assertion
+failures after successful PostgreSQL setup; scratch configuration removed and live
+source/test hashes unchanged. No production/test corrections; C2-P count0/2.
+
+Bounded internal slice complete. Updated DeveloperGuide (local database setup and
+internal session API), AGENTS pointers, outcome and existing handoff. UserGuide
+unchanged because no user-facing journey is delivered. No build/browser/deployment
+claim, commit or push. Full C2 needs agreed credential-verifier, persistent-cookie
+and HTTP response contracts. Existing INV-01 conflicted merge remains untouched.

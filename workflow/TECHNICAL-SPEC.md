@@ -85,7 +85,7 @@ concurrency mechanism.
 | --- | --- | --- |
 | `id` | uuid, primary key | Not the cookie value |
 | `token_hash` | text, unique, not null | SHA-256 of the cookie token. The raw token is never stored, so a database leak does not yield usable sessions |
-| `user_id` | uuid, not null, references users, on delete cascade | |
+| `user_id` | uuid, not null; no foreign key in C1 | INV-01 owns users and adds the constraint, per the approved C1 decision |
 | `created_at` | timestamptz, not null | |
 | `last_seen_at` | timestamptz, not null | Updated opportunistically; not an expiry, since FR-1701 has none |
 
@@ -150,6 +150,9 @@ Every signed-out request to a marketplace route is refused and directed to log i
 
 - **Cookie.** httpOnly, Secure, SameSite=Lax, path `/`. The value is a random token with
   at least 256 bits of entropy; only its SHA-256 hash is stored.
+  Persistent lifetime is 400 days, renewed during authenticated use, as approved
+  in "C2 shared contract — persistent cookie" below. Server sessions do not expire
+  by age or inactivity; browser retention is not an indefinite guarantee.
 - **Passwords.** PBKDF2-HMAC-SHA256, a fresh 16-byte salt, 600,000 iterations and a
   256-bit derived key, with the algorithm and work factor stored alongside, as in the
   source. Verification is constant-time. Note for the operational section: this costs
@@ -231,6 +234,344 @@ Concurrency criteria such as AC-1709, AC-1710 and AC-1712 are verified by issuin
 concurrent service calls against a real database, not by simulating a race.
 
 ## Execution plan
+
+### PUB-1 — publish the reviewed partial baseline, 2026-10-19
+
+Owner requested commit/push of the current migration baseline so a teammate can
+start INV-02. This supersedes the earlier no-commit/no-push restriction only for
+this publication. No feature implementation/corrections authorised. Coordinator
+owns documentation and Git; workers are read-only, return evidence for consolidation
+in existing records (no extra handoff/log). Retain A 2/2, B 2/2, B9 1/2, C2-P 0/2.
+Unexpected failure permits diagnosis only; no corrective code/test edits.
+
+Candidate includes current modified tracked files, C1/C2-P production/SQL/tests,
+the existing docs/HANDOFF-INV17.md and existing project task logs. Exclude all
+Claude outputs/, local environment files, dependencies and generated artifacts.
+This is publication of partial work, not feature Done, route approval or INV-02
+implementation approval. INV-02 inventory is available; detailed spec/plan/owners
+and contracts remain its own readiness gates. Existing INV-01 worktree untouched.
+
+| Task | Role | Allowed edits | Blocked by | Evidence required | Tier / mutation | Completed |
+| --- | --- | --- | --- | --- | --- | --- |
+| PUB-1-T Verify existing baseline | Testing | none; ignored test/build artifacts only | Owner publication request | npm run test:coverage, npm run typecheck, npm run lint from web; dedicated local test DB only after confirming loopback port55432/test base without printing credentials; actual results or blocker | Deep / C | Yes: publication_tests recovered exit0 coverage490/490, branches88.38%; typecheck exit0; lint exit0, one generated coverage-file warning, zero errors; local test DB only; no build/browser |
+| PUB-1-R Check teammate workflow package | Specification reviewer | none | Owner publication request; independent of PUB-1-T | Tracked workflow/skill/role/template availability and startup pointers; distinguish inventory-only INV-02 from approved work; review intended publication scope, report material omissions | Deep / C | Yes: publication_review confirms all required files tracked, startup pointers and INV-02 boundaries; no material omissions; no tests or final feature acceptance claimed |
+| PUB-1-G Publish explicit candidate | Coordinator | documentation and Git index/commit/push only | PUB-1-T, PUB-1-R | Inspect staged diff/no secrets; commit and normal push to codex/nextjs-migration; verify remote SHA; preserve excluded files | Deep / C | Yes: cc257f6 committed/pushed; remote SHA matches; 12 documentation/record files, no secret-value/excluded-path matches; Claude outputs preserved untracked; code baseline f36a520 already remote |
+
+Tester: no build/browser claim is required for this partial publication; prior
+reviews remain prior evidence. Do not contact production/demo DB or use shared
+override. If runner/process permissions block execution, report the exact action
+for coordinator escalation. Reviewer: this is a publication-readiness check, not
+reopening completed implementation/security reviews or final feature acceptance.
+
+
+
+### C2 shared contract — credential verifier
+
+Interface shape approved by the requesting owner on 2026-10-18. Reference:
+INV-01 TD-INV01-01/02/04/06/07 at branch codex/inv01-accounts, commit 210fa9e,
+read through Git without touching its conflicted worktree. This approval preserves
+the responsibility split; it does not authorise full C2 implementation.
+
+- INV-01 owns credential verification. Inputs are username and the exact unchanged
+  password. INV-01 trims username and performs case-insensitive lookup, preserving
+  registered username case in the result.
+- Success returns only user ID, registered-case username and display name.
+- Unknown username and incorrect password yield the same credential-rejection result.
+- Storage or verification failures are distinct safe errors, never credential rejection.
+- The verifier creates no session. INV-17 creates the session only after successful
+  verification and owns cookie handling.
+- Resolve the current browser session first. A valid session produces the existing
+  approved "Already signed in." behaviour without new account/session creation;
+  unavailable lookup fails without creating a session, rather than implying signed out.
+
+Planned verification: case-insensitive/trimmed lookup, exact password preservation,
+success-field allowlist, equivalent credential rejection, unavailable storage distinct
+from rejection, and existing-session guard ordering/no new session on failure.
+These checks have not been executed for this contract. Exact TypeScript signature,
+exact error types, reason/status mapping and operation payloads remain pending;
+full C2 rows remain unstarted. No completed ledger entries or counters change.
+
+### C2 shared contract — HTTP envelope
+
+Scope clarification, owner-directed 2026-10-19: active design work returns to
+INV-17 POST/GET/DELETE /api/session and required shared authentication boundaries.
+Previously approved registration-related shapes remain recorded for integration;
+registration implementation, account forms and registration field-message detail
+belong to INV-01 and are not prerequisites for completing unrelated session design.
+Session-only cache policy is approved below. Full C2 readiness still requires
+the actual credential/account dependency and remaining session contracts; scope
+clarification does not waive readiness reviews or authorise production changes.
+
+Owner approved the envelope shape on 2026-10-19, preserving INV-01 TD-INV01-06
+logical responses and the existing INV-17 refusal fields:
+
+- Success: `{ ok: true, data: ... }`.
+- Failure: `{ ok: false, error: ... }`.
+- Error preserves `brand`, category `code` and safe `message`, adding a specific
+  machine-readable `reason` and optional `fieldErrors`. The frontend uses the
+  reason rather than parsing message text.
+- Passwords, password hashes and session tokens are excluded from response bodies.
+
+This is a transport contract shape, not permission to change the completed domain
+refusal module. Adapter versus shared-type extension remains to be designed and
+reviewed before implementation. Remaining request/header details and field-specific
+messages are not finalised by the envelope approval.
+Trace: INV-01 TD-INV01-06 and INV-17 FR-1712/1713. Planned checks cover response
+allowlists, success/failure discrimination, category preservation and exclusion of
+sensitive values. No tests executed; full C2 remains blocked on contract completion.
+
+Session-only cache policy approved by the owner on 2026-10-19: every response from
+POST/GET/DELETE `/api/session`, including errors, carries `Cache-Control: no-store`.
+Session checks resolve current database state without a shared application cache.
+This prevents stale authentication results driving recovery or logout confirmation.
+The earlier broader proposal covering registration/frontend refresh is not approved
+by this decision. Planned checks: header on success/error paths, and a subsequent
+check observes revocation rather than reusing an earlier authenticated result.
+No tests executed; route implementation/readiness gates remain pending.
+
+Origin policy approved by the owner on 2026-10-19: POST and DELETE /api/session
+require Origin to match the configured application origin exactly. Reject missing,
+null or mismatched origins before credential verification or session changes.
+Return HTTP403, PERMISSION, ORIGIN_NOT_ALLOWED, "This request isn't allowed. Please
+try again from HotShop.". Configure the trusted origin per environment, never
+derive trust from caller-supplied host headers. This is design approval only.
+Readiness must cover real browser same-origin requests plus absent/null/foreign
+origin rejection with no session mutation; no such checks have run yet.
+
+Transport-only category approved by the owner on 2026-10-19: `INTERNAL` is the
+HTTP error category for `INTERNAL_ERROR` / HTTP 500. Keep the six domain refusal
+categories unchanged. Unexpected failures receive a fixed safe message, never
+exception details. This avoids misclassifying programming failures as storage or
+session problems. The transport type/adapter must accommodate this category without
+adding it to domain `RefusalCode`; its exact implementation and brand handling
+remain subject to readiness review. Approved general messages are listed below.
+Planned checks: INTERNAL/INTERNAL_ERROR/500 alignment,
+fixed-message redaction and unchanged domain categories. No tests executed.
+
+General error messages approved by the owner on 2026-10-19:
+
+| Reason | Safe message |
+| --- | --- |
+| VALIDATION_FAILED | Check the highlighted fields and try again. |
+| AUTHENTICATION_REQUIRED | Please log in to continue. |
+| STORAGE_UNAVAILABLE | We couldn't complete your request because storage is unavailable. Please try again. |
+| INTERNAL_ERROR | Something went wrong. Please try again. |
+
+Preserve existing INV-01 wording: INVALID_CREDENTIALS uses "Incorrect username or
+password."; ALREADY_SIGNED_IN uses "Already signed in."; SESSION_LOOKUP_UNAVAILABLE
+uses "We couldn't verify your session. Please log in again.". Logout failure
+retains the operation-specific feedback "Couldn't confirm logout. Please try
+again." and preserves the current page and unsaved input per FR-0119. That flow
+is not replaced by the generic retry or login-navigation behaviour. Lost-response
+recovery remains governed by INV-01, not inferred from an absent server response.
+Planned checks: exact safe wording, no exception/input leakage, and logout-specific
+feedback/state preservation on failure. No tests executed for this approval.
+
+Field-error format approved by the owner on 2026-10-19:
+`fieldErrors` maps each affected field to an array of safe messages, for example
+`{ username: ["Choose a different username."], passwordConfirmation: ["Passwords do not match."] }`.
+Include only fields with errors; omit `fieldErrors` for general failures. Never
+echo submitted values or passwords. Invalid login credentials remain a general
+error without identifying which credential was wrong. This supports INV-01's
+approved registration field errors, including a taken username. The example
+illustrates the format; the full message catalogue and field-name allowlist remain
+to be finalised with request schemas. Planned checks: affected-fields-only mapping,
+arrays of safe messages, omission for general errors, no input echo, and general
+credential rejection. No tests executed for this approval.
+
+Failure reason/status mapping approved by the owner on 2026-10-19:
+
+| Situation | Reason | HTTP status | Category |
+| --- | --- | --- | --- |
+| Invalid fields | VALIDATION_FAILED | 400 | VALIDATION |
+| Unknown username or wrong password | INVALID_CREDENTIALS | 401 | SESSION |
+| Protected request without valid session | AUTHENTICATION_REQUIRED | 401 | SESSION |
+| Login/register while already signed in | ALREADY_SIGNED_IN | 409 | SESSION |
+| Session lookup unavailable | SESSION_LOOKUP_UNAVAILABLE | 503 | STORAGE |
+| Account/session storage unavailable | STORAGE_UNAVAILABLE | 503 | STORAGE |
+| Unexpected server failure | INTERNAL_ERROR | 500 | INTERNAL (transport only) |
+
+The remaining six category assignments above were approved on 2026-10-19.
+Unavailable session lookup is a storage failure, not evidence of an invalid
+session; its specific reason selects INV-01's recovery flow. Planned checks also
+assert each reason/category pairing. Domain categories remain unchanged.
+
+A successful session-status check confirming signed out returns HTTP 200 with an
+explicit signed-out result. Lookup failure returns 503 and preserves the cookie,
+per INV-01 TD-INV01-07. Reasons supplement, rather than replace, broad refusal
+categories. This mapping does not finalise additional cases such as duplicate
+registration, malformed transport or origin refusal. Header requirements and
+messages for those additional cases remain to be specified before readiness.
+Planned checks: each listed status/reason, indistinguishable credential rejection,
+signed-out success versus lookup failure, and cookie preservation on lookup failure.
+No checks executed and no full C2 ledger gate advanced by this design approval.
+
+Success payloads/statuses approved by the owner on 2026-10-19. Each data value is
+wrapped in `{ ok: true, data: ... }`:
+
+| Operation | HTTP status | data |
+| --- | --- | --- |
+| Register | 201 | `{ username }` |
+| Login | 200 | `{ authenticated: true, user }` |
+| Check session, signed in | 200 | `{ authenticated: true, user }` |
+| Check session, signed out | 200 | `{ authenticated: false, user: null }` |
+| Logout, including already ended | 200 | `{ authenticated: false, user: null }` |
+
+`user` contains exactly `{ id, username, displayName }`, preserving registered
+username capitalisation. Registration creates no session; login sets the cookie
+separately. Shared login/session-check shapes support INV-01 uncertain-login
+recovery. Logout reports signed out only after termination is confirmed, including
+confirmation that the session is already absent. Failure to resolve/revoke is not
+a success. This preserves INV-01 TD-INV01-03/05/06/07 without implementing account
+routes here. Planned checks: exact payload allowlists/statuses, no registration
+session, cookie/body separation, recovery-compatible shapes and failed logout
+never returning signed-out success. These checks have not been run.
+
+### C2 shared contract — persistent cookie
+
+Owner approved 2026-10-18: retain server sessions until explicit logout without
+age/inactivity expiry; issue a persistent cookie with a 400-day lifetime renewed
+during authenticated use. Keep HttpOnly, Secure, SameSite=Lax and path `/`.
+Trace: FR-1701 and AC-1701/1702. This clarifies browser persistence rather than
+introducing server expiry. Browser cookie expiry, cleared data or privacy policies
+can require another login even though the server session remains valid.
+
+Evidence for the browser constraint: Chrome caps cookie expiry at 400 days from
+setting, https://developer.chrome.com/blog/cookie-max-age-expires. This is external
+documentation, not executed HotShop browser verification. Exact renewal placement,
+cookie name/domain policy and local HTTPS setup remain implementation-design items
+to settle before route readiness. Renewal must not imply a new server session or
+revive a revoked session; unavailable lookup retains the existing cookie per
+INV-01 TD-INV01-07. HTTP contract and full route implementation remain pending.
+
+Planned checks: persistence attributes and renewal after successful authentication,
+no server expiry with an advanced clock, browser close/reopen retaining login,
+and no authentication from a missing/expired cookie. None executed this turn.
+
+### C2-P — approved internal session slice
+
+Owner approved this bounded split on 2026-10-18. C2-P does not complete C2. Full
+C2 route rows remain pending the INV-01 credential verifier, persistent-cookie
+policy and HTTP response contract. AC-1708a is the signed-out request criterion;
+full request-level control-first evidence cannot be claimed by internal tests.
+
+Internal interface (coordinator-defined implementation detail, revision C2-P-v1):
+new src/server/db/sessions.ts, inside the existing pre-authentication DB boundary.
+No new dependency or changes to the shared Actor/DB/error APIs. Required injectable
+Db handle and Clock; use existing SessionRecord { sessionId, userId } for resolution.
+
+- createSession(userId: string, options: { db: Db; clock: Clock }):
+  Promise<{ token: string; session: SessionRecord }>. Caller is trusted server-side
+  credential verification, never a route accepting arbitrary user IDs. Generate a
+  UUID row id and a crypto-random 32-byte base64url token; store only its SHA-256
+  hex hash. Both timestamps use the supplied clock. Single atomic INSERT.
+- resolveSession(token: string, options: { db: Db }): Promise<SessionRecord | null>.
+  Resolve only by token hash; unknown token returns null. No idle/age expiry.
+  This read need not update last_seen_at; opportunistic updates are deferred.
+- revokeSession(token: string, options: { db: Db }): Promise<void>. Delete only the
+  matching hash. Already missing is successful, and other sessions remain intact.
+- Database failures throw a safe SessionStorageError with fixed message
+  'Session storage is unavailable.' and no driver cause/details or token. They
+  never become null/success. HTTP/category mapping stays pending with INV-01.
+
+Acceptance P1: from real migrated sessions schema, an unknown or modified token
+resolves null, while a valid token resolves precisely its session/user; this proves
+only the internal token boundary. P2: stored hash equals SHA-256, raw token is not
+stored; independent creates yield distinct 32-byte tokens and UUID row identities.
+P3: injected timestamps stored exactly; advancing time does not expire a session.
+P4: two sessions for one synthetic user coexist; revoking one leaves the other;
+repeating revoke succeeds. P5: actual database failure is reported as the safe
+storage error, with no raw database details; unknown-token null is distinguishable.
+P6: result can feed existing actorFromSession unchanged. No users FK/schema changes.
+
+Control classification: internal authentication boundary; preserve pre-implementation
+specification and security reviews. Security review checks test/design evidence now;
+post-implementation checks assess actual behaviour. Mutation tier A is limited to
+removing token-hash lookup/deletion restriction and checking assertion discrimination,
+not a broad infrastructure audit. Coverage remains acceptance-driven; no test padding.
+
+| Task | Role | Allowed edits | Blocked by | Evidence required | Completed |
+| --- | --- | --- | --- | --- | --- |
+| C2-P0 Declare runnable API stubs | Implementation | src/server/db/sessions.ts | ENV-3-R passing baseline | Exact signatures/types above, throwing stubs only; import/typecheck succeeds | Yes: inv17_session_impl stub SHA6594E2D5; lint/typecheck passed |
+| C2-PT Write lifecycle tests | Testing | tests/integration/session-lifecycle.test.ts | C2-P0 | P1–P6 using isolated PostgreSQL and actual sessions migration; behavioural red, not import errors | Yes: inv17_env1 eight cases all fail on stubs; migrated PostgreSQL setup succeeds; typecheck/lint pass |
+| C2-PR1 Test-readiness review | Specification reviewer | none | C2-PT | Inspect P1–P6 coverage and red cause; identify unverified full-route criteria | Yes: inv17_env_review READY; independent8/8 meaningful red; no blockers |
+| C2-PS Security readiness | Security reviewer | none | C2-PR1 | Review token boundary, safe errors, isolation and tests; no claim full route guard exists | Yes: inv17_session_security READY; no unmet criteria; actual RNG/SQL inspection remains final |
+| C2-PI Implement lifecycle | Implementation | src/server/db/sessions.ts | C2-PS | P1–P6 green, unit/integration, typecheck/lint; no test edits | Yes: focused8/8; combined490/490, source branches88.38%, sessions100%; typecheck/lint passed; final review pending |
+| C2-PR2 Final spec/security evidence | Specification reviewer | none | C2-PI | Actual code/coverage, targeted token-boundary mutation discrimination, findings | Yes: independent spec/security PASS; lookup mutant fails P1/P4, delete mutant fails P4; live hashes unchanged; no blockers; 0/2 corrections |
+
+Human approver: requesting owner. Initial correction cycles: 0/2 for this bounded
+C2-P batch; carry across all its roles/stages. Keep A/B/B9 and environment repairs
+separate without resetting them. Any unexpected failed loop needing edits requires
+an approved correction plan. Coordinator alone changes rows. Full C2 and C-RS remain
+incomplete, and no login/browser feature completion is claimed.
+
+### Windows npm subprocess correction — ENV-3
+
+Owner explicitly approved ENV-3 on 2026-10-18 after ENV-DB found 164 passing tests
+and 13 failures, all db-check-script.test.ts. Read-only reproduction confirms
+execFile('npm', ['--version']) fails ENOENT on Windows before the script executes.
+ENV-1/2 evidence and existing production-batch counters remain preserved.
+
+| Task | Role | Allowed edits | Blocked by | Evidence required | Completed |
+| --- | --- | --- | --- | --- | --- |
+| ENV-3 Portable npm CLI subprocess | Testing | web/tests/integration/db-check-script.test.ts only | Owner approval received | Same npm db:check via Node/CLI path; unchanged assertions and script; actual execution, focused and integration reruns; removing fix reproduces launch failure | Yes: inv17_env1 focused 32/32; both revert probes fail; integration177/177; review pending |
+| ENV-3-R Independent correction review | Specification reviewer | none | ENV-3 | Inspect actual invocation/diff, unchanged assertions, execution evidence and test results | Yes: inv17_env_review independently focused32/32; no blocking findings |
+
+ENV-3 scope amended with explicit owner approval: preserve configured password for
+the successful-connection fixture, synthetic fallback only for passwordless setups,
+and assert non-disclosure without displaying the password. Same allowed test file.
+Focused suite then full integration rerun and independent review remain required.
+
+No production script edits, shell-interpolated credentials, weakened assertions or
+new requirements. Unexpected failures or expanded scope pause for owner direction.
+Run database tests one lane at a time against local .env.test.local only.
+
+### Local disposable database setup — ENV-DB
+
+Owner selected local disposable PostgreSQL on 2026-10-18. PostgreSQL 17.11 binaries
+from EDB (linked by postgresql.org), installed outside the repository. C: data
+initialisation failed on a WAL rename; E:/HotShopTestPostgres17/data succeeded.
+Server verified listening only on 127.0.0.1:55432. No production DB contacted.
+
+| Task | Role | Allowed edits | Blocked by | Evidence required | Completed |
+| --- | --- | --- | --- | --- | --- |
+| ENV-DB Configure and verify isolated test baseline | Testing | gitignored web/.env.test.local only; local disposable DB provisioning | Owner approval received; local server ready | Confirm isolated local target, create test base, run integration lane once and report actual results; no application changes | Yes: local setup verified; 164 passed/13 failed; failures tracked under ENV-3 |
+
+Use the generated password file under local HotShopTestPostgres17 tools directory
+without printing it. Never use production .env.local credentials for connection.
+Do not enable shared-database override. Stop on unexpected test failures and report;
+this setup authorises no code/test corrections. Run integration single-lane.
+
+### Local execution prerequisite — ENV-1
+
+Status: owner approved scoped ENV-1 repair on 2026-10-18. C2-T remains
+unstarted while this prerequisite or its real test database is unavailable.
+Evidence: local npm ci fails EUSAGE; @vitest/coverage-v8 and seven transitive packages
+are missing from package-lock.json despite the coverage dependency in package.json.
+
+| Task | Role | Allowed edits | Blocked by | Evidence required | Completed |
+| --- | --- | --- | --- | --- | --- |
+| ENV-1 Synchronise locked test dependencies | Testing | web/package-lock.json only | Owner approval received 2026-10-18 | Existing declared versions unchanged; focused lock diff; successful clean install, unit/typecheck/lint or exact unresolved failures | Yes: clean install/typecheck/lint passed; initial unit failure repaired under ENV-2; inspected by inv17_env_review |
+
+ENV-1 result: lock repair and clean installation passed; typecheck/lint passed.
+Unit baseline: 293 passed, 12 skipped, one failing compiler-fixture suite. The lock
+repair is verified; ENV-2 subsequently restored the full unit baseline. Existing versions
+and package.json unchanged. Worker: inv17_env1; evidence recorded in InteractionRecord.
+
+| Task | Role | Allowed edits | Blocked by | Evidence required | Completed |
+| --- | --- | --- | --- | --- | --- |
+| ENV-2 Windows compiler-fixture paths | Testing | web/tests/unit/actor-seam-compile.test.ts only | Owner approval received 2026-10-18 | Confirm normalisation mismatch; preserve assertions; focused/unit checks; revert proves original failure | Yes: inv17_env1, focused 12/12, revert fails original setup, restored full units 305/305; review pending |
+| ENV-2-R Independent correction review | Specification reviewer | none | ENV-2 | Inspect test diff; verify normalisation and unchanged expectations; no concealed skips | Yes: inv17_env_review independently passed focused 12/12; no blocking findings |
+
+ENV-2 is the explicitly approved local portability correction, not permission to
+reopen Slice B or B9 production work. Stop for expanded scope or unrelated failures.
+
+Do not remove coverage, weaken tests or upgrade declared packages to make installation
+pass. Pause on unrelated changes or unexpected failures requiring a revised correction
+plan. No database tests against application/demo credentials. Existing A/B/B9 counters
+are carried, not reset. Shared session/credential route design remains separately pending.
+
+
 
 Adopted 2026-10-18 under the compact feature records and delegation policy in
 `workflow/MIGRATION-WORKFLOW.md`. This is the single authoritative plan for INV-17;
@@ -354,6 +695,16 @@ cannot be bypassed by accident, not that it is ergonomic:
 
 Mutation tier A: every claimed guarantee above closes with a mutation that fails when reverted.
 
+**`sessions.user_id` carries no foreign key in INV-17.** Decided 2026-10-18 after C1-T found the
+gap. `sessions` references a `users` table that no document defines and no feature group has been
+assigned. Creating it here would decide INV-01's account schema unilaterally, and the workflow
+requires both area owners to agree a shared contract; INV-01 is in flight on its own branch and
+its handoff explicitly asks for the session contract to be reviewed with INV-17 before
+integration. So INV-17 creates `sessions` with `user_id` as a plain column, and **INV-01 adds the
+foreign key when it creates `users`**, which is a one-line migration there. The cost is that until
+then a session row can name a user that does not exist, which is acceptable because no code path
+creates one except the session service INV-17 owns.
+
 **Slice B's suites migrate through `unscoped()`, not by binding the actor.** Decided 2026-10-18
 after B9-M stopped on it. Those suites test the transaction primitive, rollback, concurrency and
 unique-violation mapping, not authorization, so a query there is deliberately not actor-scoped and
@@ -385,10 +736,10 @@ test of its logic. **Mut** is the verification tier, A sweep / B spot check / C 
 | Task | Role | Allowed edits | Blocked by | Ctl | Mut | Cap | Completed |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | **C1** Migration runner and `sessions` migration | | | | | | | |
-| C1-T Author tests | Testing | `tests/**` | B6, B7, B9-R2 | | B | Standard | No |
-| C1-R1 Test readiness review | Spec reviewer | none | C1-T | | | Deep | No |
-| C1-I Implement runner and first migration | Implementation | `src/**`, `supabase/migrations/**`, `scripts/**` | C1-R1 | | B | Standard | No |
-| C1-R2 Implementation and coverage review | Spec reviewer | none | C1-I | | | Deep | No |
+| C1-T Author tests | Testing | `tests/**` | B6, B7, B9-R2 | | C | Standard | Yes, 2026-10-18. 4 tests, 133 lines |
+| C1-R1 Test readiness review | Spec reviewer | none | C1-T | | | Deep | **Merged into C1-R2 on 2026-10-18.** C1 is not control-type and its tests are simple, so the risk a readiness gate protects against, implementing against bad tests, is low here. Recorded rather than skipped; C2 and C4 keep both gates |
+| C1-I Implement runner and first migration | Implementation | `src/**`, `supabase/migrations/**`, `scripts/**` | C1-T | | C | Standard | Yes, 2026-10-18. `runMigrations(dir?)`, 45 lines, tracking via `schema_migrations` |
+| C1-R2 Implementation and coverage review, merged with C1-R1 | Spec reviewer | none | C1-I | | | **Standard**, downgraded from Deep for this row: a file reader with no trust boundary | Yes, 2026-10-18. All four criteria met, nothing blocking, 2 notes. 486 tests, 88.23% branch |
 | **C2** Session create, destroy, resolve, route handlers | | | | | | | |
 | C2-T Author tests | Testing | `tests/**` | C1-R2 | yes | A | Deep | No |
 | C2-R1 Test readiness review | Spec reviewer | none | C2-T | yes | | Deep | No |
@@ -396,7 +747,7 @@ test of its logic. **Mut** is the verification tier, A sweep / B spot check / C 
 | C2-I Implement session lifecycle and routes | Implementation | `src/**` | C2-RS | yes | A | Deep | No |
 | C2-R2 Implementation and coverage review | Spec reviewer | none | C2-I | yes | A | Deep | No |
 | **C3** Guarded idempotent seed command | | | | | | | |
-| C3-T Author tests | Testing | `tests/**` | C1-R2 | | B | Standard | No |
+| C3-T Author tests | Testing | `tests/**` | C1-R2, **plus `users` from INV-01 and listings from INV-04/05** | | C | Standard | Blocked |
 | C3-R1 Test readiness review | Spec reviewer | none | C3-T | | | Deep | No |
 | C3-I Implement seed command | Implementation | `src/**`, `scripts/**` | C3-R1 | | B | Standard | No |
 | C3-R2 Implementation and coverage review | Spec reviewer | none | C3-I | | | Deep | No |
@@ -412,9 +763,9 @@ Source IDs and evidence per task:
 
 | Task | Source requirement and acceptance IDs | Evidence required to close |
 | --- | --- | --- |
-| C1 | FR-1701 to FR-1703 | Migrations apply to an empty database and are idempotent on re-run; `sessions` schema matches the data model section |
+| C1 | FR-1701 to FR-1703 | Migrations apply to an empty database and are idempotent on re-run; `sessions` schema matches the data model section. **`user_id` is a plain column with no foreign key**, see below |
 | C2 | FR-1701 to FR-1705a, AC-1701 to AC-1706 | Identity resolved from the cookie inside the request with no caller-supplied user id; a signed-out request is refused; logout deletes one row and leaves other sessions intact; control-first test starts from the documented setup |
-| C3 | FR-1706, FR-1706a, AC-1707, AC-1708b | Seeds available listings only, no offers, sales or meetups; second run changes nothing |
+| C3 | FR-1706, FR-1706a, AC-1707, AC-1708b | Seeds available listings only, no offers, sales or meetups; second run changes nothing. **Partly blocked**: `users` belongs to INV-01 and listings to INV-04/05, so only the guarded idempotent mechanism is buildable now, with the content and AC-1707 verified when those tables land. Same shape as FR-1709 |
 | C4 | FR-1704, Security section | An image is served only after the session check; no public or signed storage URL path exists; storage stubbable so tests need no Supabase |
 | C-RS | FR-1704, FR-1707, FR-1712 | Trust boundaries, credential handling and sensitive-data exposure across the finished slice |
 

@@ -4,7 +4,96 @@ Platform and data foundations. One of the four authoritative feature records req
 the compact records policy in `workflow/MIGRATION-WORKFLOW.md`. Read this first: it carries
 current status, approvals, the next action, blockers and the shared correction-cycle count.
 
-Last updated 2026-10-18 (SGT), after INV17-B6, B7 and B8.
+Last updated 2026-10-19 (SGT), after verified partial-baseline publication.
+
+## Current takeover status — 2026-10-19
+
+This section supersedes the historical status below. Source handoff:
+docs/HANDOFF-INV17.md. Working branch codex/nextjs-migration has code baseline
+f36a520, committed and pushed externally during the coordinator interruption;
+remote SHA verified on resume. It includes C1/C2-P and environment repairs.
+The remaining publication is workflow/contracts/documentation and historical logs.
+Preserve all existing local files; exclude Claude outputs/.
+
+### Locally verified baseline
+
+- ENV-1: repaired only coverage lock entries; no existing versions or package.json
+  changed. Clean install with lifecycle scripts disabled, typecheck and lint passed.
+- ENV-2: fixed Windows compiler-fixture path normalisation. 305 unit tests passed,
+  no skips. Reverting the change reproduces failure. Independent reviewer confirmed
+  unchanged assertions/fixtures and independently passed the focused 12 tests.
+- Local PostgreSQL 17.11 is running at 127.0.0.1:55432, data at
+  E:/HotShopTestPostgres17/data. Dedicated hotshop_test base and ignored
+  web/.env.test.local configured. No production DB contacted or shared override used.
+- Initial integration baseline: 164 passed/13 failed. All failures were in db-check
+  subprocess tests because execFile('npm') fails ENOENT on Windows.
+- ENV-3 portable npm launch and valid success-password fixture are repaired.
+  Focused32/32 and integration177/177 passed; independent reviewer also passed32/32.
+  Both revert probes reproduced the corresponding failures. No authentication weakening.
+- C2-PI: focused8/8, combined unit/integration coverage490/490 passed (19 files); source branches88.38%, session module100%. Typecheck/lint passed. No local build run. Historic cloud counts remain separate evidence.
+
+### Next action and boundaries
+
+Environment recovery gates passed. User approved C2-P; stubs, eight meaningful red tests, independent specification/security readiness and implementation are complete. C2-PR2 passed independent specification and security review. In scratch copies, removing lookup restriction failed P1/P4 and removing deletion restriction failed P4; live source/test hashes remained unchanged. The bounded C2-P slice is complete, with 0/2 correction cycles used. C2-T for full routes remains unstarted. Credential
+verifier interface shape is now owner-approved in TECHNICAL-SPEC.md, "C2 shared
+contract — credential verifier"; exact types/error encoding remain pending.
+Account storage is owned by INV-01; no users FK is added in C1. Next: agree the
+remaining HTTP response/error contract before full C2 route work. Envelope shape
+approved 2026-10-19: success `{ ok: true, data: ... }`, failure
+`{ ok: false, error: ... }`; preserve refusal brand/code/message and add reason
+and optional fieldErrors. The seven proposed failure reasons/statuses are approved
+in the C2 HTTP envelope section, including 200 for confirmed signed-out session
+checks versus 503/cookie preservation for unavailable lookup. Success payloads and
+statuses are also approved in that section: registration 201 with username;
+login/check 200 with explicit authentication state and minimal user; logout 200
+with signed-out state only after termination is confirmed. Field-error format is
+approved: affected fields map to safe-message arrays, general failures omit it,
+and submitted values are never echoed. Credential rejection remains general.
+Transport-only INTERNAL category is approved for INTERNAL_ERROR/500 with a fixed
+safe message; the six domain refusal categories remain unchanged. The six remaining
+reason/category assignments are approved in the technical spec, including STORAGE
+for unavailable session lookup. General error messages are now approved in the
+technical spec, preserving INV-01's credential/already-signed-in/lookup wording
+and logout-specific feedback/page/input preservation. Owner directed return to
+INV-17: cache policy for POST/GET/DELETE /api/session is approved: no-store on all
+responses including errors, and current database session checks without shared
+application caching. Cross-site request protection is also approved: exact configured
+Origin match for POST/DELETE, rejecting absent/null/mismatch before credential or
+session changes with PERMISSION/ORIGIN_NOT_ALLOWED/403. Remaining session-route/
+cookie/security contracts still gate C2 readiness.
+The previous broader cache proposal remains unapproved. Registration, account
+forms and registration field-message detail stay with INV-01; prior shared design
+approvals are preserved but do not authorise INV-01 implementation.
+Persistent-cookie policy
+is approved: 400-day lifetime renewed during authenticated use; server sessions
+have no age/idle expiry. Browser retention limits are explicit in FR-1701 and the
+technical spec. Exact renewal placement and remaining cookie setup details still
+need design before readiness. No implementation gates have been advanced.
+No browser login or deployment claim; no local build run. Owner now authorises a
+commit and normal push of the partial baseline, superseding the earlier prohibition.
+PUB-1 verification/package review passed: publication_tests reports coverage490/490,
+branches88.38%, typecheck exit0 and lint exit0 (one unused eslint-disable warning
+in ignored generated coverage/block-navigation.js, zero errors). Only the dedicated
+local test database was used. publication_review found no material workflow-package
+omissions. No code/test edits, build/browser verification or feature Done claim.
+Documentation/workflow records published as cc257f6; remote SHA verified. PUB-1
+complete. Only excluded Claude outputs/ remained untracked. Next authorised work:
+remaining session-contract discussion, not full C2 implementation. INV-02 may
+start specification work from the published baseline.
+Core workflow/skills/roles/templates are tracked. INV-02 has inventory evidence,
+not approved detailed design/implementation tasks here; teammate can start discovery
+and specification, with implementation gated on its own approvals/dependencies.
+
+Coordinator takeover confirmed workspace E:/CS3227-2610-MP3, branch
+codex/nextjs-migration at 1761bc1 and existing dirty tree. Prior test/review results
+above were read as recorded evidence, not rerun. INV-01 decisions were inspected
+from committed branch 210fa9e without touching its worktree; integrating them remains
+pending. Publication changes documentation only and does not authorise implementation.
+
+Keep counters A 2/2, B 2/2 and B9 1/2 from the newer handoff; C2-P 0/2; full C2 routes unstarted. ENV-1,
+ENV-2 and ENV-3 are owner-approved scoped environment repairs, not resets or
+permission to reopen exhausted production batches. C3 content and C5 remain blocked
+on their feature dependencies. INV-01's nine-conflict merge remains untouched.
 
 ## The other three records
 

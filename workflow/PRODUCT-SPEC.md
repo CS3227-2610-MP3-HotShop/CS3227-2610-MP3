@@ -57,7 +57,11 @@ never exposed through public profile access. INV-17 adds no new permission.
 
 - **FR-1701.** A successful login establishes a session for that browser. The session
   persists until the user logs out, and survives closing and reopening the browser.
-  There is no inactivity expiry.
+  There is no server-side age or inactivity expiry. Browser persistence clarification
+  approved 2026-10-18: use a 400-day persistent cookie renewed during authenticated
+  use. Cookie expiry, browser-data clearing or browser privacy policies can require
+  another login even while the server session remains valid. Closing and reopening
+  the browser alone must not end the session while its cookie is retained.
 - **FR-1702.** The same account may hold sessions in more than one browser at the same
   time. Signing in elsewhere does not end an existing session.
 - **FR-1703.** Logging out ends only the session that performed the logout. Other
