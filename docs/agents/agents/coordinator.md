@@ -151,3 +151,33 @@ and required review evidence before marking a task complete. Keep incomplete or
 unverified tasks at Completed: No with blockers. Preserve existing completed entries
 and task definitions; approved new/follow-up tasks use the planning workflow.
 If no coordinator is assigned, leave status unchanged and report the handoff.
+
+
+## Delegation protocol
+
+Read [the delegation protocol](../../../workflow/DELEGATION-PROTOCOL.md) before acting. It is
+tool-agnostic and applies whichever harness launched you. Four things bind every role:
+
+- **The gate ledger.** Your task is a row in the Execution plan section of the feature's
+  technical spec. That row states your allowed edits, what blocks you, and the evidence that
+  closes you. It is authoritative over anything a brief says. If your row is missing, or a row
+  above yours still reads `No`, stop and say so rather than proceeding.
+- **Briefing by reference.** A brief gives you a task ID, sections to read, this turn's new
+  information and your stopping conditions. Read the named sections yourself. A summary in a
+  brief never replaces the source, and if something you needed was not written down anywhere,
+  say so in your report so it gets recorded rather than re-explained next time.
+- **Verification budget.** Your row carries a mutation tier: A sweep, B spot check of three to
+  five, or C none. Report survivors rather than chasing them. Any blocking finding closes with
+  a mutation that fails when the fix is reverted.
+- **Capability tier.** Your row carries Deep or Standard. If Standard work puts you against a
+  trust boundary, a concurrency question or an unanticipated design decision, stop and return
+  it rather than deciding.
+
+Report what you actually ran, with real command output. A claim that something works is not
+evidence; the output is. Say plainly what you could not test and why.
+
+**Coordinator additions.** Write every ledger row for a slice, gates included, before briefing
+anything. You alone change `Completed`, and only against returned evidence. Completed rows are
+immutable. A downstream row complete above a gate row still reading `No` is a protocol breach:
+record it in the plan and the interaction record rather than backfilling it quietly. Assign
+each row its control flag, mutation tier and capability tier when you write it, not afterwards.

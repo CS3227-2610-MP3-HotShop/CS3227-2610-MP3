@@ -1,0 +1,43 @@
+// DECISION 3: the scoped handle exposes nothing but the scoped tag, the
+// authorization tag, the actor, the marker and `unscoped`. Each line below is
+// a different way of reaching the connection without saying `unscoped`, and
+// each must be a type error.
+import { actorFromSession } from '@/server/actor';
+import { withTransaction, type Tx } from '@/server/db';
+
+const actor = actorFromSession({ userId: 'u', sessionId: 's' });
+
+export async function throughUnsafe(): Promise<void> {
+  await withTransaction(actor, async (tx) => {
+    await tx.unsafe('select * from listings_fixture');
+  });
+}
+
+export async function throughNesting(): Promise<void> {
+  await withTransaction(actor, async (tx) => {
+    await tx.begin(async () => undefined);
+  });
+}
+
+export async function byWideningToTx(): Promise<void> {
+  await withTransaction(actor, async (tx) => {
+    const raw: Tx = tx;
+    await raw`select * from listings_fixture`;
+  });
+}
+
+export async function throughASavepoint(): Promise<void> {
+  // The one the first version of this fixture missed. A savepoint handle is a
+  // fully functional unscoped client, not a nuisance method: B9-R1 ran
+  // `tx.savepoint((sp) => sp`select * from listings_fixture`)` and got every
+  // row, with no actor and no `unscoped`.
+  await withTransaction(actor, async (tx) => {
+    await tx.savepoint(async (sp) => sp`select * from listings_fixture`);
+  });
+}
+
+export async function byEndingTheConnection(): Promise<void> {
+  await withTransaction(actor, async (tx) => {
+    await tx.end();
+  });
+}

@@ -1,0 +1,47 @@
+// POSITIVE CONTROL. Everything the seam is supposed to allow, in one file.
+//
+// Its job is to fail when the harness is broken rather than when the seam is.
+// A compile test whose negative cases all "pass" because the fixture never
+// resolved an import is the type-level version of a guard that never ran.
+import { actorFromSession, type Actor } from '@/server/actor';
+import { withTransaction, type ActorTx, type Tx } from '@/server/db';
+
+const actor: Actor = actorFromSession({ userId: 'u', sessionId: 's' });
+
+export async function scopedRead(): Promise<readonly { id: string }[]> {
+  return withTransaction(actor, async (tx: ActorTx) => {
+    const rows = await tx<{ id: string }[]>`
+      select id from listings_fixture where owner = ${tx.actorId}
+    `;
+    return rows;
+  });
+}
+
+export async function authorizedWrite(listingId: string): Promise<void> {
+  await withTransaction(actor, async (tx) => {
+    await tx.authorize`
+      select 1 from listing_grants_fixture
+      where user_id = ${tx.actorId} and listing_id = ${listingId}
+      for share
+    `;
+    await tx`
+      update listings_fixture set title = 'x'
+      where id = ${listingId} and owner = ${tx.actorId}
+    `;
+  });
+}
+
+export async function deliberatelyUnscoped(): Promise<readonly { id: string }[]> {
+  return withTransaction(actor, async (tx) => {
+    const sql: Tx = tx.unscoped('public listing search, FR-1706');
+    return sql<{ id: string }[]>`select id from listings_fixture`;
+  });
+}
+
+export async function withOptions(): Promise<number> {
+  return withTransaction(actor, async () => 1, { onUniqueViolation: () => undefined });
+}
+
+export function identityIsReadable(): string {
+  return `${actor.userId}/${actor.sessionId}`;
+}

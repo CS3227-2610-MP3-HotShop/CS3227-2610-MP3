@@ -1,0 +1,15 @@
+// CRITERION 1: a query issued inside `withTransaction` without an actor does
+// not compile. The old two-argument form is the shape every Slice B caller
+// uses, so this is also the pin that the seam was not added beside the old
+// door instead of in it.
+//
+// Nothing here suppresses anything. A `ts-expect-error` directive in a fixture
+// whose whole purpose is to produce an error would hide the very diagnostic
+// being asserted, and the harness would report a clean file as proof.
+import { withTransaction } from '@/server/db';
+
+export async function forgot(): Promise<void> {
+  await withTransaction(async (tx) => {
+    await tx`select id from listings_fixture`;
+  });
+}

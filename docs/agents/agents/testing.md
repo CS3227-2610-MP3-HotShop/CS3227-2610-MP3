@@ -68,3 +68,77 @@ and executed passing-test evidence confirmed by the specification reviewer. Inve
 unexpected passes; do not manufacture failures or infer full coverage from green.
 Setup failures remain unverified, and mixed tasks retain red evidence requirements
 for missing behaviour. Existing JavaFX success does not establish Next.js behaviour.
+
+
+## Delegation protocol
+
+Read [the delegation protocol](../../../workflow/DELEGATION-PROTOCOL.md) before acting. It is
+tool-agnostic and applies whichever harness launched you. Four things bind every role:
+
+- **The gate ledger.** Your task is a row in the Execution plan section of the feature's
+  technical spec. That row states your allowed edits, what blocks you, and the evidence that
+  closes you. It is authoritative over anything a brief says. If your row is missing, or a row
+  above yours still reads `No`, stop and say so rather than proceeding.
+- **Briefing by reference.** A brief gives you a task ID, sections to read, this turn's new
+  information and your stopping conditions. Read the named sections yourself. A summary in a
+  brief never replaces the source, and if something you needed was not written down anywhere,
+  say so in your report so it gets recorded rather than re-explained next time.
+- **Verification budget.** Your row carries a mutation tier: A sweep, B spot check of three to
+  five, or C none. Report survivors rather than chasing them. Any blocking finding closes with
+  a mutation that fails when the fix is reverted.
+- **Capability tier.** Your row carries Deep or Standard. If Standard work puts you against a
+  trust boundary, a concurrency question or an unanticipated design decision, stop and return
+  it rather than deciding.
+
+Report what you actually ran, with real command output. A claim that something works is not
+evidence; the output is. Say plainly what you could not test and why.
+
+**Control-type tasks.** When your row is marked as a control, its purpose is to prevent
+something. Its first acceptance criterion is an end-to-end test starting from the documented
+operator setup, proving the control fires at all, before any test of its internal logic. A
+control that is correct but never executes is worse than no control, because the next person
+relies on it. This project shipped exactly that: an isolation guard corrected twice before
+anyone checked whether it ran.
+
+
+## Coverage budget and stopping rules
+
+Adopted 2026-10-18 after INV-17 produced 9,293 lines of tests for 1,772 lines of production
+code, a 5:1 ratio, reaching 89% branch coverage. A threshold would have stopped it thousands
+of lines earlier. These rules bound the work; they are not advisory.
+
+**The stop is 80% branch coverage of `src/`.** It is a floor and a **ceiling**. Below it, the
+slice is not done. Above it, nobody may ask for more tests, including a reviewer. Measure with
+`vitest --coverage`. `scripts/` and `tests/helpers/` are excluded, because chasing an operator
+script to a branch target is how this ratio happened.
+
+**Alongside it, one qualitative rule coverage cannot express:** every acceptance criterion in
+your ledger row has at least one test that fails if the behaviour is removed. Coverage measures
+execution, not assertion, so a test that calls a function and asserts nothing counts as covered.
+This rule is what stops that, and it is per criterion, not per branch.
+
+**Test what the acceptance criteria name, not what could go wrong.** The criteria name the
+refusals; those get tests. Percent-encoding, byte-order marks, hostname spellings and malformed
+inputs do not, unless a criterion names them. "What could go wrong" is unbounded and produced
+most of the 9,293 lines.
+
+**A review finding becomes a test only if it maps to an acceptance criterion.** Otherwise it is
+a note in the report and nothing more. Every finding becoming a permanent test is the ratchet.
+
+**Budget: tests for a slice should land near 1.5x that slice's production lines.** Materially
+over means the design is wrong, not the coverage. Say so rather than writing more tests.
+
+**Not permitted without the row explicitly asking:**
+
+- Mutation sweeps. Only where the row's mutation tier says so, which is now reserved for
+  cross-account data exposure.
+- Differential or property tests over large generated inputs. Nothing here needs 680,000
+  comparisons.
+- Prose headers over roughly 20 lines in a test file. A design decision goes in the technical
+  spec in a few lines or it is not worth recording. INV-17 shipped a 500-line header in a
+  1,512-line file.
+
+**Still required, and not negotiable:** no vacuous tests. A test that passes against a stub, or
+against code with the behaviour deleted, is not evidence. Say so and remove it rather than
+banking a green. INV-17's testers caught themselves doing this four times and were right each
+time.

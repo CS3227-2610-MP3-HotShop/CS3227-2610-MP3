@@ -9,12 +9,16 @@ This document details features incrementally. A feature is inventory-only until 
 detail is drafted here, and drafted until the user approves it. Approval of one feature
 does not approve another, and no approval here authorises implementation.
 
+INV-17 was approved by the user on 2026-10-17. Its open items listed below are technical
+specification decisions, not unresolved product intent. Its design is drafted in
+[`TECHNICAL-SPEC.md`](TECHNICAL-SPEC.md).
+
 ## Feature status
 
 | ID | Feature group | Detail status |
 | --- | --- | --- |
 | INV-01 to INV-16 | Existing JavaFX feature groups | Inventory-only |
-| INV-17 | Platform and data foundations | Draft detail, awaiting approval |
+| INV-17 | Platform and data foundations | Approved 2026-10-17 |
 
 ## Product Description
 
@@ -128,9 +132,17 @@ never exposed through public profile access. INV-17 adds no new permission.
 
 - **FR-1718.** All dates and times display in one fixed application timezone, shown with
   a zone label, so both participants of a sale always see the same time string.
-- **FR-1719.** Meetup scheduling rules are evaluated in that same zone: the 15-minute
-  start grid, the requirement that a start is in the future, the 60-day-ahead cutoff,
-  durations of 15 minutes to 4 hours, and overlap checks.
+- **FR-1719.** Scheduling rules that depend on a date or time are evaluated in that same
+  zone rather than in any viewer's zone, and INV-17 owns the evaluation zone and the date
+  and time primitives those rules are built from. Within INV-17 that means: a start is in
+  the future, the 60-day-ahead cutoff evaluated as calendar days in the application zone,
+  and whether a meetup has ended.
+
+  Narrowed on 2026-10-17. The earlier wording also listed the 15-minute start grid,
+  durations of 15 minutes to 4 hours and overlap checks. Those are meetup rules and
+  belong to INV-11 and INV-12, which consume INV-17's primitives rather than redefining
+  the zone. A test-readiness review found them untested under INV-17, and the narrowing
+  resolves that rather than widening this group.
 - **FR-1720.** Refusal messages about scheduling state times in that same zone and
   label, matching what the screens show.
 

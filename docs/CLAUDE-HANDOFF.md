@@ -1,190 +1,255 @@
-# Migration handoff to Claude
+# Migration handoff
 
-Prepared 2026-10-17 at the user's request to continue with another assistant.
+Rewritten 2026-10-17 (SGT) to replace a document that had become layered updates on a
+superseded base. This is the current state. Historical narrative lives in
+`docs/InteractionRecord.md`, which is append-only.
 
 ## Start here
 
-Work in E:/CS3227-2610-MP3, not the older MP2 checkout. Read AGENTS.md first.
-Read this handoff, docs/InteractionRecord.md (current handoff and latest entries),
-workflow/FEATURE-INVENTORY.md and workflow/FEATURE-EVIDENCE.md. Then read
-workflow/MIGRATION-WORKFLOW.md and docs/agents/AgentSpecifications.md before work.
-Use the detailed guides/source only as needed; avoid repeating the completed audit.
+Work in `E:/CS3227-2610-MP3`. The older MP2 checkout is a separate working copy with
+unrelated changes; leave it alone.
 
-User prefers a back-and-forth process, one feature/specification decision at a time.
-Report actions and progress transparently. Do not infer approval from silence.
+Read in this order, and no further until you need to:
 
-## Exact repository state
+1. `AGENTS.md`
+2. This file
+3. `docs/InteractionRecord.md`, the "Current handoff" block plus the last few entries
+4. `workflow/PRODUCT-SPEC.md` and `workflow/TECHNICAL-SPEC.md`
+5. `workflow/FEATURE-INVENTORY.md`, and `workflow/FEATURE-EVIDENCE.md` only when you need
+   a specific group's source trace
+6. `workflow/MIGRATION-WORKFLOW.md` and `docs/agents/AgentSpecifications.md` before
+   delegating work
 
-- Repository: https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3
-- Working branch: codex/migration-workflow.
-- HEAD: 1d812ef270d780d248c74f7a37c543345df70026 — Establish migration workflow and agent roles.
-- That workflow commit is local; it was not pushed by this chat.
-- Before this handoff, modified files: AGENTS.md, docs/DeveloperGuide.md,
-  docs/InteractionRecord.md, workflow/FEATURE-INVENTORY.md.
-- Before this handoff, untracked files: workflow/FEATURE-EVIDENCE.md and
-  logs/2026-10-17-feature-inventory-evidence.md. Preserve them.
-- This handoff adds this file and logs/2026-10-17-claude-handoff.md, and updates
-  the three required instruction/guide/decision records. It does not commit or push.
-- Recheck actual status on arrival. Do not reset, discard or overwrite local work.
-- Windows Git needed command-scoped safe.directory=E:/CS3227-2610-MP3 in this
-  environment. Do not change global Git configuration just to work around that.
+Do not repeat the feature audit. It is finished, approved, and its evidence is recorded.
 
-## Current stopping point and immediate next action
+## How the user works
 
-All 16 existing JavaFX feature groups were traced to implementation paths and
-representative test assertions. The full list was presented to the user, who had
-NOT yet approved its coverage when this handoff was written.
+One decision at a time, with the reasoning shown. They push back on recommendations and
+are usually right to; when they question a decision, re-examine it properly rather than
+defending it. The no-ORM decision came from exactly that, and the first answer was wrong.
 
-Superseded on 2026-10-17: after a guide-derived recheck and the addition of INV-17, the
-user approved coverage of the 17 groups. That approval covers the feature list only.
-The user also froze the migration source baseline at 1d812ef; a later JavaFX source
-change needs a proposed re-baseline with a diff and explicit approval before it affects
-scope. The next step is detailed specifications, one feature at a time.
+Silence is not approval, and neither is moving on to the next topic. Report what actually
+happened, including what failed and what you did not verify. Several of the most useful
+findings here came from stating a limit plainly instead of rounding a result up.
 
-Resume by briefly presenting/referencing the 16 groups and asking whether that
-coverage is approved. Do not repeat the entire code audit or start coding. Confirm
-whether the inspected commit should be the frozen migration source reference;
-record later-source-change handling rather than silently accepting new source.
-Once inventory coverage is approved, discuss detailed specifications one feature
-at a time, starting with a user-agreed feature (accounts is a reasonable proposal).
-Product/technical specs and executable task plans have not yet been created for
-the migration. Inventory approval alone does not authorise implementation.
+## Repository state
 
-Update 2026-10-17 (Claude session): repository state was rechecked by reading .git
-refs and the reflog, because this session has no shell on the workspace machine and
-executed no Git command. Branch codex/migration-workflow is at 1d812ef, unpushed, and
-the uncommitted file set listed above is intact.
+- Repository: `https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3`
+- Checked out: `codex/nextjs-migration`, at `7c16bcf`
+- `codex/migration-workflow` is at the same commit and is pushed to origin
+- Everything done on 2026-10-17 after that commit is **uncommitted** on the feature branch
+- `master` is still at `227ba99`. PR #1 from `codex/agent-specifications` is open, and
+  `codex/migration-workflow` contains its two commits, `bf47d26` and `93dbfc6`
+- Windows Git needs command-scoped `safe.directory=E:/CS3227-2610-MP3` here. Do not change
+  global Git configuration to work around it
 
-A guide-derived recheck of the 16 groups found nothing to remove and one gap: session
-lifecycle, data lifecycle, transactional consistency and the refusal-message standard
-have no inventory ID. INV-17, platform and data foundations, is proposed and undecided.
+The migration source baseline is **frozen at `1d812ef`**. Specifications cite behaviour at
+that commit. A later JavaFX source change does not change scope by itself; it needs a
+proposed re-baseline with a diff and explicit approval.
 
-The user decided that the web application no longer keeps one user logged in at a time.
-Concurrent multi-user access replaces that desktop constraint, and local-only decisions
-are open to revision rather than inherited. Session mechanism, cross-user update
-visibility, concurrency control, simultaneous-viewer read state and the browser
-equivalent of unsaved-change protection remain undecided.
+## What exists
 
-The user also decided that the desktop minimum window size of 960 x 640 and the fixed
-JavaFX layout units are not carried over. The web layout adapts to arbitrary viewport
-sizes; breakpoints and acceptance viewports remain a specification detail.
+**Specifications.** `workflow/PRODUCT-SPEC.md` holds the whole migration's product intent.
+INV-17 is approved; INV-01 to INV-16 are inventory-only. `workflow/TECHNICAL-SPEC.md` holds
+INV-17's design as a draft.
 
-## Feature coverage
+**Code,** in `web/`, uncommitted:
 
-01 accounts; 02 profiles/password/images; 03 search/filter/sort; 04 listing display;
-05 create/edit/photos; 06 listing management/archive/delete; 07 buyer offers;
-08 seller offers; 09 sales/purchases/completion; 10 cancellation;
-11 meetup slots/booking; 12 meetup changes; 13 messaging lifecycle;
-14 conversation list/unread/actions; 15 seller dashboard; 16 shared UI behaviour.
+- Next.js 16.4.2, React 19.3.1, TypeScript 5.9.3, Vitest 5.0.5, Tailwind 4.3.3,
+  postgres.js 3.4.9, zod 4.6.7, Supabase JS 2.118.0, Supabase CLI 2.121.0. No ORM.
+- `src/domain/errors/index.ts`: the refusal taxonomy. Six reason codes, catalogue-only
+  authoring behind a private Symbol token, `isRefusal` for refusal-shaped data and
+  `isAuthoredRefusal` for values this module made, `asPayload()` for transport, money and
+  count formatting that reject malformed input.
+- `src/domain/time/index.ts`: injectable clock, fixed-zone formatting for Asia/Singapore
+  with an SGT label, and three scheduling predicates including the 60-day horizon counted
+  as calendar days in the application zone.
+- `tests/unit/`: 168 cases. `npm run test`, `typecheck`, `lint` and `build` all pass.
+- `vitest.config.mts` pins `TZ=America/New_York` so the suite discriminates on any
+  machine. Do not "fix" that to Singapore; it is deliberate.
 
-The evidence document contains source paths, named existing tests, boundary rules,
-interactions, and limits. No whole feature group was added or removed by the audit.
-Important unresolved distinctions:
+The domain layer imports nothing at all, and a lint rule enforces that.
 
-- ListingService.getListing allows any logged-in user to fetch any existing listing
-  by ID, including unavailable/archived ones; search hides them. Choose the web
-  detail-access policy explicitly, not from assumed participant-only navigation.
-- Meetup UI uses quarter-hour starts and fixed durations. Services accept broader
-  valid intervals; UI/service expiry and pending-move cancellation rules also differ.
-  Record intended web rules explicitly. See evidence for precise differences.
-- Opening Chat with seller does not persist an empty conversation; the first message
-  or offer does. HotShop_Architecture contains stale wording on that and meetup closure.
-- Sale snapshot freezes title, description, condition and agreed price, not all fields.
-- Wishlist, notifications, password recovery, account deletion and four documented
-  future enhancements are not automatically parity requirements.
-- Separate MP3 assignment requirements are not certified by this existing-feature audit.
+**Nobody has run this on the user's machine.** It was built and verified in an assistant
+cloud workspace. `cd web && npm install && npm test` is the user's own check.
 
-## Agreed migration scope
+## INV-17 is roughly a quarter done
 
-MP3 contains the MP2 JavaFX implementation and is the source of truth. Migrate all
-existing features to TypeScript/Next.js for web/Vercel delivery. Use a separate
-migration branch; codex/nextjs-migration was proposed but has not been created.
-Fresh demo data is approved; existing accounts/records/images need not be imported.
-Superseded 2026-10-17: the web app has no reset feature and uses hosted PostgreSQL from
-the start; data persists and seeding runs once at provisioning. Seed content is seeded
-accounts plus a spread of listings, with no seeded offers, sales or meetups.
-Database choice, seed provisioning, sessions, concurrent-update visibility, images,
-timezones, exact runtime/dependencies/test/build commands and human owners remain
-undecided.
-The two-day delivery is an aspiration, not proof the full scope fits that deadline.
+Only the parts needing no database exist. Five of its twenty requirements:
 
-Frontend/backend owners may work in parallel against an approved shared contract.
-Each approves their own area; both must explicitly approve shared-interface or
-cross-area changes. Assign human owners and shared-file writers before execution.
+| Requirement | State |
+| --- | --- |
+| FR-1712, FR-1713 refusal taxonomy and six reason codes | Done |
+| FR-1718 fixed-zone display with a label | Done |
+| FR-1719 (as narrowed) future start, 60-day horizon, has-ended | Done |
+| FR-1720 scheduling refusals state times in that zone | Mechanism done; the refusals themselves belong to INV-11 |
+| FR-1701 to FR-1703 session lifetime, concurrent sessions, per-session logout | Not started, needs a database |
+| FR-1704 request identity resolved from the cookie | Not started |
+| FR-1705, FR-1705a persistence, signed-out requests refused | Not started |
+| FR-1706, FR-1706a seeding, idempotent, provisioning-time | Not started |
+| FR-1709 invariants under concurrency | Not started. INV-17 owns the pattern and the transaction helper; the partial unique indexes land on each feature's tables |
+| FR-1710, FR-1711 atomic multi-record changes, conflict refusals | Not started |
+| FR-1714 to FR-1717 polling for an open conversation and the unread total | Not started, and additionally blocked on INV-13 and INV-14, since no conversations exist to poll |
 
-## Workflow and role rules
+Also unbuilt from the technical spec: the migration mechanism, generated row types,
+connection management for the pooled connection, and the authenticated image route.
 
-- Coordinator delegates production/test work and consolidates reports/docs; does not
-  implement production code or tests. Tester owns tests/fixtures/test configuration;
-  implementer owns production and assigned usage/design/setup documentation.
-- Specification reviewer checks test readiness, then implementation/coverage and
-  final documentation. Security reviewer checks the stable final candidate.
-- Missing/incorrect behaviour needs meaningful behavioural red before production.
-  Already-correct behaviour needs implementation-path and passing-test evidence,
-  independently reviewed. Setup failure is unverified, not red; never manufacture red.
-- Unexpected failed-loop code/test changes require a concrete correction plan and
-  explicit approval BEFORE corrective edits, even within existing requirements.
-  Initial expected TDD red is normal initial work.
-- Maximum TWO shared correction cycles per task/batch across stages/agents/followups;
-  new IDs/restarts do not reset count. Exhaustion requires explicit human direction.
-- All reviewer disagreements go to the human with both positions and evidence.
-  Pause affected/dependent work only; continue independent authorised work.
-- Implementer routes suspected test problems back to tester; no direct test editing.
-- Coordinator alone updates PLAN completion/progress from evidence. Completed entries
-  stay immutable; authorised follow-up work retains applicable correction budget.
-- One writer per shared file at a time; explicit transfer. Workers supply task logs.
-- Unit/integration tests selectively, Playwright for critical real frontend+backend
-  journeys. Mocks and legacy Java tests do not prove integrated web completion.
+A sensible build order once any PostgreSQL is available:
 
-Detailed roles: docs/agents/agents/ and docs/agents/AgentSpecifications.md.
-Aligned skills: .agents/skills/manage-product-spec, manage-technical-spec,
-plan-implementation and implement-task. Read relevant SKILL.md before that stage.
+1. Connection and the transaction helper, which is what FR-1710 rests on and what every
+   service will take as a handle
+2. Migration runner and the first migration, the sessions table
+3. Session create, destroy and resolve, plus the route handlers and signed-out refusal
+4. Seed command
+5. Image route, which needs storage and can be stubbed until the Supabase project exists
+6. Polling routes last, since they have nothing to return until conversations exist
 
-## Documentation and project management
+## Next step
 
-Every agreed decision updates docs/InteractionRecord.md, including discussion-only
-turns. Keep current handoff current; preserve historical records. Completed changes
-update AGENTS.md and docs/DeveloperGuide.md. Feature Done additionally requires
-actual User Guide updates, feature SDD summary, test/review evidence and integration.
-Use docs/agents/SDDInteractionSummary.md and a fresh task log under logs/.
+Either of these, user's choice:
 
-Use feature parent issues; separately tracked frontend/backend tasks have their own
-issues, with integration issue if substantial. Plan incrementally; unknowns can be
-Pending until the affected task approaches execution. Approved detail, owners,
-contracts and prerequisites are required before starting. Backlog/Ready/In progress/
-Review/Done are stages; Paused/Blocked are separate flags with reasons/resume gates.
-Templates exist in .github/ISSUE_TEMPLATE and .github/PULL_REQUEST_TEMPLATE.md.
+- The account rules for INV-01: username normalisation and uniqueness shape, the password
+  policy, display name and pickup location limits. Pure domain work, no database needed,
+  and it is the largest remaining chunk that is not blocked.
+- INV-17's persistence half, per the order above. This needs a PostgreSQL but not
+  *the* PostgreSQL: the user's friend is provisioning a Supabase project, and that gates
+  deployment and image storage only. A local Postgres, or one installed in the assistant's
+  cloud workspace, unblocks the connection helper, migrations, sessions and their
+  integration tests immediately.
 
-Last known remote state (not refreshed for this handoff): PR #1 is the older agent
-specifications PR; issues #2 parent setup, #3 workflow gates, #4 roles/skills,
-#5 configuration, #6 issue conventions, #7 disposable exercise, #8 feature inventory.
-No feature issues or GitHub board/labels were configured here. Exercise findings
-have not been posted to #7. Do not infer closure from local completion evidence.
-Current request authorises handoff only, not publishing/merging or creating issues.
+## Decisions in force
 
-## Verification already performed and limits
+Approved, with superseded ones marked so nobody reinstates them:
 
-- Workflow commit reviewed on standards and specification axes; stale current-status
-  summaries corrected and rechecked, no outstanding review findings at commit time.
-- Historical disposable synthetic exercise: 24 tests, controlled failure, approved
-  one-line repair and independent reviews; one actual correction cycle. Scripted
-  shared-interface/exhaustion checks are not actual two-human approval/two cycles.
-  See docs/agents/WorkflowExercise.md. No app implementation resulted from it.
-- Custom worker launch was user-reported in another MP3 chat. Actual exercise here
-  used generic dispatch reading saved instructions; native loading not revalidated.
-- Feature audit used three read-only workers and coordinator consolidation. Source
-  unchanged between earlier93dbfc6 and current1d812ef for inspected application paths.
-  All32 cited test method names exist;105 relative links resolve; whitespace passed.
-  Tests/assertions were READ, not executed. No Java build/manual walkthrough/web test.
-- Codex .codex/agents/*.toml are client-specific. Do not assume Claude loads them.
-  Read portable Markdown roles and explicitly map available Claude capabilities;
-  if enforcement/delegation differs, report it rather than claiming equivalence.
-- Do not run Java tests for this handoff. For future Java changes use Java25,
-  Gradle9.1.0 wrapper and JUnit5; choose web commands during target setup.
+- 17 feature groups, coverage approved 2026-10-17. INV-17 added for platform and data
+  foundations; it has no JavaFX source trace because it is a target-decision group.
+- Concurrent multi-user web access. **Supersedes** the desktop single-logged-in-user
+  constraint. The single service worker is gone, so database constraints are what protect
+  the marketplace invariants.
+- No reset feature, and hosted PostgreSQL from the start. **Supersedes** the earlier
+  resettable-demo decision with PostgreSQL deferred. On a serverless host those two could
+  not both hold: interim in-memory state disappears between deployments and cold starts,
+  which users experience as an uncontrolled reset.
+- PostgreSQL in every environment including tests, each with its own database. Tests never
+  target the demo database.
+- Supabase for database and object storage. Not Supabase Auth, not Row Level Security:
+  authorization stays in application code as in the source services.
+- No ORM. **Supersedes** an earlier Drizzle decision. Schema is numbered `.sql` migrations
+  via the Supabase CLI, row types come from `supabase gen types typescript`, and
+  `postgres.js` gives real transactions. `supabase-js` is for storage only, because
+  PostgREST commits each HTTP request before replying and four operations need several
+  writes to form one unit: accepting an offer, completing a sale, cancelling a sale, and
+  deleting an enquiry-only listing.
+- Seeding creates available listings only. Reserved, sold and archived are produced by the
+  application's own operations, and tests must reach them the same way rather than writing
+  a status value into storage.
+- Sessions last until explicit logout, survive closing the browser, and several browsers
+  can hold sessions for one account. A sessions table with an opaque token in an httpOnly
+  cookie, because a stateless cookie cannot revoke one session.
+- No anonymous browsing. Login is required everywhere, as in the source.
+- One fixed application timezone, `Asia/Singapore`, displayed with a label.
+- Background polling for an open conversation and the unread total. Not push: Vercel
+  serverless cannot host websockets, and a realtime channel would need participant checks
+  written separately from the HTTP routes, which is where they fail quietly.
+- Images served through an authenticated application route, not public or signed storage
+  URLs.
+- The desktop 960 x 640 minimum and fixed JavaFX layout units are **not** target criteria.
+- FR-1719 narrowed: INV-17 owns the evaluation zone and the time primitives. The 15-minute
+  start grid, duration bounds and overlap checks belong to INV-11 and INV-12.
+
+## Open decisions
+
+- Human owners for frontend and backend. Unassigned, and the workflow requires them before
+  implementation assignment. The user is currently the approver for both areas.
+- Polling intervals, and whether the unread total polls at a different rate.
+- Seed content counts: how many accounts, how many listings, photos or not.
+- PostgreSQL major version, pending from the provisioning task.
+- Node version and whether to pin the package manager.
+
+## How work is run
+
+The assistant coordinates and delegates to subagents taking the tester, implementer and
+reviewer roles, because the workflow separates them and a single agent writing both tests
+and code produces self-review. This is not ceremony. On the one task done so far, the
+test-readiness review and the implementation review each found defects that would
+otherwise have shipped, including a timezone guard that could not catch the implementation
+it existed to catch, and `NaN` reaching a user-facing refusal message.
+
+Order that worked: implementer scaffolds, tester writes failing tests, reviewer checks test
+readiness, implementer stubs the API to get genuine per-test red, implementer implements to
+green, reviewer checks implementation and coverage.
+
+Two things to keep doing. Make the implementer stub the full API before implementing, since
+a failure at import collection is a setup failure rather than red by the project's own
+policy. And when a reviewer finds something, take it back to the role that owns the file
+rather than fixing it across role boundaries.
+
+## Environment traps
+
+These cost real time to discover. A fresh session will hit them again.
+
+- **There is no shell on the user's machine.** `device_bash` fails with "Workspace
+  unavailable". That means no Git, no npm, nothing. Read `.git/HEAD`, `.git/refs/**` and
+  `.git/logs/HEAD` as files to establish repository state, and say plainly that you did
+  not run `git status`.
+- **The cloud session has no GitHub credential.** `gh auth status` reports an invalid
+  token. Branching, committing, pushing and PR creation are the user's to run. Give exact
+  commands and do not record any of it as done until they confirm.
+- **`device_commit_files` sometimes reports success without writing.** This happened
+  repeatedly, usually around a connection drop. Always verify afterwards with
+  `device_list_dir` and compare the file size, then retry the commit if it did not change.
+  A silently lost decision record is the worst version of this.
+- **Build and test in the cloud workspace, then copy files over.** The container has Node
+  22 and npm registry access; the user's machine is unreachable for execution.
+  `node_modules` never crosses.
+- **The cloud workspace blocks `fonts.googleapis.com`.** The scaffold's Geist fonts were
+  replaced with a system font stack for that reason alone. It is an environment limit, not
+  a design decision, and the user may want them back.
+- TypeScript is pinned to 5.9.3 rather than the registry's 7.0.2, because typescript-eslint
+  does not support TS 7 and that reaches the project through `eslint-config-next`.
+- `.codex/agents/*.toml` are Codex-specific. Do not assume they load. Read the portable
+  Markdown role briefs and map capabilities explicitly; if enforcement differs, say so
+  rather than claiming equivalence.
+
+## Verification, and its limits
+
+Performed and recorded:
+
+- 168 unit tests passing, with typecheck, lint and build clean, in the cloud workspace.
+- The 60-day horizon differential-tested against an independently written oracle over
+  680,000 pairs spanning year 1 to 9999 CE, zero mismatches. Money formatting against
+  BigInt truth over roughly 640,000 values, zero mismatches. The refusal catalogue fuzzed
+  across 45 hostile invocations, zero leaks.
+- The feature inventory traced to source paths and named test assertions at `1d812ef`.
+  Those assertions were **read, not executed**.
+
+Not performed: nothing has run on the user's machine, no database exists, no integration or
+Playwright test has been written, nothing is deployed, no Java build or test was run, and
+no remote issue state was verified from this session.
+
+## Carried follow-ups against INV-17
+
+- An object carrying `Symbol.toStringTag: 'Date'` passes the date brand check and then
+  reaches the engine's own error message. It needs a hand-crafted object, but that guard
+  exists to keep engine wording out of refusals.
+- Whether Next.js preserves a **thrown** refusal across the server and client boundary,
+  given it substitutes an opaque digest in production. The returned path through
+  `asPayload()` is solid; standardise on returning before features start throwing refusals
+  out of server actions.
+- Money and message-length range validators do not exist. The formatters reject malformed
+  input but not out-of-range input. These belong with the listing, offer and message
+  features.
+- Four of the six reason codes are declared but unreached until the features that raise
+  them land.
+- `AGENTS.md` refers to `workflow/PLAN.md`, which has never been created.
+
+A habit worth keeping, recorded because it recurred three times in one task: a claim
+written in a code comment reached one step further than the mechanism beneath it, every
+time. The mechanism was sound and the sentence was not. Check the sentence as carefully as
+the line.
 
 ## Scope hygiene
 
-Personal non-project material was separated from this repository and should stay
-outside current project documents. The user accepted existing published history;
-do not rewrite history or restore removed material. MP2 is a separate older working
-checkout with unrelated changes; leave it untouched.
+Personal non-project material was separated from this repository and belongs outside the
+project documents. Published history is accepted as is; do not rewrite it or restore
+removed material. MP2 is a separate older checkout; leave it untouched.

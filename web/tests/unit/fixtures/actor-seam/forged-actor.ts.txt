@@ -1,0 +1,22 @@
+// FR-1704 / DECISION 2: an `Actor` cannot be built, and cannot be derived from
+// a user id the caller chose. If any line here compiles, the seam is a naming
+// convention.
+//
+// ONE CASE IS DELIBERATELY ABSENT. `{ ...actorFromSession(...) }` DOES compile:
+// a spread copies the branding property at the type level, so the unique symbol
+// cannot see the difference. That gap is closed at runtime instead, by WeakSet
+// membership, and it is asserted in `actor-seam.test.ts` under FR-1704
+// ("recognises only what actorFromSession made"). It is recorded here so the
+// absence reads as a known limit rather than an oversight.
+import { actorFromSession, type Actor } from '@/server/actor';
+import { withTransaction } from '@/server/db';
+
+export const literal: Actor = { userId: 'victim', sessionId: 's' };
+
+export const fromUserId: Actor = actorFromSession('victim');
+
+export const fromPartial: Actor = actorFromSession({ userId: 'victim' });
+
+export async function clientChosenUser(userId: string): Promise<void> {
+  await withTransaction({ userId, sessionId: 's' }, async () => undefined);
+}

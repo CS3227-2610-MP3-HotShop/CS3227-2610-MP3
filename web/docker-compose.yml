@@ -1,0 +1,66 @@
+# A PostgreSQL for local development and for the database tests.
+#
+# DOCKER IS A CONVENIENCE, NOT A REQUIREMENT. Nothing in the test suite knows
+# about Docker. All the suite needs is DATABASE_URL_TEST pointing at a
+# PostgreSQL it can create a database on. A Postgres.app install, a native
+# Windows install, a shared dev server, a WSL install, a Supabase branch: all
+# work identically. This file exists so that someone who has Docker does not
+# have to think about it, not so that everyone else has to install it.
+#
+# ---------------------------------------------------------------------------
+# Using it
+# ---------------------------------------------------------------------------
+#
+#   docker compose up -d db
+#   docker compose down -v        # stop and discard the data
+#
+# Then put this in `.env.test.local` (gitignored by the `.env*.local` rule):
+#
+#   DATABASE_URL_TEST=postgresql://hotshop:hotshop@localhost:55432/hotshop_test
+#
+# On Windows, `.env.test.local` is the path of least resistance: PowerShell has
+# no `export`, and `$env:DATABASE_URL_TEST = "..."` only lasts for that one
+# terminal. The file is read by the test bootstrap directly, so it works the
+# same in PowerShell, in Git Bash, in WSL and in CI.
+#
+# ---------------------------------------------------------------------------
+# Not using it
+# ---------------------------------------------------------------------------
+#
+# Point DATABASE_URL_TEST at any PostgreSQL 13 or newer and you are done. The
+# suite creates a database per run and drops it afterwards, so the account needs
+# CREATEDB. If it does not have CREATEDB, the bootstrap says so and falls back
+# to truncating inside the database you named.
+#
+# Deployment is Supabase, which is PostgreSQL 17. This image is pinned to 17 to
+# match it, so a version-specific surprise shows up here rather than in
+# production.
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: hotshop-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: hotshop
+      POSTGRES_PASSWORD: hotshop
+      # The suite creates its own per-run database; this one is the entry point
+      # it connects to in order to do that.
+      POSTGRES_DB: hotshop_test
+    ports:
+      # 55432 on the host, deliberately not 5432: a developer with PostgreSQL
+      # already installed should not have to stop it to run the tests, and a
+      # port clash on Windows surfaces as a confusing permission error.
+      - "55432:5432"
+    volumes:
+      - hotshop-db-data:/var/lib/postgresql/data
+    healthcheck:
+      # `npm run test` can fail confusingly against a server that is still
+      # starting, so wait for readiness rather than for the container.
+      test: ["CMD-SHELL", "pg_isready -U hotshop -d hotshop_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  hotshop-db-data:
