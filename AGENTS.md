@@ -117,6 +117,35 @@ If an unrelated problem is discovered, report it separately rather than fixing i
 
 ## Migration collaboration
 
+For teammate onboarding and the current feature-plan location, read
+docs/DeveloperGuide.md, Teammate migration startup. INV-17's ledger is embedded
+in workflow/TECHNICAL-SPEC.md; inventory approval alone does not ready INV-02.
+
+For INV-17 session work, read `workflow/TECHNICAL-SPEC.md` section C2-P and
+`workflow/INV17-OUTCOME.md` current status. Internal lifecycle evidence does not
+complete login routes or cookie contracts. For local database tests, follow
+`docs/DeveloperGuide.md` section Local Windows integration-test database.
+For the approved INV-01/INV-17 credential-verifier boundary, consult
+`workflow/TECHNICAL-SPEC.md` section C2 shared contract; full route implementation
+remains gated on remaining cookie details and the HTTP contract. The approved
+400-day renewable cookie policy does not introduce server-side session expiry;
+see the C2 persistent-cookie contract and FR-1701 browser-retention clarification.
+The approved C2 HTTP envelope preserves refusal fields; do not treat its approval
+as permission to modify completed domain code. Core failure reason/status mappings
+and success payloads/statuses are approved in the C2 HTTP envelope section;
+remaining transport details still gate routes. Logout failures never count as
+confirmed signed-out success. The approved field-error contract uses safe-message
+arrays for affected fields only; never echo submitted values or distinguish the
+wrong credential in a login rejection. INTERNAL is approved only for the HTTP
+error contract (INTERNAL_ERROR/500), not as a new domain refusal category. Follow
+the approved C2 reason/category table; unavailable session lookup is STORAGE,
+never confirmation that a session is invalid. Use the approved general-message
+catalogue; preserve INV-01's operation-specific logout failure feedback and page/input.
+Keep current C2 work scoped to INV-17 session routes and necessary shared contracts;
+registration/account UI detail remains INV-01-owned despite shared design approvals.
+Apply the approved session-only cache contract: no-store on every session-route
+response and no shared application cache for session checks.
+
 For configured worker names and coordinator startup, read
 [AgentConfiguration.md](docs/agents/AgentConfiguration.md). Files alone
 do not prove instruction loading or behavioural validation; use the recorded smoke-test evidence and remaining readiness gates. Record external test reports with their provenance and distinguish them from checks executed in this chat.

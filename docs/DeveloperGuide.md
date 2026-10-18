@@ -309,6 +309,106 @@ Workflow approvals and smoke-test evidence are already recorded. The user select
 No additional Projects permission is needed. Issue #6 tracks publication of the
 latest tracker documentation.
 
+## Local Windows integration-test database
+
+The owner selected a disposable local PostgreSQL instance on 2026-10-18. Current
+machine setup: PostgreSQL 17.11 binaries under
+C:/Users/jonat/AppData/Local/HotShopTestPostgres17/pgsql; data under
+E:/HotShopTestPostgres17/data; listen address 127.0.0.1, port 55432. This is a
+manually managed local instance, not an installed Windows service. Binaries came
+from [EDB's archives](https://www.enterprisedb.com/download-postgresql-binaries),
+linked by the [PostgreSQL Windows download page](https://www.postgresql.org/download/windows/).
+
+The generated local password stays outside tracked files. Test connection settings
+belong in gitignored web/.env.test.local as DATABASE_URL_TEST. Do not use the
+application/demo connection or enable shared-database fallback for this setup.
+The existing test bootstrap provisions and tears down a separate database per run.
+
+In PowerShell, start and stop this machine's instance with:
+
+~~~powershell
+& 'C:/Users/jonat/AppData/Local/HotShopTestPostgres17/pgsql/bin/pg_ctl.exe' -D 'E:/HotShopTestPostgres17/data' -l 'E:/HotShopTestPostgres17/server.log' start
+& 'C:/Users/jonat/AppData/Local/HotShopTestPostgres17/pgsql/bin/pg_ctl.exe' -D 'E:/HotShopTestPostgres17/data' -m fast stop
+~~~
+
+Run npm run test:integration from web/ with no other integration run active.
+Unit checks use npm run test:unit and do not need PostgreSQL. Check current
+verification outcomes in workflow/INV17-OUTCOME.md; successful server startup alone
+is not passing integration evidence.
+
+## Internal session storage (INV-17 C2-P)
+
+### Teammate migration startup
+
+Use the published `codex/nextjs-migration` branch in a separate checkout/feature
+branch. Read AGENTS.md, the feature inventory/evidence, migration workflow and
+delegation protocol, then the relevant skill and role briefs in docs/agents/.
+INV-17's current status is workflow/INV17-OUTCOME.md (Current takeover status),
+and its execution ledger is in workflow/TECHNICAL-SPEC.md; there is no standalone
+workflow/PLAN.md for this feature. Do not reconstruct a competing plan or treat
+older handoff sections as current. The checked-in role/configuration files are
+portable guidance; verify loading in the teammate's own agent environment.
+
+INV-02 currently has an approved inventory entry, not an approved detailed design
+or implementation plan in this checkout. Start with product specification using
+the existing feature evidence and frozen Java baseline 1d812ef; record an owner
+and approve feature detail/contracts before implementation. Session/account/image
+dependencies must be agreed with INV-17/INV-01 owners; publishing this baseline
+does not claim those dependencies or the full features are complete.
+
+### Session implementation and approved design
+
+Current design scope is INV-17's session routes and required authentication
+dependencies. Registration and account UI work remain with INV-01; shared response
+approvals do not authorise implementing that feature. See the outcome for open
+session-route decisions and readiness gates. Approved session-route cache policy:
+all POST/GET/DELETE `/api/session` responses, including errors, use
+`Cache-Control: no-store`; checks resolve current database state without a shared
+application cache. This is design approval, not implemented or tested behaviour.
+
+The approved credential-verifier interface shape is recorded in
+`workflow/TECHNICAL-SPEC.md`, "C2 shared contract — credential verifier".
+INV-01 verifies credentials and returns minimal user identity; INV-17 creates the
+session only after success. Verification does not itself create a session, and
+unavailable storage must remain distinct from rejected credentials. This is an
+approved design boundary, not implemented login functionality. The approved cookie
+policy is a 400-day lifetime renewed during authenticated use, with no server-side
+age/idle expiry; browser retention limits can still require login. See the technical
+spec's C2 persistent-cookie contract. The C2 HTTP envelope shape is also approved:
+success carries `ok: true` and `data`; failure carries `ok: false` and `error`,
+preserving refusal brand/code/message with a specific reason and optional field
+errors. The seven core failure reasons/statuses are approved in the technical spec;
+confirmed signed-out session checks return 200, while unavailable lookup returns
+503 and preserves the cookie. Success payloads/statuses are approved in the same
+section: registration returns username; login/session checks return explicit
+authentication state and minimal user identity; confirmed logout returns signed-out
+state. Approved field errors map affected fields to safe-message arrays, omit
+unaffected fields and general failures, and never echo submitted values. Invalid
+login credentials remain a general error. Unexpected failures use the approved
+transport-only INTERNAL category with INTERNAL_ERROR/500 and a fixed safe message;
+the six domain refusal categories remain unchanged. The approved reason/category
+table in the technical spec maps unavailable session lookup to STORAGE while its
+specific reason selects session recovery. General error wording is approved in the
+same contract; logout failure retains its specific feedback and current page/input
+rather than following the generic session-recovery navigation. Remaining transport details and
+route implementation are pending; no browser persistence checks have yet been
+executed for this design.
+
+`web/src/server/db/sessions.ts` provides `createSession`, `resolveSession` and
+`revokeSession` with an injected database; creation also takes an application clock.
+Creation is for trusted server-side callers after credential verification. It does
+not verify credentials itself. Tokens use 32 cryptographically random bytes;
+PostgreSQL stores only their SHA-256 hashes. Resolution returns the existing
+`SessionRecord` or null for an unknown token. Revocation affects only that token
+and succeeds when it is already absent. Sessions have no age/idle expiry here.
+
+Database failures throw `SessionStorageError` with a fixed safe message and no
+attached driver details. Callers must distinguish this failure from an unknown
+token. Login routes, cookie persistence and HTTP error mapping remain pending;
+these internal functions do not establish a working browser login journey.
+See the C2-P plan in `workflow/TECHNICAL-SPEC.md` and current verification in
+`workflow/INV17-OUTCOME.md`. No new dependency is required.
+
 ## Acknowledgements
 
 See [Acknowledgements](developerGuide/Acknowledgements.html) for the sources of
