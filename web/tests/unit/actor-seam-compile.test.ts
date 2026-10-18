@@ -35,7 +35,8 @@ import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 import { beforeAll, describe, expect, it } from 'vitest';
 
-const PROJECT_ROOT = fileURLToPath(new URL('../../', import.meta.url));
+// TypeScript normalises compiler-host paths to forward slashes on Windows too.
+const PROJECT_ROOT = fileURLToPath(new URL('../../', import.meta.url)).replace(/\\/g, '/');
 const FIXTURE_DIR = new URL('./fixtures/actor-seam/', import.meta.url);
 
 /** Where each fixture pretends to live, so relative and `@/` resolution work. */

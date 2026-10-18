@@ -91,8 +91,11 @@ interface Outcome {
 }
 
 async function dbCheck(env: Record<string, string | undefined>): Promise<Outcome> {
+  // npm supplies its CLI path; invoking it with Node also works without a shell on Windows.
+  const npmCli = process.env.npm_execpath;
+  if (!npmCli) throw new Error('Run this suite through npm run test:integration.');
   try {
-    const { stdout, stderr } = await run('npm', ['run', '--silent', 'db:check'], {
+    const { stdout, stderr } = await run(process.execPath, [npmCli, 'run', '--silent', 'db:check'], {
       cwd: projectRoot,
       env: { ...process.env, ...env },
       timeout: 30_000,
@@ -175,11 +178,13 @@ function expectTheScriptRan(result: Outcome): void {
 let url: string;
 /** The same reachable database, but with a password the output must not echo. */
 let urlWithPassword: string;
+let successPassword: string;
 
 beforeAll(() => {
   url = testDatabaseUrl();
   const withPassword = new URL(url);
-  withPassword.password = 'hunter2';
+  if (!withPassword.password) withPassword.password = 'hunter2';
+  successPassword = decodeURIComponent(withPassword.password);
   urlWithPassword = withPassword.toString();
 });
 
@@ -216,7 +221,8 @@ describe('npm run db:check', () => {
     const result = await dbCheck({ DATABASE_URL: urlWithPassword });
 
     expect(result.code).toBe(0);
-    expect(`${result.stdout}${result.stderr}`).not.toContain('hunter2');
+    // Compare booleans so a failed assertion cannot print the configured secret.
+    expect(`${result.stdout}${result.stderr}`.includes(successPassword)).toBe(false);
   });
 
   it('exits non-zero and names DATABASE_URL when it is malformed', async () => {
