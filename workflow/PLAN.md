@@ -1006,7 +1006,17 @@ as consumed versus remaining or calculate a credit delta without dashboard meani
   access to multi findings/code. No independent development reviewers in this arm.
 - Acceptance: common tests/styles pass and iterations recorded; same correction
   policy and model, usage recorded only from actual user readings/runtime evidence.
-- Completed: No. Do not start automatically after the first arm.
+- Completed: No. Owner supplied updated starting readings session 28%, weekly42%;
+  dispatched fresh no-history Luna single agent at 2026-10-19 19:05:24 UTC from
+  unchanged f5ec63b in tools/benchmark/singleagent-soc-search. No multi findings/code
+  supplied. Root orchestration only; no independent development review for this arm.
+  Initial stable submission observed 19:09:55 UTC:271seconds (4m31s), 149 focused
+  tests and both styles pass, XML independently inspected; fixed testblob unchanged.
+  Worker-reported interval19:05:58–19:09:37UTC:219seconds. Initial self-check2compile
+  diagnostics,1promptliteral testfailure,9styleviolations; fixed before submission.
+  Final productionblob02d08dceeddd7113796e7da6e54e07df07c82965. No review fixes.
+  Await ending readings before common evaluation or correction; single self-test
+  success is not independent contract/security acceptance.
 
 ### SOC-RESULTS — Score and consolidate once
 
@@ -1018,10 +1028,152 @@ as consumed versus remaining or calculate a credit delta without dashboard meani
   only when dashboard semantics are known, interventions/findings and limitations.
 - Acceptance: reproducible commits/checks, transparent costs and test limitations;
   do not claim provider quota compliance, live quality or general workflow advantage.
-- Completed: No. No push, deployment or seller merge is included.
+- Completed: Yes — 2026-10-20. Both initial candidates, fixed hashes, focused/style
+  reports,100 common security cases, source findings and manual credit observations
+  consolidated below and in benchmark-results.csv. Shared encoding oracle conflict
+  is unscorable; attributable counts4/1. Broad regressions were interrupted after
+  approximately14minutes, not passed; standalone packaging passes on both. Neither
+  implementation accepted and no correction performed. No push/deployment/merge.
 
 Common frozen source hashes (Git blobs): SocSearchClientTest
 `b67b9e8f24eef1067b8caa22bf039c2ff6f7b830`; ControlledHttpsServer
 `f17ee62da31262a0217af84c7faa43aea4817916`. Both arms will inherit these unchanged.
 Shared setup is complete; multi measured implementation awaits fresh credit/ready
 signal. Original 46% is preliminary, not the measured baseline. No live SoC call.
+
+### SOC-MULTI initial result and manual usage readings
+
+Candidate saved as a47df937694c854b25641b8df383c918a907c4a7. Measured workflow
+398 seconds; first candidate observed at 322 seconds, remaining review/orchestration
+76 seconds. Final 149 tests and both styles pass, but both independent reviewers
+confirm two contract defects: body work survives timeout/close after headers, and
+body network errors map to INVALID_RESPONSE. Initial review acceptance therefore
+fails. No post-review edits; correction count 0/1. These results remain part of the
+case study even if a later correction is approved.
+
+Owner manual readings: 5-hour session 36% to 30%; weekly 43% to 42%. Observed
+decreases are 6 and 1 percentage points respectively. Display direction (remaining
+or used) was not explicitly confirmed; no absolute credit/token conversion or
+fine-grained cost claim. Dashboard rounding, lag and coordinator wrap-up can affect
+the deltas. Common setup (earlier preliminary 46%) is excluded. Single has not run.
+Recommend initial single run before correcting either candidate; await separate
+user ready signal, using 30%/42% only if still current at that checkpoint.
+
+Single starting checkpoint supersedes 30%/42%: owner reported 28%/42% and the run
+started. Between-window dashboard change is session30% to28%, weekly42% unchanged;
+record separately rather than attributing it to either measured arm. Dashboard lag
+and coordinator wrap-up can contribute; no causal allocation to specific actions.
+
+## SoC connection paired benchmark — initial results, 2026-10-20
+
+The owner explicitly revised multi's ending reading from30%/42% to28%/42% after
+single finished, judging the latter more accurate. Use that selected endpoint below;
+retain the original snapshot above. It incorporates the previously separate30-to28
+session interval into multi's manual usage window, without changing its398-second
+workflow clock. Single ending is25%/41%. These are raw dashboard observations, not
+exact tokens or credits; remaining/used wording and dashboard lag were not verified.
+
+| Metric | Multi-agent | Single-agent |
+| --- | --- | --- |
+| Branch | multiagent-soc-search | singleagent-soc-search |
+| Initial candidate | a47df937694c854b25641b8df383c918a907c4a7 | 560ffcb73516e51e030d204f8104a651028ba4e1 |
+| Same common starting checkpoint | f5ec63b99fbb81148cd3ad3206e2508df9974a90 | f5ec63b99fbb81148cd3ad3206e2508df9974a90 |
+| Focused acceptance/validator tests |149/149 |149/149 |
+| Separately executed frozen security-tag subset |100/100 |100/100 |
+| Main/test Checkstyle |Pass |Pass |
+| Observed initial workflow time |398s (6m38s) |271s (4m31s) |
+| Development specialists |3 plus coordinator |1 |
+| User development interventions during run |0 |0 |
+| Initial compile diagnostics |Not reported |2 |
+| Initial test failures before self-fix |1 close-order case |1 literal-input case |
+| Initial Checkstyle violations before self-fix |79 |9 |
+| Post-review correction passes |0 |0 |
+| Common source-contract acceptance |FAIL |FAIL |
+| Attributable common source findings |4 |1 |
+| Shared test/spec-conflicted criterion |1 unscored |1 unscored |
+| 5-hour dashboard start to selected end |36% to28% |28% to25% |
+| Observed session percentage-point decrease |8 |3 |
+| Weekly dashboard start to end |43% to42% |42% to41% |
+| Observed weekly percentage-point decrease |1 |1 |
+| Exact tokens / credits |N/A |N/A |
+
+### Common findings, with both initial candidates unchanged
+
+Common evaluator independently inspected both candidates against AI-T2-C1 without
+the earlier review findings. Source inspection, not new execution, established:
+
+- Multi: request prompt invents category TOYS and omits existing SPORTS (client
+  lines36–41); body read I/O errors become INVALID_RESPONSE instead of NETWORK
+  (157–161); after headers, body reader/stream is not canceled by timeout or close
+  (133–163,320–325); only first Content-Encoding value is checked, permitting an
+  unsupported additional value (292–295).
+- Single: a short valid deadline can finish before sendAsync dispatch, while the
+  HTTP future is still null, allowing a request to start after timeout (140–150).
+- The deadline race is a source-inferred possible ordering, not experimentally
+  reproduced. Finding counts do not imply equal severity.
+- Multi's in-window final reviewers found the body cancellation and error-mapping
+  defects (2 of its4 attributable findings), stopping acceptance despite green tests. Other findings and
+  all single findings came from the common post-run assessment. No code was fixed
+  following any review, and no common tests were weakened or changed mid-run.
+
+Shared encoding criterion is UNSCORABLE: both concatenate buyer text into input
+rather than the specified inner JSON encoding (multi107–109, single123–125), but
+SocSearchClientTest216–225 requires the raw hostile buyer string to remain a literal
+substring of the parsed input. Quotes/backslashes would be escaped by compliant
+inner encoding, contradicting that assertion. Initial readiness and final reviews
+missed this oracle conflict. Root audit and evaluator clarification exclude it from
+workflow-attributed defect counts (initial provisional5/2 becomes4/1), while
+preserving evidence of both formal deviations. This is a shared setup defect;
+it compromises comparison for that criterion, not proof of a successful injection.
+Single reported its initial test failure on literal preservation, so tests may have
+steered its implementation. Do not blame either arm for satisfying this conflict.
+No tests corrected or benchmark rerun; any correction requires explicit owner plan.
+
+### Verification and interpretation
+
+Coordinator inspected both focused XML reports (73 client +76 validator cases) and
+styles:zero failures/errors/skips/style errors. Frozen SocSearchClientTest blob
+b67b9e8f24eef1067b8caa22bf039c2ff6f7b830 matches both snapshots. Independent common
+tagged execution used the same ignored security-only init script and both class
+filters:58 client +42 validator security cases each, exit0 on both. That100 is a
+subset of149, not100 additional independent tests. Local HTTPS fixture checks prove
+fixture operation, not live SoC interoperability. Exact request-byte edge and
+disconnect mapping remain known test gaps; passing tests do not prove full contract.
+
+Additional `check build shadowJar` runs were interrupted after approximately14minutes
+for both candidates, outside measured windows. No aggregate full regression/build
+pass is claimed. The complete application suite was active in isolated PostgreSQL
+provisioning; this interruption is not an observed assertion failure or proof of
+an application defect. Docker CLI lookup failed earlier, but test-worker diagnostics
+confirmed Testcontainers PostgreSQL reachable. Both owned workers stopped after
+interrupt. Standalone `shadowJar` then passed on both (UP-TO-DATE); both resulting
+JARs contain SocSearchClient, Gson and PostgreSQL driver, with zero org/sqlite entries.
+
+Only one paired run:single was second; dependency/project caches and operational
+process reminders were not perfectly matched. Coordinator prompted multi to finish
+style work after premature handoffs; single received the same completion policy in
+its initial briefing. Neither received the other arm's code or defect-specific hints.
+Common setup, readiness, post-run evaluation and result bookkeeping are separate
+from measured development time. Revised multi manual credits include extra wrap-up;
+display rounding/lag prevents exact usage ratios or a general cost claim. One
+independent common evaluator is shared scoring, not a single-arm development reviewer.
+Separate worktrees share a filesystem; instruction isolation is not a security sandbox.
+
+This case observed a shorter initial single run and a smaller selected session
+percentage drop. Multi's extra reviews exposed defects before acceptance, but did
+not fix them or produce an accepted candidate. Both workflows missed contract
+requirements; neither runtime feature is ready to use. No live SoC calls, hosted
+database tests, deployment, seller-branch reconciliation or correction pass occurred.
+Machine-readable observations are in workflow/benchmark-results.csv.
+
+Benchmark results are complete; SOC-MULTI/SOC-SINGLE remain unaccepted implementation
+tasks because of confirmed contract defects. No automatic correction or rerun is
+authorised. Any next repair must address the shared oracle conflict explicitly and
+preserve these initial snapshots/results. Full marketplace regression remains an
+uncompleted verification gate for actual feature acceptance.
+
+Post-run common evaluation and result preparation were observed from19:11:28 to
+19:29:58UTC (20October03:11:28–03:29:58SGT),18m30s, including the interrupted broad
+regressions. This shared overhead is separate from both development windows; its
+credit delta and total pre-run preparation time were not measured. Final result
+commit bookkeeping follows that endpoint.
