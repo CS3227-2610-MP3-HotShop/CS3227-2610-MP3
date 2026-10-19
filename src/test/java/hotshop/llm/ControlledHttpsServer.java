@@ -15,6 +15,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -29,7 +32,8 @@ final class ControlledHttpsServer implements AutoCloseable {
     private final HttpsServer server;
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     private final BlockingQueue<Request> requests = new LinkedBlockingQueue<>();
-    private volatile Response response = new Response(200, "application/json", new byte[0]);
+    private final AtomicInteger requestCount = new AtomicInteger();
+    private volatile Response response = new Response(200, "application/json", new byte[0], Map.of(), false);
 
     ControlledHttpsServer() throws GeneralSecurityException, IOException {
         KeyStore keys = KeyStore.getInstance("PKCS12");
@@ -47,12 +51,14 @@ final class ControlledHttpsServer implements AutoCloseable {
             try (exchange) {
                 // Synthetic fixture inputs only. Bound capture independently of future client limits.
                 byte[] body = exchange.getRequestBody().readNBytes(8193);
+                requestCount.incrementAndGet();
                 requests.add(new Request(exchange.getRequestMethod(), exchange.getRequestURI(),
                         exchange.getRequestHeaders().getFirst("Authorization"),
-                        new String(body, StandardCharsets.UTF_8)));
+                        new String(body, StandardCharsets.UTF_8), Map.copyOf(exchange.getRequestHeaders())));
                 Response current = response;
                 exchange.getResponseHeaders().set("Content-Type", current.contentType());
-                exchange.sendResponseHeaders(current.status(), current.body().length);
+                current.headers().forEach((name, value) -> exchange.getResponseHeaders().set(name, value));
+                exchange.sendResponseHeaders(current.status(), current.chunked() ? 0 : current.body().length);
                 exchange.getResponseBody().write(current.body());
             }
         });
@@ -64,7 +70,16 @@ final class ControlledHttpsServer implements AutoCloseable {
     }
 
     void respond(int status, String contentType, String body) {
-        response = new Response(status, contentType, body.getBytes(StandardCharsets.UTF_8));
+        response = new Response(status, contentType, body.getBytes(StandardCharsets.UTF_8), Map.of(), false);
+    }
+
+    void redirect(URI destination) {
+        response = new Response(302, "application/json", new byte[0],
+                Map.of("Location", destination.toString()), false);
+    }
+
+    void respondChunked(String body) {
+        response = new Response(200, "application/json", body.getBytes(StandardCharsets.UTF_8), Map.of(), true);
     }
 
     Request takeRequest() throws InterruptedException {
@@ -73,6 +88,10 @@ final class ControlledHttpsServer implements AutoCloseable {
             throw new AssertionError("Expected a captured loopback HTTPS request");
         }
         return request;
+    }
+
+    int requestCount() {
+        return requestCount.get();
     }
 
     HttpClient trustedClient() throws GeneralSecurityException, IOException {
@@ -103,9 +122,9 @@ final class ControlledHttpsServer implements AutoCloseable {
         return stream;
     }
 
-    record Request(String method, URI uri, String authorization, String body) {
+    record Request(String method, URI uri, String authorization, String body, Map<String, List<String>> headers) {
     }
 
-    private record Response(int status, String contentType, byte[] body) {
+    private record Response(int status, String contentType, byte[] body, Map<String, String> headers, boolean chunked) {
     }
 }
