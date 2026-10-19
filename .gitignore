@@ -19,3 +19,4 @@ _site/
 _markbind/logs/
 tools/
 node_modules/
+.env
