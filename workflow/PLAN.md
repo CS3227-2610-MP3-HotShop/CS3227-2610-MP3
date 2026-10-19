@@ -730,3 +730,23 @@ The owner lifted the pause. Existing implementer is executing PG004/PG005/PG007 
 
 
 Associated PG007 documentation ownership includes linked docs/userGuide/GettingStarted.md, docs/developerGuide/DevelopmentWorkflow.md and docs/developerGuide/ArchitectureOverview.md for precise PostgreSQL setup/reset/architecture corrections. Historical diagrams need not be regenerated; scope remains the database conversion.
+
+## AI search benchmark — BENCH-P1, 2026-10-20
+
+Owner requested immediate sequential two-branch execution, multiagent-search first,
+singleagent-search second. Source:AI-P1/AI-T1 appended to product/technical specs.
+Human approver:repository owner. New batch AI-SEARCH-BENCH (not PG-CONVERSION).
+No deployment/push requested. Deadline:21October2026,14:00Asia/Singapore.
+
+| Task | Dependency | Ownership and deliverable | Acceptance | Completed |
+| --- | --- | --- | --- | --- |
+| BENCH-SETUP | None | Independent Luna common-setup author owns validator declaration stub and fixed AiSearchProposalValidatorTest; root owns specs/Git/checkpoint. | Runnable79-case behavioral red at stub; both styles passed;45 security-tagged cases; common checkpoint being frozen. | Yes2026-10-20 |
+| BENCH-MULTI | BENCH-SETUP | Luna implementer owns validator only; coordinator plus final Luna specification/security reviewers. | Submitted candidate, unchanged-test/style results and review findings recorded, measured elapsed. | No |
+| BENCH-SINGLE | BENCH-SETUP; after BENCH-MULTI for scheduling only | Fresh Luna implementer owns validator only in isolated singleagent-search worktree. No multi-arm findings supplied. | Submitted candidate and same checks, no test/spec changes, measured elapsed. | No |
+| BENCH-RESULTS | BENCH-MULTI,BENCH-SINGLE | Coordinator evaluates fixed reports/hashes, consolidates one result table here. | Honest counts/times/interventions/corrections; usage N/A where not exposed; limitations stated. | No |
+
+Mandatory protocol and exact acceptance partitions are in AI-P1/AI-T1. Fixed tests
+are common evaluation setup, not a benefit credited to either workflow. Record
+preparation separately, same implementation model, sequential order/cache effects.
+Worker reports are concise messages; no interaction/task Markdown files. Broader AI
+integration remains pending and is not a prerequisite for this early benchmark.

@@ -544,3 +544,7 @@ do not recreate task logs or read removed historical paths by default.
 The PostgreSQL/workflow changes are prepared for the owner-requested
 postgres-migration branch. Local .env.local files are ignored and must not be
 published; supply database credentials through the process/server environment.
+
+### Buyer AI-search benchmark
+
+The owner authorised an early contract/validator comparison on multiagent-search and singleagent-search. AI-P1/AI-T1 and BENCH-P1 are appended to the existing workflow documents. This pure Java boundary accepts decoded proposal maps and returns existing ListingSearch criteria; no provider/database/UI integration or new dependency is part of this slice. Both arms use identical frozen tests, starting code and Luna implementation model. Record actual correctness/security results, timings, interventions and usage only where exposed; preparation is separate and one paired run is a limited case study.

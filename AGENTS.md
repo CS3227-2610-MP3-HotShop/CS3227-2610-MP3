@@ -607,3 +607,5 @@ Old standalone interaction logs, full handoff histories and archive were deleted
 the owner's explicit request2026-10-20. Historical filenames in completed plan entries
 are provenance references, not files to restore/read. Use the current short handoff
 and consolidated feature summary. Public CA certificate stays outside the repo.
+
+Active AI-search benchmark: see AI-P1/AI-T1 and BENCH-P1 in existing workflow specs/plan. Owner authorised sequential multiagent-search then singleagent-search from one frozen contract/test checkpoint. Runtime SoC/UI remains separate. Fixed tests/specs are read-only to measured implementation agents; do not share arm-specific results. Workers return messages, no Markdown logs.

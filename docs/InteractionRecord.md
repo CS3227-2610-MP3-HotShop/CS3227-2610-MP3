@@ -1,5 +1,15 @@
 # Current project handoff
 
+## Active benchmark — AI search contract and validator
+
+Owner authorised immediate sequential multiagent-search then singleagent-search on
+2026-10-20. multiagent-search was created from aac5548 before contract edits.
+AI-P1/AI-T1 and BENCH-P1 are in existing workflow specs/plan. Independent common
+setup is writing the fixed evaluation suite and behavior-free stub; measured arms
+have not started. Same frozen checkpoint/tests and Luna implementation model for
+both; no SoC/database/UI calls. Deadline:21October2026,14:00Singapore. Workers
+return messages only; results will be consolidated once, not per-agent logs.
+
 ## PostgreSQL conversion — accepted locally, 2026-10-20
 
 Workspace E:/CS3227-2610-MP3; branch postgres-migration, based on f15b076 plus reviewed
