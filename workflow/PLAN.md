@@ -983,7 +983,18 @@ as consumed versus remaining or calculate a credit delta without dashboard meani
 - Acceptance: frozen common tests and styles pass; final findings recorded. One
   explicitly approved post-review correction cycle maximum; preserve any failed
   initial candidate/metrics rather than silently rerunning or resetting the clock.
-- Completed: No. Do not dispatch before fresh manual baseline/ready signal.
+- Completed: No. Dispatched 2026-10-20, clock start 2026-10-19 18:56:00 UTC;
+  owner starting raw readings session 36%, weekly 43%. Meaning used/remaining not
+  explicitly stated. Common source checkpoint f5ec63b, fresh Luna implementer.
+  Focused client+validator tests/styles in measured window; broader database/build
+  evaluator checks outside both arms. Initial measured review end 19:02:38 UTC,
+  398 seconds from dispatch. First candidate observed 19:01:22 (322 seconds).
+  Final 149 focused tests and both styles pass, fixed oracle unchanged. Initial
+  self-check: 1 close-order failure and 79 style violations, fixed before submission.
+  Both final reviewers confirm body read is not canceled/closed after headers on
+  timeout/close, and body I/O disconnect maps INVALID_RESPONSE instead of NETWORK.
+  Acceptance failed despite tests passing. No correction authorised or performed;
+  cycle 0/1. Stop for ending readings before single-arm dispatch or any fixes.
 
 ### SOC-SINGLE — Implement the same slice with one agent
 

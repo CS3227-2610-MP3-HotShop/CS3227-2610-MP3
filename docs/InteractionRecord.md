@@ -1,5 +1,32 @@
 # Current project handoff
 
+## Multi initial candidate finished — awaiting ending credit readings
+
+SOC-MULTI initial measured window: 18:56:00–19:02:38 UTC, 398 seconds (6m38s).
+Start readings: session 36%, weekly 43%; ending readings pending. Candidate observed
+19:01:22 UTC; 149 tests and styles pass, fixed test unchanged. Production Gitblob
+a04e280c53a20f13b2d5b0e0f58cf815edb41c2d. Both final reviewers confirmed body-work
+cancellation/stream lifecycle defect and incorrect NETWORK error mapping on body
+disconnect. Review acceptance FAIL; no corrections started, 0/1. Preserve candidate.
+Next: user ending readings, then agree how to score any optional correction pass;
+single-agent branch remains untouched at f5ec63b, no findings shared to that arm.
+Candidate commit/result bookkeeping after review clock is outside timed workflow;
+manual ending reading can include this small coordinator wrap-up. No live SoC call.
+
+## Measured multi-agent run active — 2026-10-20
+
+Owner supplied starting raw dashboard readings: 5-hour session 36%, weekly 43%.
+Whether percentages are used or remaining is not explicitly stated. SOC-MULTI
+dispatched from common commit f5ec63b99fbb81148cd3ad3206e2508df9974a90 on
+multiagent-soc-search; clock-tool start 2026-10-19 18:56:00 UTC (20 October 02:56 SGT).
+Fresh no-history Luna implementer soc_multi_implementation owns production client
+only; tests/specs/build read-only. End-of-candidate spec/security reviews follow.
+Focused 73 client cases plus 76 validator cases and styles are measured checks;
+broader PostgreSQL/build evaluation follows outside both credit windows. Docker
+was not found via PATH or standard installed path in preliminary check; do not
+disable database tests or claim full regression success. No live SoC calls.
+Stop after multi reviews for ending readings; single run needs its own checkpoint.
+
 ## Immediate next step — larger benchmark common setup ready
 
 Branch multiagent-soc-search. SOC-SETUP/SOC-READY completed: 73 cases, 71 expected
