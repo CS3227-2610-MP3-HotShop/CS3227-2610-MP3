@@ -37,6 +37,34 @@ The main objectives of this guide are to:
 Proposed features and enhancements are documented separately in
 [Future Work](developerGuide/FutureWork.html).
 
+### Project Deployment Process
+
+This application uses [JPro](https://www.jpro.one) to run existing Java and JavaFX files in a browser.
+
+For local manual testing purposes, run the following command to start JPro on your local machine:
+```
+./gradlew jproRun
+```
+The app should start at `localhost:8080`
+
+Once everything is verified to be working properly, create the JPro distribution `.zip` file with the following command:
+```
+./gradlew jproRelease
+```
+The resultant `.zip` file will be located under `/build/distributions/`
+
+For deployment onto [Render](https://render.com), a Docker Image is required. Follow the steps to create the image:
+
+1. Install [Docker Desktop](https://docs.docker.com/desktop/) for your operating system.
+2. Run the following command in the project root directory:
+```
+docker build -t <image-name> .
+```
+3. Once the build has completed, test that it works by using the following command:
+```
+docker run -p 8080:8080 <image-name>
+```
+
 ### Development verification
 
 The full test suite takes more than ten minutes on a typical laptop, mostly
