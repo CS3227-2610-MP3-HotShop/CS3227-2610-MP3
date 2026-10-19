@@ -1,5 +1,16 @@
 # Coordinator
 
+> Reporting override (2026-10-20): AGENTS.md "Minimal workflow records" supersedes
+> logging duties below. Subagents return concise messages and write no reporting
+> Markdown; coordinator consolidates existing records after final review passes.
+
+> Current owner override (2026-10-19): follow the "Owner-approved delivery workflow"
+> in [the common contract](../AgentSpecifications.md). One implementer owns production
+> and tests for the approved batch; reviews happen only on the completed candidate.
+> Earlier tester-ownership, intermediate-review and failed-initial-development-loop
+> restrictions below are superseded where they conflict. Final findings share one
+> explicitly approved correction pass. No extra budget or execution resumption granted.
+
 Version: 0.5, 2026-10-15 (SGT)
 
 Status: coordinator is the main chat, not a separate custom agent. Four worker types launched in the user-supplied smoke-test report; generic-dispatch behaviour was exercised as documented in docs/agents/WorkflowExercise.md; native loading after instruction edits and unexercised paths remain unverified.
@@ -31,7 +42,7 @@ Record missing information instead of inventing values. An unresolved input bloc
 2. Delegate each eligible task with its objective, relevant specification references, allowed files/actions, acceptance criteria, and required evidence.
 3. On receiving a result, inspect its reported status and evidence. A claim of completion without acceptance evidence does not release dependent tasks.
 4. Arrange review of a stable implementation snapshot using the agreed reviewer roles. Collect their reports before assigning changes to that snapshot.
-5. For failed loops requiring test or code changes, draft the change plan below and wait for user approval before delegating edits, even when they remain within approved requirements. Respect the two-cycle limit.
+5. For failed loops requiring test or code changes, draft the change plan below and wait for user approval before delegating edits, even when they remain within approved requirements. Respect the one-cycle limit.
 6. Advance to the next eligible approved task without asking for repeated permission. Ask before expanding scope, adding an outside prerequisite, or changing requirements.
 
 Choose parallel work only where task dependencies and workspace ownership allow it. Avoid assigning overlapping edits or allowing reviews to inspect a moving implementation.
@@ -87,11 +98,11 @@ If evidence is missing, identify the gap explicitly. Evidence gathering may be d
 
 ## Correction-cycle limit
 
-Allow **two fix-and-review cycles after the initial review** before asking for direction on unresolved findings. The initial review does not consume a correction cycle. One cycle consists of a delegated set of fixes and a review of the resulting snapshot; multiple findings in that set do not each count as a separate cycle.
+Allow **one fix-and-review cycle after the initial review** before asking for direction on unresolved findings. The initial review does not consume a correction cycle. One cycle consists of a delegated set of fixes and a review of the resulting snapshot; multiple findings in that set do not each count as a separate cycle.
 
-Track the count for the reviewed task or implementation batch and carry it across agent restarts. Do not reset it by replacing a worker or renaming the same work. After cycle two, pause unresolved affected work, present the findings and attempted fixes, and ask the user how to proceed. Continue independent eligible work.
+Track the count for the reviewed task or implementation batch and carry it across agent restarts. Do not reset it by replacing a worker or renaming the same work. After cycle one, pause unresolved affected work, present the findings and attempted fixes, and ask the user how to proceed. Continue independent eligible work.
 
-This is one shared budget for production fixes, testing-subagent corrections, and coverage/review verification across both pre-implementation and post-implementation checkpoints. Correction cycles used at the first checkpoint remain consumed at the second; the initial scheduled assessment at either checkpoint is not itself a correction cycle. Do not allocate separate two-cycle loops to each agent. Record test reinvocations under the same task/batch and cycle; initial test writing is part of the initial TDD pass.
+This is one shared budget for production fixes, testing-subagent corrections, and coverage/review verification across both pre-implementation and post-implementation checkpoints. Correction cycles used at the first checkpoint remain consumed at the second; the initial scheduled assessment at either checkpoint is not itself a correction cycle. Do not allocate separate one-cycle loops to each agent. Record test reinvocations under the same task/batch and cycle; initial test writing is part of the initial TDD pass.
 
 Reviewer disagreements go to the user immediately; they do not wait for the cycle limit. Each failed loop requiring code/test changes requires its own approved change plan before edits, including in-scope corrections.
 

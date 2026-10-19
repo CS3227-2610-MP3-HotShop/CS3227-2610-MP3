@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.DriverManager;
 import java.util.UUID;
 import java.util.concurrent.CompletionException;
 
@@ -18,8 +17,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import hotshop.ApplicationRuntime;
+import hotshop.support.PostgresTestSupport;
 
-class ProfileImageTest {
+class ProfileImageTest extends PostgresTestSupport {
     @TempDir
     Path directory;
 
@@ -27,16 +27,12 @@ class ProfileImageTest {
     void replaceProfileImage_databaseFailure_preservesPreviousImageAndCleansImport() throws Exception {
         Path source = image();
         Path data = directory.resolve("data");
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(data)) {
+        try (ApplicationRuntime runtime = openTestRuntime(data)) {
             var accounts = runtime.getAccounts();
             accounts.register("alice", "Sample1!", "Alice").join();
             accounts.login("alice", "Sample1!").join();
             String original = accounts.replaceProfileImage(source).join().getProfileImage().orElseThrow();
-            try (var connection = DriverManager.getConnection("jdbc:sqlite:" + data.resolve("marketplace.db"));
-                    var statement = connection.createStatement()) {
-                statement.execute("CREATE TRIGGER fail_profile BEFORE UPDATE ON users "
-                        + "BEGIN SELECT RAISE(ABORT, 'simulated failure'); END");
-            }
+            failWrites("users", "UPDATE");
             assertFailure(ServiceException.Code.STORAGE, () -> accounts.replaceProfileImage(source).join());
             assertEquals(original, accounts.getOwnProfile().join().getProfileImage().orElseThrow());
             try (var files = Files.list(data.resolve("images/profiles"))) {
@@ -51,7 +47,7 @@ class ProfileImageTest {
         Path source = image();
         Path data = directory.resolve("data");
         Path blocked;
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(data)) {
+        try (ApplicationRuntime runtime = openTestRuntime(data)) {
             var accounts = runtime.getAccounts();
             accounts.register("alice", "Sample1!", "Alice").join();
             accounts.login("alice", "Sample1!").join();
@@ -64,7 +60,7 @@ class ProfileImageTest {
         }
         Files.delete(blocked);
         Files.copy(source, blocked);
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(data)) {
+        try (ApplicationRuntime runtime = openTestRuntime(data)) {
             runtime.getAccounts().login("alice", "Sample1!").join();
             assertTrue(runtime.getAccounts().getOwnProfile().join().getProfileImage().isEmpty());
             assertFalse(Files.exists(blocked));
@@ -76,7 +72,7 @@ class ProfileImageTest {
         Path source = image();
         Path data = directory.resolve("data");
         String saved;
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(data)) {
+        try (ApplicationRuntime runtime = openTestRuntime(data)) {
             var accounts = runtime.getAccounts();
             accounts.register("alice", "Sample1!", "Alice").join();
             accounts.login("alice", "Sample1!").join();
@@ -86,7 +82,7 @@ class ProfileImageTest {
         Files.copy(source, orphan);
         Path unrelated = data.resolve("images/profiles/notes.txt");
         Files.writeString(unrelated, "preserve");
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(data)) {
+        try (ApplicationRuntime runtime = openTestRuntime(data)) {
             assertFalse(Files.exists(orphan));
             assertTrue(Files.exists(unrelated));
             assertTrue(Files.exists(data.resolve("images/profiles").resolve(saved)));
@@ -99,7 +95,7 @@ class ProfileImageTest {
     void replaceProfileImage_invalidImage_preservesExistingProfile() throws Exception {
         Path source = image();
         Path data = directory.resolve("data");
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(data)) {
+        try (ApplicationRuntime runtime = openTestRuntime(data)) {
             var accounts = runtime.getAccounts();
             accounts.register("alice", "Sample1!", "Alice").join();
             accounts.login("alice", "Sample1!").join();
@@ -112,7 +108,7 @@ class ProfileImageTest {
 
     @Test
     void imageOperations_loggedOut_rejectBeforeAccessingFiles() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory.resolve("data"))) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory.resolve("data"))) {
             assertFailure(ServiceException.Code.SESSION,
                     () -> runtime.getAccounts().replaceProfileImage(directory.resolve("missing.png")).join());
             assertFailure(ServiceException.Code.SESSION, () -> runtime.getAccounts().removeProfileImage().join());
@@ -136,7 +132,7 @@ class ProfileImageTest {
         ImageIO.write(new BufferedImage(512, 512, BufferedImage.TYPE_INT_RGB), "png", source.toFile());
         Path data = directory.resolve("data");
         String replacement;
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(data)) {
+        try (ApplicationRuntime runtime = openTestRuntime(data)) {
             var accounts = runtime.getAccounts();
             accounts.register("alice", "Sample1!", "Alice").join();
             accounts.login("alice", "Sample1!").join();
@@ -146,7 +142,7 @@ class ProfileImageTest {
             assertTrue(Files.exists(data.resolve("images/profiles").resolve(replacement)));
             assertTrue(Files.exists(source));
         }
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(data)) {
+        try (ApplicationRuntime runtime = openTestRuntime(data)) {
             var accounts = runtime.getAccounts();
             accounts.login("alice", "Sample1!").join();
             assertEquals(replacement, accounts.getOwnProfile().join().getProfileImage().orElseThrow());

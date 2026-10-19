@@ -12,6 +12,7 @@ import java.time.Clock;
 import java.util.concurrent.CompletionException;
 
 import hotshop.database.Database;
+import hotshop.database.DatabaseConfig;
 import hotshop.repository.ChatRepository;
 import hotshop.repository.ListingRepository;
 import hotshop.repository.MeetupRepository;
@@ -166,6 +167,21 @@ public final class ApplicationRuntime implements AutoCloseable {
      * @throws SQLException if database access fails
      */
     public static ApplicationRuntime open(Path directory, Clock clock) throws IOException, SQLException {
+        return open(directory, clock, DatabaseConfig.fromEnvironment(System.getenv()));
+    }
+
+    /**
+     * Opens a runtime against an explicitly configured, already provisioned PostgreSQL database.
+     *
+     * @param directory the local image storage and lock directory
+     * @param clock the application event clock
+     * @param config the PostgreSQL connection configuration
+     * @return the runtime, which the caller must close
+     * @throws IOException if filesystem initialization fails or the directory is locked
+     * @throws SQLException if connectivity or schema validation fails
+     */
+    public static ApplicationRuntime open(Path directory, Clock clock, DatabaseConfig config)
+            throws IOException, SQLException {
         Files.createDirectories(directory);
         FileChannel channel = FileChannel.open(directory.resolve("application.lock"),
                 StandardOpenOption.CREATE, StandardOpenOption.WRITE);
@@ -179,8 +195,13 @@ public final class ApplicationRuntime implements AutoCloseable {
             if (lock == null) {
                 throw new IOException("HotShop is already using this data directory");
             }
-            Database database = new Database(directory.resolve("marketplace.db"));
-            database.migrate();
+            Database database = new Database(config);
+            try {
+                database.validateSchema();
+            } catch (SQLException failure) {
+                throw new SQLException("Database unavailable or not provisioned; check configuration and run "
+                        + "migrateDatabase", failure.getSQLState());
+            }
             ImageStorage profileImages = new ImageStorage(directory.resolve("images/profiles"));
             ImageStorage listingImages = new ImageStorage(directory.resolve("images/listings"));
             ApplicationRuntime runtime = new ApplicationRuntime(channel, lock, database, profileImages,

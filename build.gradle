@@ -39,10 +39,12 @@ application {
 }
 
 dependencies {
-    implementation 'org.xerial:sqlite-jdbc:3.53.4.0'
+    implementation 'org.postgresql:postgresql:42.7.14'
     implementation 'one.jpro:jpro-webapi:2026.3.1'
     testImplementation platform('org.junit:junit-bom:5.13.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.testcontainers:testcontainers-postgresql:2.0.5'
+    testImplementation 'org.testcontainers:testcontainers-junit-jupiter:2.0.5'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
@@ -54,6 +56,14 @@ jpro {
 tasks.named('test') {
     useJUnitPlatform()
     jvmArgs '--enable-native-access=ALL-UNNAMED'
+}
+
+tasks.register('migrateDatabase', JavaExec) {
+    group = 'application'
+    description = 'Creates or upgrades the PostgreSQL schema using operator environment settings.'
+    dependsOn tasks.named('classes')
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'hotshop.database.DatabaseProvisioning'
 }
 
 checkstyle {

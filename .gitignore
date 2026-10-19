@@ -17,5 +17,6 @@ bin/
 node_modules/
 _site/
 _markbind/logs/
+.env.local
 tools/
 node_modules/

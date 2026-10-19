@@ -2,7 +2,6 @@ package hotshop.database;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -13,30 +12,44 @@ import java.util.List;
 
 /** Opens configured connections and groups repository work into one transaction. */
 public final class Database {
-    /** Released migrations in order; a migration's version is its one-based position. Append only. */
-    private static final List<String> MIGRATIONS = List.of(
-            "/db/migration/001_accounts.sql",
-            "/db/migration/002_listings.sql",
-            "/db/migration/003_offers.sql",
-            "/db/migration/004_sale_completion.sql",
-            "/db/migration/005_meetups.sql",
-            "/db/migration/006_conversations.sql");
+    private static final List<String> POSTGRES_MIGRATIONS = List.of("/db/postgresql/001_initial.sql");
+    /** Shared across provisioners; transaction-scoped and local to the selected database. */
+    private static final long MIGRATION_LOCK = 1213418823L;
     private final String url;
+    private final DatabaseConfig config;
     private final List<String> migrations;
 
-    /**
-     * Selects an absolute SQLite file; connections are opened only when work is executed.
-     *
-     * @param file the SQLite database file, resolved to an absolute path
-     */
-    public Database(Path file) {
-        this(file, MIGRATIONS);
+    /** Selects PostgreSQL configuration without opening a connection. */
+    public Database(DatabaseConfig config) {
+        this(config, POSTGRES_MIGRATIONS);
     }
 
-    /** Uses the given ordered migration resources instead of the released schema. */
-    Database(Path file, List<String> migrations) {
-        url = "jdbc:sqlite:" + file.toAbsolutePath().normalize();
+    /** Stores the given configuration URL and migration resources without opening a connection. */
+    Database(DatabaseConfig config, List<String> migrations) {
+        url = config.url();
+        this.config = config;
         this.migrations = List.copyOf(migrations);
+    }
+
+    /**
+     * Checks the provisioned schema version without creating or changing any tables.
+     *
+     * @throws SQLException if database access fails
+     */
+    public void validateSchema() throws SQLException {
+        try (Connection connection = openConnection()) {
+            connection.setReadOnly(true);
+            try (Statement statement = connection.createStatement();
+                    var rows = statement.executeQuery("SELECT COALESCE(MAX(version), 0) FROM schema_migrations")) {
+                rows.next();
+                if (rows.getInt(1) != migrations.size()) {
+                    throw new SQLException("Database schema is incompatible; run compatible database provisioning");
+                }
+            } catch (SQLException failure) {
+                throw new SQLException("Database schema is unavailable or incompatible; "
+                        + "run compatible database provisioning", failure.getSQLState());
+            }
+        }
     }
 
     /** Work may pass this connection to any participating repository. */
@@ -61,7 +74,14 @@ public final class Database {
      * @throws SQLException if database access fails
      */
     public <T> T executeTransaction(Work<T> work) throws SQLException {
+        return executeTransaction(work, Connection.TRANSACTION_SERIALIZABLE);
+    }
+
+    private <T> T executeTransaction(Work<T> work, Integer isolation) throws SQLException {
         try (Connection connection = openConnection()) {
+            if (isolation != null) {
+                connection.setTransactionIsolation(isolation);
+            }
             connection.setAutoCommit(false);
             try {
                 T result = work.execute(connection);
@@ -79,20 +99,12 @@ public final class Database {
     }
 
     private Connection openConnection() throws SQLException {
-        Connection connection = DriverManager.getConnection(url);
-        try (Statement statement = connection.createStatement()) {
-            statement.execute("PRAGMA foreign_keys = ON");
-            statement.execute("PRAGMA busy_timeout = 5000");
-            return connection;
-        } catch (SQLException failure) {
-            connection.close();
-            throw failure;
-        }
+        return DriverManager.getConnection(url, config.connectionProperties());
     }
 
     /**
-     * Applies each pending migration in order, one transaction per version, so a failure leaves
-     * the database at the last fully applied version. Never downgrades a newer database.
+     * Applies pending PostgreSQL migrations atomically under a transaction advisory lock.
+     * Never downgrades a newer database.
      *
      * @throws SQLException if database access fails
      * @throws IOException if filesystem access or resource loading fails
@@ -102,13 +114,20 @@ public final class Database {
         for (String resource : migrations) {
             scripts.add(readMigration(resource));
         }
-        int current = executeTransaction(this::readSchemaVersion);
-        if (current > scripts.size()) {
-            throw new SQLException("Database requires a newer HotShop version");
-        }
-        for (int version = current + 1; version <= scripts.size(); version++) {
-            applyMigration(version, scripts.get(version - 1));
-        }
+        executeTransaction(connection -> {
+            try (var lock = connection.prepareStatement("SELECT pg_advisory_xact_lock(?)")) {
+                lock.setLong(1, MIGRATION_LOCK);
+                lock.execute();
+            }
+            int current = readSchemaVersion(connection);
+            if (current > scripts.size()) {
+                throw new SQLException("Database requires a newer HotShop version");
+            }
+            for (int version = current + 1; version <= scripts.size(); version++) {
+                applyMigration(connection, version, scripts.get(version - 1));
+            }
+            return null;
+        }, Connection.TRANSACTION_READ_COMMITTED);
     }
 
     private static String readMigration(String resource) throws IOException {
@@ -131,22 +150,19 @@ public final class Database {
         }
     }
 
-    private void applyMigration(int version, String script) throws SQLException {
-        executeTransaction(connection -> {
-            try (Statement statement = connection.createStatement()) {
-                for (String sql : script.split(";")) {
-                    if (!sql.isBlank()) {
-                        statement.execute(sql);
-                    }
+    private void applyMigration(Connection connection, int version, String script) throws SQLException {
+        try (Statement statement = connection.createStatement()) {
+            for (String sql : script.split(";")) {
+                if (!sql.isBlank()) {
+                    statement.execute(sql);
                 }
             }
-            try (var insert = connection.prepareStatement(
-                    "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)")) {
-                insert.setInt(1, version);
-                insert.setString(2, Instant.now().toString());
-                insert.executeUpdate();
-            }
-            return null;
-        });
+        }
+        try (var insert = connection.prepareStatement(
+                "INSERT INTO schema_migrations(version, applied_at) VALUES (?, ?)")) {
+            insert.setInt(1, version);
+            insert.setString(2, Instant.now().toString());
+            insert.executeUpdate();
+        }
     }
 }

@@ -23,6 +23,24 @@ Then read [Accounts and Interface](userGuide/AccountsAndInterface.html)
 to create an account and find your way around. Use the sidebar to explore each
 topic in detail.
 
+## PostgreSQL setup and persistence
+
+The operator must configure the PostgreSQL connection and run the separate schema
+setup command before launching HotShop; see [Developer Guide](DeveloperGuide.html#postgresql-operator-setup).
+An internet or local network connection to that database is required. Marketplace
+records persist across application restarts. New installations start empty; old SQLite
+files are not imported or reset. Your local data directory holds images and the
+application lock. Keep it available with the same database when restarting.
+
+If startup reports a database setup/connectivity problem, ask the operator to check
+connection settings and run compatible provisioning. A folder/lock error means the
+image folder is unavailable or another instance is using it. Data is not reset to
+recover from either condition. If an operation asks you to retry after a concurrent
+change, refresh the relevant record and submit the action again.
+
+Hosted JPro multi-user sessions and Supabase image storage remain separate integration
+work; this database conversion retains the current single-runtime directory lock.
+
 ## Purpose of this Guide
 
 This guide aims to:

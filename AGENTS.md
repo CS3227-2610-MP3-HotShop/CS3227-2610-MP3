@@ -1,5 +1,20 @@
 # AGENTS.md
 
+## Minimal workflow records — owner approved 2026-10-20
+
+Subagents return concise results in messages; they do not create or maintain task logs,
+interaction summaries, approval records or other reporting Markdown files. Reports
+include changed files, actual check results and unresolved findings, without transcripts.
+The coordinator maintains one short current handoff in docs/InteractionRecord.md.
+Keep approvals in the chat until final review passes, then consolidate decisions,
+approvals and verification into the existing feature summary and decision record once.
+Do not create a separate log per task, agent, discussion or workflow adjustment.
+Required product/setup documentation still changes with behavior. On 2026-10-20
+the owner explicitly requested deletion of old interaction logs and verbose histories;
+retain only the current handoff and consolidated final summary. This rule supersedes older per-agent/per-task logging and
+every-decision documentation requirements in skills, role briefs and templates.
+
+
 This file defines the repository-wide instructions that AI coding agents must follow when working on HotShop.
 
 These instructions apply to all files in this repository unless a more specific instruction file exists for a particular directory.
@@ -7,6 +22,17 @@ These instructions apply to all files in this repository unless a more specific 
 ---
 
 ## Project Overview
+
+Current owner direction: retain JavaFX/JPro, hosted on Render, with Supabase
+PostgreSQL and Supabase Storage. Next.js migration instructions below are
+historical where they conflict with this direction. PostgreSQL replaces SQLite
+in every environment, including local development and tests (approved 2026-10-19).
+See workflow/PRODUCT-SPEC.md for the current database scope and unresolved gates.
+Use the workflow shipped on jpro-docker: .agents/skills, docs/agents role contracts,
+and .github/workflows/gradle.yml. Missing old migration artifacts do not mean the
+retained agent workflow is absent; create task-specific specifications and plans
+through the existing skills rather than restoring abandoned migration scope.
+Never run automated tests against hosted/demo data or read credentials into logs.
 
 HotShop is a Java-based e-commerce application.
 
@@ -389,63 +415,11 @@ Do not disable tests, Checkstyle, or other verification mechanisms merely to mak
 
 ## Logging Agent Interactions
 
-After every agreed decision, update docs/InteractionRecord.md before ending the turn, including discussion-only turns. Record the decision, reason when known, affected scope, and any superseded decision. Maintain a current handoff covering workspace/branch, completed work, unverified work, blockers, and next authorised step. Distinguish proposals from approvals and planned checks from executed checks. Keep personal decisions in their separate external record.
-
-
-Maintain [docs/InteractionRecord.md](docs/InteractionRecord.md) for project decisions and outcomes. Keep personal conversation records and unrelated material outside the repository. For mixed requests, record the project-relevant task summary here and preserve the original conversation separately; this overrides the verbatim-prompt logging requirement for such requests. Preserve the separate project task logs required below.
-At the end of every workflow task performed by the LLM, create a new Markdown file under:
-```
-logs/
-```
-Do not overwrite previous task logs.
-
-Use a descriptive filename that allows logs to be distinguished from one
-another. Prefer:
-```
-YYYY-MM-DD-<short-task-description>.md
-```
-If multiple tasks with the same description occur on the same date, add a numeric suffix.
-
-Each log must contain:
-```
-# Agent Interaction Log
-
-## User Prompt
-
-Record the user's original task prompt.
-
-## Steps Taken
-
-Summarize the significant steps performed by the LLM.
-
-## Reasoning Summary
-
-Explain the engineering rationale behind significant decisions.
-
-Do not include hidden chain-of-thought or private internal reasoning.
-Record concise, user-facing engineering justifications instead.
-
-## Changes Made
-
-List the important files created, modified, or deleted and explain why.
-
-## Verification
-
-Record the commands or checks actually performed and their outcomes.
-
-## Final Output and Conclusion
-
-Summarize the final result, including any unresolved issues.
-
-```
-Logs must accurately reflect what occured.
-
-Do not claim that commands, tests, or manual checks were performed when they were not.
-
-Do not include passwords, tokens, credentials, personal data, or other secrets in logs
-
----
-
+Follow the owner-approved "Minimal workflow records" rule above. Subagents return
+concise results in messages and do not write reporting Markdown. Coordinator keeps
+one current handoff and consolidates approvals/results into existing records after
+final review passes. Do not create per-task or per-agent logs. Old log deletion was explicitly authorised; do not include credentials, secrets, private reasoning or unrelated personal
+material. Product/setup documentation still reflects delivered behavior.
 ## Handling Ambiguity
 When requirements are ambiguous:
 - inspect existing behaviour and documentation for evidence;
@@ -474,7 +448,7 @@ A task is complete only when all applicable conditions below are satisfied:
 - [ ] No credentials or sensitive information were introduced.
 - [ ] No temporary/debugging code remains.
 - [ ]The final diff has been inspected for unrelated changes.
-- [ ]The agent interaction has been recorded under logs/.
+- [ ] Final approvals and evidence are consolidated in existing records after reviews pass.
 - [ ]Any verification that could not be performed is clearly reported.
 
 ---
@@ -502,7 +476,7 @@ docs/agents/AgentSpecifications.md. Assign one writer per shared file at a time.
 The coordinator owns AGENTS.md, workflow documentation, decision records and feature
 SDD summaries; implementers own assigned user/design/setup guide updates.
 The specification reviewer independently checks final feature documentation.
-Each agent supplies its own task log; read-only assignments return content for
+Each agent returns a concise result message; coordinator consolidates existing records for
 authorised consolidation. Feature Done requires the documented checks and evidence.
 
 Only the coordinator updates workflow/PLAN.md completion/progress fields from worker
@@ -533,3 +507,103 @@ docs/agents/triage-labels.md. Preserve concurrent feature-specification work.
 
 Tracking choice agreed 2026-10-17: use GitHub issues and labels; Projects is
 explicitly deferred. Follow docs/agents/issue-tracker.md for stage/flag updates.
+
+## Owner-approved delivery workflow (2026-10-19)
+
+This instruction supersedes earlier role, skill, client-configuration and plan wording
+that requires tester handoffs or independent reviews before implementation.
+
+Assign one implementer the entire approved implementation batch, including production
+code, tests, fixtures, build configuration, associated guides and its task evidence.
+The implementer may write and update tests against the approved requirements; it must
+preserve valid assertions and never weaken checks to obtain a pass. Use test-first
+evidence where practical and run relevant tests/styles during implementation.
+Normal initial implementation includes bringing the approved behavior to green;
+do not route every expected development failure through another agent.
+
+Keep that implementer through the batch. No separate tester or intermediate review
+handoffs by default. Prerequisites are working contracts and evidence, rather than
+acceptance by an intermediate reviewer. Pause for unresolved requirements, scope
+changes or a genuine blocker. Do not invent scope or relabel review corrections
+as initial work.
+
+After implementation, tests, documentation and required checks are complete, submit
+one stable candidate for the final specification/coverage and security reviews.
+Group findings from both into one report and, if needed, one explicitly approved
+correction pass followed by focused re-review. There is one shared correction budget,
+not one per reviewer. Stop and report unresolved findings after that pass.
+The coordinator retains shared records, plan status and final acceptance ownership.
+
+Existing completed entries, historical evidence and exhausted correction budgets
+remain unchanged. This workflow change grants no extra PG-CONVERSION correction cycle.
+The owner resumed PostgreSQL implementation on 2026-10-19; current execution status
+is recorded in workflow/PLAN.md and docs/InteractionRecord.md.
+
+## Retained Java PostgreSQL conversion
+
+The owner approved PG-T1, PG-P1 execution and recorded staged follow-ups; use
+workflow/PLAN.md for eligibility and logs/2026-10-19-feature-pg-conversion-sdd-summary.md
+for the current handoff. Fresh data, no SQLite import; separate schema provisioning,
+no startup migration; disposable local Docker PostgreSQL tests, never hosted test data.
+Use BIGINT for Java long epoch-millisecond timestamps/counters and BYTEA for credentials.
+
+Docker fixtures and narrow configuration/credential-aware connections are verified.
+The TLS query-key fix rejects noncanonical raw sslmode keys; canonical hosted URLs
+require verify-full before connection. Initial PostgreSQL storage engine passes49
+tests and both styles (PG018); PG019/PG020 engine readiness and standalone command
+focused checks are recorded. Consolidated runtime/service/test conversion is accepted locally2026-10-20.
+Final746-case suite, required wrapper checks and specification/security reviews pass; see current
+workflow/PLAN.md and the feature SDD summary rather than historical stage notes.
+Current batch PG-CONVERSION has an explicit owner exception for TLS correction cycle3;
+cycle3/3 is complete and independently verified; PG014 baseline is recorded. The default is now one correction cycle; historical PG-CONVERSION exhaustion is preserved.
+Further unexpected corrective edits require explicit owner direction.
+
+PostgreSQL does not establish JPro multi-user readiness. Preserve directory-lock/image
+recovery protection until separately approved integration supplies per-browser sessions
+and server-owned shared storage with coordinated cleanup. No hosted readiness claim.
+
+## Owner-approved correction limit (2026-10-19)
+
+Use one initial implementation pass and required initial reviews, then at most one
+shared correction pass and re-review per task/batch. Group findings into that pass.
+Corrections still require an explicitly approved plan. If findings remain, stop
+and report them; no further loop without explicit owner direction. Required initial
+readiness, coverage and security checkpoints remain. Avoid repeating unchanged checks.
+This owner instruction supersedes older two-cycle wording in saved skills and client
+configurations. Preserve historical counts: PG-CONVERSION remains exhausted at 3/3.
+Execution was resumed by the owner; no new correction budget is granted.
+
+Owner resumed the approved PostgreSQL batch on 2026-10-19 after adopting consolidated implementation ownership. Current execution status is in workflow/PLAN.md and docs/InteractionRecord.md; earlier pause entries are historical.
+
+
+## Targeted context and handoff rule — owner approved 2026-10-19
+
+Coordinators and workers must read only context needed for the current assignment.
+Search headings/symbols first; read bounded relevant sections or line ranges. Use the
+current handoff plus selected task/acceptance criteria and relevant source/tests.
+Do not reread whole chats, long decision records, historical logs or unrelated specs.
+For new subagents use fork_turns=none and a compact self-contained brief containing
+scope, ownership, current decisions, exact document sections, checks and blockers.
+Reuse an active implementer instead of restarting it merely to remove old context.
+Mandatory instructions still apply: read applicable instructions once, then consult
+only changed/relevant sections. Expand reads only when needed to resolve a concrete
+ambiguity or dependency. Keep current handoffs short and link supporting evidence.
+Already injected app conversation context cannot be selectively removed by agents;
+this rule controls requested history, file/tool reads and future agent handoffs.
+The ongoing approved PostgreSQL batch continues; this is not a pause request.
+
+## Owner model preference — 2026-10-19
+
+Use gpt-6.1-sol for the coordinator and gpt-6-luna for specialist subagents.
+Repository .codex/config.toml sets the main/default specialist preferences; the four
+.codex/agents/hotshop_*.toml roles explicitly select Luna. New specialist launches
+use no full-history inheritance. Do not claim an existing session changed model
+merely because configuration changed; the coordinator model is selected in the app.
+Let an already-running verification finish rather than restart it solely for model
+selection. Final specialist reviews use Luna. Settings persistence is verified by
+file inspection; a new live session's actual model requires runtime confirmation.
+
+Old standalone interaction logs, full handoff histories and archive were deleted at
+the owner's explicit request2026-10-20. Historical filenames in completed plan entries
+are provenance references, not files to restore/read. Use the current short handoff
+and consolidated feature summary. Public CA certificate stays outside the repo.

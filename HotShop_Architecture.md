@@ -1,5 +1,12 @@
 # Campus Marketplace — Application Architecture
 
+> Historical desktop architecture baseline. SQLite storage, offline-only operation,
+> database-file backup/reset and startup-migration guidance below are superseded by
+> the approved retained JavaFX/JPro PostgreSQL conversion. Use
+> [the current technical design](workflow/TECHNICAL-SPEC.md) and
+> [Developer Guide](docs/DeveloperGuide.md) for PostgreSQL setup and current limits.
+> This baseline is retained for source-behavior traceability, not current setup.
+
 ## 1. Project overview
 
 The project is a Java desktop marketplace where buyers and sellers can list items, exchange messages, negotiate through offers, arrange meetups, and complete transactions.

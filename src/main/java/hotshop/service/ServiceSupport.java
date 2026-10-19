@@ -26,7 +26,7 @@ final class ServiceSupport {
     private ServiceSupport() {
     }
 
-    /** SQLite stores milliseconds, so times are truncated to match what a restart restores. */
+    /** Persistence stores milliseconds, so event times match what a restart restores. */
     static Instant now(Clock clock) {
         return clock.instant().truncatedTo(ChronoUnit.MILLIS);
     }
@@ -61,8 +61,17 @@ final class ServiceSupport {
         try {
             return database.executeTransaction(work);
         } catch (SQLException exception) {
-            throw new ServiceException(ServiceException.Code.STORAGE, failureMessage, exception);
+            throw storageFailure(exception, failureMessage);
         }
+    }
+
+    /** Maps retryable database conflicts without replaying callbacks or exposing driver diagnostics. */
+    static ServiceException storageFailure(SQLException failure, String message) {
+        if ("40001".equals(failure.getSQLState()) || "40P01".equals(failure.getSQLState())) {
+            return new ServiceException(ServiceException.Code.STORAGE,
+                    "Another operation changed this data. Please retry your action.");
+        }
+        return new ServiceException(ServiceException.Code.STORAGE, message);
     }
 
     /** Loads the public part of a profile that a saved record refers to. */

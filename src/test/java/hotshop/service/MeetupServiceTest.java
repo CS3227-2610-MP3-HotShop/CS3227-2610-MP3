@@ -21,9 +21,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import hotshop.ApplicationRuntime;
+import hotshop.support.PostgresTestSupport;
 import hotshop.model.MeetupStatus;
 
-class MeetupServiceTest {
+class MeetupServiceTest extends PostgresTestSupport {
     private static final String PASSWORD = "Sample1!";
     private static final Instant START = Instant.parse("2026-09-24T00:00:00Z");
     private static final Instant TOMORROW = START.plus(Duration.ofDays(1));
@@ -658,6 +659,6 @@ class MeetupServiceTest {
     }
 
     private ApplicationRuntime open() throws Exception {
-        return ApplicationRuntime.open(directory, clock);
+        return openTestRuntime(directory, clock);
     }
 }

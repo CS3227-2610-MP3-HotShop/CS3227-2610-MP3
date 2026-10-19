@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
-import java.sql.DriverManager;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
@@ -18,11 +17,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import hotshop.ApplicationRuntime;
+import hotshop.support.PostgresTestSupport;
 import hotshop.model.ListingStatus;
 import hotshop.model.OfferStatus;
 import hotshop.model.TransactionStatus;
 
-class TransactionServiceTest {
+class TransactionServiceTest extends PostgresTestSupport {
     private static final String PASSWORD = "Sample1!";
     private static final Instant START = Instant.parse("2026-09-24T00:00:00Z");
 
@@ -109,8 +109,7 @@ class TransactionServiceTest {
             UUID sale = agreedSale(runtime, "bobby", 4000);
             runtime.getTransactions().confirmCompletion(sale).join();
             loginAs(runtime, "bobby");
-            sql("CREATE TRIGGER fail_listing BEFORE UPDATE ON listings "
-                    + "BEGIN SELECT RAISE(ABORT, 'simulated failure'); END");
+            failWrites("listings", "UPDATE");
             assertFailure(ServiceException.Code.STORAGE,
                     () -> runtime.getTransactions().confirmCompletion(sale).join());
             var purchase = runtime.getTransactions().getMyPurchases().join().get(0);
@@ -149,8 +148,7 @@ class TransactionServiceTest {
     void cancelSale_listingSaveFailure_rollsBackCancellation() throws Exception {
         try (ApplicationRuntime runtime = open()) {
             UUID sale = agreedSale(runtime, "bobby", 4000);
-            sql("CREATE TRIGGER fail_listing BEFORE UPDATE ON listings "
-                    + "BEGIN SELECT RAISE(ABORT, 'simulated failure'); END");
+            failWrites("listings", "UPDATE");
             assertFailure(ServiceException.Code.STORAGE, () -> runtime.getTransactions().cancelSale(sale).join());
             var entry = runtime.getTransactions().getMySales().join().get(0);
             assertEquals(TransactionStatus.ACTIVE, entry.sale().getStatus());
@@ -521,13 +519,13 @@ class TransactionServiceTest {
     }
 
     private void sql(String statement) throws Exception {
-        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + directory.resolve("marketplace.db"));
+        try (var connection = openDatabaseConnection();
                 var sql = connection.createStatement()) {
             sql.execute(statement);
         }
     }
 
     private ApplicationRuntime open() throws Exception {
-        return ApplicationRuntime.open(directory, clock);
+        return openTestRuntime(directory, clock);
     }
 }
