@@ -249,7 +249,7 @@ class AiSearchProposalValidatorTest {
     }
 
     private static List<Object> invalidCategoryValues() {
-        return java.util.Arrays.asList(null, Category.ELECTRONICS, "electronics", " ELECTRONICS", "UNKNOWN", 1);
+        return List.of(Category.ELECTRONICS, "electronics", " ELECTRONICS", "UNKNOWN", 1);
     }
 
     @ParameterizedTest
@@ -260,7 +260,7 @@ class AiSearchProposalValidatorTest {
     }
 
     private static List<Object> invalidSortValues() {
-        return java.util.Arrays.asList(null, ListingSort.NEWEST, "newest", " NEWEST", "UNKNOWN", 1);
+        return List.of(ListingSort.NEWEST, "newest", " NEWEST", "UNKNOWN", 1);
     }
 
     @ParameterizedTest
@@ -293,7 +293,7 @@ class AiSearchProposalValidatorTest {
     }
 
     private static List<Object> invalidTitleValues() {
-        return java.util.Arrays.asList(null, 1, true);
+        return List.of(1, true);
     }
 
     @Test

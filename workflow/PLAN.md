@@ -741,8 +741,8 @@ No deployment/push requested. Deadline:21October2026,14:00Asia/Singapore.
 | Task | Dependency | Ownership and deliverable | Acceptance | Completed |
 | --- | --- | --- | --- | --- |
 | BENCH-SETUP | None | Independent Luna common-setup author owns validator declaration stub and fixed AiSearchProposalValidatorTest; root owns specs/Git/checkpoint. | Runnable79-case behavioral red at stub; both styles passed;45 security-tagged cases; common checkpoint being frozen. | Yes2026-10-20 |
-| BENCH-MULTI | BENCH-SETUP | Luna implementer owns validator only; coordinator plus final Luna specification/security reviewers. | Submitted candidate, unchanged-test/style results and review findings recorded, measured elapsed. | No |
-| BENCH-SINGLE | BENCH-SETUP; after BENCH-MULTI for scheduling only | Fresh Luna implementer owns validator only in isolated singleagent-search worktree. No multi-arm findings supplied. | Submitted candidate and same checks, no test/spec changes, measured elapsed. | No |
+| BENCH-MULTI | BENCH-SETUP-FIX | Luna implementer owns validator only; coordinator plus final Luna specification/security reviewers. | Submitted candidate, unchanged-test/style results and review findings recorded, measured elapsed. | No |
+| BENCH-SINGLE | BENCH-SETUP-FIX; after BENCH-MULTI for scheduling only | Fresh Luna implementer owns validator only in isolated singleagent-search worktree. No multi-arm findings supplied. | Submitted candidate and same checks, no test/spec changes, measured elapsed. | No |
 | BENCH-RESULTS | BENCH-MULTI,BENCH-SINGLE | Coordinator evaluates fixed reports/hashes, consolidates one result table here. | Honest counts/times/interventions/corrections; usage N/A where not exposed; limitations stated. | No |
 
 Mandatory protocol and exact acceptance partitions are in AI-P1/AI-T1. Fixed tests
@@ -750,3 +750,16 @@ are common evaluation setup, not a benefit credited to either workflow. Record
 preparation separately, same implementation model, sequential order/cache effects.
 Worker reports are concise messages; no interaction/task Markdown files. Broader AI
 integration remains pending and is not a prerequisite for this early benchmark.
+
+### BENCH-SETUP-FIX — Approved common-oracle correction
+
+Dependencies:BENCH-SETUP. Status:owner-approved correction1/1 verified; Completed:Yes2026-10-20. All76 cases reach stub red,42 security-tagged; both styles pass.
+Owner:existing common setup author, test file only. Root owns Git/spec/status.
+Failure:e79 pilot76pass3fail because invalid title/category/sort fixtures include
+null, contradicting AI-P1 optional-null defaults and the positive null-default test.
+Proposed edit:remove exactly those3 null fixture rows; keep all remaining assertions.
+Freeze76 common cases (security subset expected42), reset both arms to corrected
+common stub checkpoint, use fresh no-history workers; retain/exclude pilot evidence
+from paired timing. This is shared setup correction1/1, not a production defect.
+Verification:76 behavioral-red cases at stub, compile/styles successful, fixed test
+blob identical on both branches. No SoC/DB/network or new reporting Markdown files.

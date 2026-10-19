@@ -5,8 +5,10 @@
 Owner authorised immediate sequential multiagent-search then singleagent-search on
 2026-10-20. multiagent-search was created from aac5548 before contract edits.
 AI-P1/AI-T1 and BENCH-P1 are in existing workflow specs/plan. Independent common
-setup is writing the fixed evaluation suite and behavior-free stub; measured arms
-have not started. Same frozen checkpoint/tests and Luna implementation model for
+setup froze79 tests at eed486d. Initial multi pilot passed76 but exposed3 conflicting
+null fixtures; contract permits those values. Owner approved shared test correction/restart
+on2026-10-20; correction1/1 is complete:76 meaningful-red cases,42 security-tagged, stylespass. Pilot code preserved in local stash. Pilot is not a valid paired comparison. Same
+corrected checkpoint/tests and fresh Luna implementation workers are proposed for
 both; no SoC/database/UI calls. Deadline:21October2026,14:00Singapore. Workers
 return messages only; results will be consolidated once, not per-agent logs.
 
