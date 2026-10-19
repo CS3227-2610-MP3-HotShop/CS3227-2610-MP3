@@ -34,7 +34,7 @@ javafx {
 }
 
 application {
-    mainClass = 'hotshop.Launcher'
+    mainClass = 'hotshop.Main'
     applicationDefaultJvmArgs = ['--enable-native-access=ALL-UNNAMED']
 }
 
