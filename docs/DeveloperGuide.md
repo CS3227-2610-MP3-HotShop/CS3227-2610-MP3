@@ -51,7 +51,15 @@ Once everything is verified to be working properly, create the JPro distribution
 ```
 ./gradlew jproRelease
 ```
-The resultant `.zip` file will be located under `/build/distributions/`
+The resultant `.zip` file will be located at `/build/distributions/HotShop-jpro.zip`
+
+**NOTE:** Deployment onto JPro requires that the application's entry point extend `javafx.application.Application`, if you wish to run the app without JPro locally, change the mainClass of your `build.gradle` to `hotshop.Launcher` as such:
+```build.gradle
+application {
+    mainClass = 'hotshop.Launcher'
+    applicationDefaultJvmArgs = ['--enable-native-access=ALL-UNNAMED']
+}
+```
 
 For deployment onto [Render](https://render.com), a Docker Image is required. Follow the steps to create the image:
 
