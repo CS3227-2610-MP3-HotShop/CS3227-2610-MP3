@@ -741,9 +741,9 @@ No deployment/push requested. Deadline:21October2026,14:00Asia/Singapore.
 | Task | Dependency | Ownership and deliverable | Acceptance | Completed |
 | --- | --- | --- | --- | --- |
 | BENCH-SETUP | None | Independent Luna common-setup author owns validator declaration stub and fixed AiSearchProposalValidatorTest; root owns specs/Git/checkpoint. | Runnable79-case behavioral red at stub; both styles passed;45 security-tagged cases; common checkpoint being frozen. | Yes2026-10-20 |
-| BENCH-MULTI | BENCH-SETUP-FIX | Luna implementer owns validator only; coordinator plus final Luna specification/security reviewers. | Submitted candidate, unchanged-test/style results and review findings recorded, measured elapsed. | No |
-| BENCH-SINGLE | BENCH-SETUP-FIX; after BENCH-MULTI for scheduling only | Fresh Luna implementer owns validator only in isolated singleagent-search worktree. No multi-arm findings supplied. | Submitted candidate and same checks, no test/spec changes, measured elapsed. | No |
-| BENCH-RESULTS | BENCH-MULTI,BENCH-SINGLE | Coordinator evaluates fixed reports/hashes, consolidates one result table here. | Honest counts/times/interventions/corrections; usage N/A where not exposed; limitations stated. | No |
+| BENCH-MULTI | BENCH-SETUP-FIX | Luna implementer owns validator only; coordinator plus final Luna specification/security reviewers. | Candidate f2d07fd;76/76 plus42/42 security, stylespass; finalreviews clear of implementation defects,1 sharedtest coverage note;320s observed. | Yes2026-10-20 |
+| BENCH-SINGLE | BENCH-SETUP-FIX; after BENCH-MULTI for scheduling only | Fresh Luna implementer owns validator only in isolated singleagent-search worktree. No multi-arm findings supplied. | Candidate0c626fa;76/76 plus42/42 security, stylespass; fixedtests unchanged;329s observed. | Yes2026-10-20 |
+| BENCH-RESULTS | BENCH-MULTI,BENCH-SINGLE | Coordinator evaluates fixed reports/hashes, consolidates one result table here. | Fixedtest blob matches botharms; XML/style/security-tag counts independently inspected; results/limits consolidated below and benchmark-results.csv. | Yes2026-10-20 |
 
 Mandatory protocol and exact acceptance partitions are in AI-P1/AI-T1. Fixed tests
 are common evaluation setup, not a benefit credited to either workflow. Record
@@ -763,3 +763,119 @@ common stub checkpoint, use fresh no-history workers; retain/exclude pilot evide
 from paired timing. This is shared setup correction1/1, not a production defect.
 Verification:76 behavioral-red cases at stub, compile/styles successful, fixed test
 blob identical on both branches. No SoC/DB/network or new reporting Markdown files.
+
+## AI search benchmark results — completed 2026-10-20
+
+Local candidates only; no push/deployment. Common corrected checkpoint:
+b87d2151e8af78f020a4ffe9572e59f897c0ba38, based on application aac5548.
+Frozen evaluation test Gitblob:18fdef917ae5bd685526365ec27fd86e94ee3b54 on both arms.
+Implementation model:both gpt-6-luna, fresh workers, no chat inheritance or arm-result
+sharing. Multi adds this coordinator plus two independent Luna final reviewers.
+Coordinator Sol preference is configured; actual running model identity and usage
+were not exposed, so model identity/credits are not inferred from that setting.
+
+| Metric | Multi-agent | Single-agent |
+| --- | --- | --- |
+| Branch | multiagent-search | singleagent-search |
+| Candidate commit | f2d07fd20fe157dd016c14f1a3b4bcac00fbdddb | 0c626fac397a8b82531a0933c0ed3889f6a55774 |
+| Full fixed acceptance suite, including security |76/76,0 errors/skips |76/76,0 errors/skips |
+| Independently executed security-tagged subset |42/42,0 errors/skips |42/42,0 errors/skips |
+| Main/test Checkstyle |Pass,0 report errors |Pass,0 report errors |
+| Worker implementation/self-check time |186s (3m06s) |270s (4m30s) |
+| Observed dispatch-to-completion workflow time |320s (5m20s) |329s (5m29s) |
+| Observed dispatch-to-first-candidate report |223s |329s |
+| Additional observed review/orchestration interval |97s |Not part of single workflow |
+| Reviewer-reported source review time |17s specification +10s security |None |
+| Development specialists |3 plus coordinator |1 |
+| Initial production-test failures before self-fix |0 |2 cases, null condition elements |
+| Initial style failures before self-fix |0 |1 overlong line |
+| Post-submission correction passes |0 |0 |
+| Human development interventions during measured arm |0 |0 |
+| Final production-file lines (descriptive, not quality score) |125 |119 |
+| Tokens / credits |N/A:not exposed |N/A:not exposed |
+
+Timing uses clock-tool UTC consistently. Multi dispatch18:08:37, first recorded
+candidate18:12:20, final review completion recorded18:13:57 UTC on2026-10-19.
+Worker reported18:08:55–18:12:01 UTC. Specification review18:12:56–18:13:13;
+security review18:13:19–18:13:29. Single dispatch18:14:22, final report recorded
+18:19:51 UTC; worker reported18:14:46–18:19:16. These are20October02:xx in
+Singapore, not a disagreement with the local date. Observed workflow time includes
+dispatch/report transport, orchestration and environment/tool approval delays;
+worker time is separately self-reported. Final Git commits and common evaluator
+security-tag runs occurred afterward and are excluded equally from measured arms.
+
+Common evaluator actually inspected full76-case XML and both Checkstyle XML reports
+for each worktree, confirmed unchanged frozen-test Gitblob, and ran the same frozen
+security-tag subset independently:multi BUILD SUCCESSFUL3s, single2s,42 cases each.
+An ignored tools/benchmark/security-only.init.gradle selected existing @Tag("security")
+cases and wrote separate test-results/benchmark-security output; no assertions/source
+were changed. Primary reports remain in build/test-results/test. Results CSV is
+workflow/benchmark-results.csv. No full unrelated PostgreSQL suite or live SoC call
+was run for this isolated pure-Java slice.
+
+### Findings and limitations
+
+- Final correctness/security scores tied. The9s observed workflow difference is
+  not evidence of a general speed advantage; one task, one pair, fixed run order
+  and unequal per-project warm cache state limit timing inference. Both ran clean,
+  sharing the warm dependency cache; project-directory caches were not matched.
+- Reviews found no production defect/security issue. Specification reviewer found
+  one minor shared-test limitation:input-list nonmutation comparison uses the same
+  list reference, so that assertion is tautological. Source inspection showed no
+  mutation; output isolation/immutability assertions are meaningful. Fixed tests
+  were not changed mid-comparison. Do not claim complete mutation/security coverage.
+- Initial single-agent tests caught/fixed two null-condition cases and one style
+  issue before submission. These are self-check iterations, not reviewer fixes.
+  Multi's faster implementation happened before reviews, so it cannot be credited
+  to those reviews. The review benefit observed was test-quality feedback only.
+- Shared setup used one independent setup worker. An excluded pilot exposed three
+  contradictory null fixtures. Owner approved one common setup correction (1/1);
+  fixture rows were removed while valid null-default assertions stayed. Pilot
+  worker186s and preparation/approval waits are excluded, preserved transparently
+  here; total preparation time was not instrumented. Pilot code is in a local stash.
+- No implementation hints, code or arm-specific review findings were sent to the
+  single worker. Worktrees are separate snapshots on a shared filesystem; access
+  separation relied on assignment instructions, not an enforced security sandbox.
+- No exact cost comparison:agent counts are a resource proxy, not token/credit totals.
+  One coordinator status query to single worker supplied no implementation hint;
+  environment sandbox Java-access retries occurred in both runs. Human development
+  interventions count requirement/fix decisions during measured arms, not automatic
+  operational approvals; shared setup had one explicit human correction approval.
+- This is a validator benchmark within a proposed buyer AI-search feature, not a
+  completed runtime AI feature or LLM jailbreak study. Raw JSON/provider/SoC quotas,
+  UI preview/apply and downstream authorization integration remain deferred.
+
+### Reproduce locally
+
+Multi root:E:/CS3227-2610-MP3 (branch multiagent-search).
+Single root:E:/CS3227-2610-MP3/tools/benchmark/singleagent-search (branch singleagent-search).
+In either assigned root with Java25, run wrapper test filtered to
+hotshop.service.AiSearchProposalValidatorTest, then checkstyleMain and checkstyleTest.
+For tagged scoring, use the common init script with --init-script and the same test
+filter; verify42 tests in build/test-results/benchmark-security. For both primary
+runs, the full76-case suite was fixed before implementation and visible/read-only
+to implementation agents. It was not a hidden held-out suite, limiting generalisation.
+
+Exact primary verification commands in each worktree:
+
+```powershell
+.\gradlew.bat test --tests hotshop.service.AiSearchProposalValidatorTest --console=plain
+.\gradlew.bat checkstyleMain checkstyleTest --console=plain
+```
+
+The ignored security scoring script can be recreated with the following content.
+Save it outside application source and pass its absolute path using `--init-script`
+to the same filtered test command. This selects existing tests without changing them.
+
+```groovy
+gradle.projectsEvaluated {
+    gradle.rootProject.allprojects { project ->
+        project.tasks.withType(org.gradle.api.tasks.testing.Test).configureEach { task ->
+            task.useJUnitPlatform { options -> options.includeTags('security') }
+            task.reports.junitXml.outputLocation.set(
+                project.layout.buildDirectory.dir('test-results/benchmark-security'))
+            task.reports.html.required.set(false)
+        }
+    }
+}
+```

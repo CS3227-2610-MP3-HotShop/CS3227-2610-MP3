@@ -1,48 +1,36 @@
 # Current project handoff
 
-## Active benchmark — AI search contract and validator
+## Buyer AI-search benchmark — completed locally, 2026-10-20
 
-Owner authorised immediate sequential multiagent-search then singleagent-search on
-2026-10-20. multiagent-search was created from aac5548 before contract edits.
-AI-P1/AI-T1 and BENCH-P1 are in existing workflow specs/plan. Independent common
-setup froze79 tests at eed486d. Initial multi pilot passed76 but exposed3 conflicting
-null fixtures; contract permits those values. Owner approved shared test correction/restart
-on2026-10-20; correction1/1 is complete:76 meaningful-red cases,42 security-tagged, stylespass. Pilot code preserved in local stash. Pilot is not a valid paired comparison. Same
-corrected checkpoint/tests and fresh Luna implementation workers are proposed for
-both; no SoC/database/UI calls. Deadline:21October2026,14:00Singapore. Workers
-return messages only; results will be consolidated once, not per-agent logs.
+Owner requested sequential multiagent-search then singleagent-search. Common frozen
+contract/stub/test checkpoint b87d215; application base aac5548. Implementation-only
+candidate commits:f2d07fd multi,0c626fa single. Same76-case suite and Luna model;
+both pass76/76, security42/42, both styles. Testblob18fdef917ae5bd685526365ec27fd86e94ee3b54
+unchanged. Observed workflow times320s multi,329s single; worker186s versus270s.
+Multi final reviewers found no production/security defects and one shared-test
+nonmutation assertion weakness. Credits/tokens unavailable. One pair is not a
+performance/cost conclusion; full methodology/limits in workflow/PLAN.md results
+and workflow/benchmark-results.csv. Excluded pilot/common fixture correction1/1
+recorded there; no arm postsubmission corrections or human development interventions.
+Both candidates committed locally; no benchmark branch push requested/performed.
+Root remains multiagent-search; single worktree tools/benchmark/singleagent-search.
+AI-P1/AI-T1 are in existing workflow specs. SoC client/JSON/UI integration remains
+pending:need SoC endpoint/model/quota guide and shared-client agreement with seller
+feature owner. Professor validation deadline21October2026,14:00Singapore.
 
-## PostgreSQL conversion — accepted locally, 2026-10-20
+## PostgreSQL and Supabase
 
-Workspace E:/CS3227-2610-MP3; branch postgres-migration, based on f15b076 plus reviewed
-conversion. PostgreSQL-only runtime/tests, separate migrateDatabase provisioning,
-read-only startup validation and updated guides are complete. Final746 tests have
-zero failures/errors/skips; wrapper test/styles/check/build/shadowJar exit0 with
-completed outputs UP-TO-DATE. JAR contains PostgreSQL and no SQLite classes.
-Final Luna specification/coverage and security reviews clear; no test reruns by
-reviewers. Earlier one listing-setup failure did not recur; cause unconfirmed.
-Historical correction budget3/3 exhausted; no additional cycle granted.
+PostgreSQL conversion published as aac5548 on postgres-migration; prior746 tests and
+required checks passed. No hosted provisioning/trust verification run. Owner reports
+Supabase17.11; local public certificate C:/Users/jonat/.postgresql/prod-supabase.cer
+copy verified. Secrets/env files remain local and ignored. Data API disabling was
+recommended for dedicated JDBC project, not confirmed. No deployment or Storage/
+JPro browser integration performed. PG historical correction3/3 remains exhausted.
 
-## Supabase connection — preparation in progress
+## Working rules
 
-Owner reports PostgreSQL17.11, matching local test major17 (different patch).
-Downloaded public CA certificate copied and SHA256 verified at
-C:/Users/jonat/.postgresql/prod-supabase.cer; original download preserved.
-JDBC URL needs sslmode=verify-full and sslrootcert pointing to that file.
-Data API disabling recommended for dedicated JDBC-only project; owner has not
-confirmed disabling it. No hosted connection, provisioning or trust-chain check run.
-Next: configure local environment privately, provision and manually verify persistence.
-Automated tests remain on disposable Docker databases; Storage/JPro deployment separate.
-
-## Minimal records and workflow
-
-One implementer owns approved code/tests/guides; reviews happen at the final candidate.
-Future batches allow one approved correction pass. New specialists use Luna with
-compact briefs/no history; Sol coordinator preference saved, live model not inferred.
-Workers return messages, not Markdown logs. Coordinator keeps this short handoff and
-consolidates final approvals/results once in the existing feature summary after reviews.
-Owner explicitly requested deletion of old logs/histories on2026-10-20; no archive kept.
-Final acceptance: [existing summary](../logs/2026-10-19-feature-pg-conversion-sdd-summary.md).
-Owner authorised commit and push to new branch postgres-migration on2026-10-20.
-Publication is in progress. web/.env.local is untracked, unread and excluded;
-.gitignore now excludes .env.local files. No deployment authorised or performed.
+One implementer owns assigned code/tests/guides; independent reviews at candidate end.
+Workers return messages, no task Markdown logs. Coordinator keeps this short handoff
+and consolidates final approvals/results once. Targeted reads only; fresh specialists
+use Luna without chat inheritance; coordinator Sol preference configured but live
+model/credit telemetry not exposed. No unrelated credentials or .env contents read.

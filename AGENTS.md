@@ -609,3 +609,5 @@ are provenance references, not files to restore/read. Use the current short hand
 and consolidated feature summary. Public CA certificate stays outside the repo.
 
 Active AI-search benchmark: see AI-P1/AI-T1 and BENCH-P1 in existing workflow specs/plan. Owner authorised sequential multiagent-search then singleagent-search from one frozen contract/test checkpoint. Runtime SoC/UI remains separate. Fixed tests/specs are read-only to measured implementation agents; do not share arm-specific results. Workers return messages, no Markdown logs.
+
+AI-search validator benchmark completed locally on multiagent-search and singleagent-search from b87d215. Both pass 76 cases, including 42 security-tagged cases, and Checkstyle. Read workflow/PLAN.md results and workflow/benchmark-results.csv for observations and limits; no task logs. One common setup correction (1/1) was approved; measured arms had no post-submission corrections. SoC/UI integration is pending. Do not infer a general workflow winner or runtime LLM safety from this paired validator case.
