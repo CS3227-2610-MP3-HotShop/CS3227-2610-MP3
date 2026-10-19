@@ -107,3 +107,31 @@ feature. SoC endpoint/model/quota documentation is inaccessible to this session;
 provider integration and the shared client agreement with the seller-feature owner
 remain open and block only later integration. No credentials enter prompts, fixtures
 or repository. Team manages deployment separately; no build-and-host service used.
+
+### Second benchmark scope — requested 2026-10-20
+
+The owner requested a larger follow-up: SoC connectivity for buyer AI search, with
+separate measured runs and manual credit readings between them. This extends the
+earlier validator-only benchmark; its completed results and frozen tests remain
+unchanged. Proposed slice: buyer request to SoC, strict response decoding into the
+existing validator, and safe transport/quota failures. UI integration remains later
+work. Provider contract and shared seller-client boundary must be resolved before
+finalising acceptance criteria or starting measured implementation. A larger slice
+does not guarantee a measurable advantage for either workflow.
+
+Owner decision, 2026-10-20: leave shared transport/parser implementation to the
+seller owner. Benchmark the buyer adapter after that dependency is ready. This
+supersedes the proposal to include shared transport implementation in our measured
+slice; manual credit checkpoints and sequential runs remain required.
+
+Superseding owner clarification, 2026-10-20: independently implement the connection
+layer now for the larger benchmark, accepting overlap with llm-feature for later
+reconciliation. Waiting for the seller transport is no longer a prerequisite.
+Include transport, response parsing and buyer proposal adaptation in the measured
+slice. Reconciliation with the seller branch is separate, subsequent work; it must
+not change either measured candidate. Credit checkpoints remain in force.
+
+The connection benchmark stops at a validated ListingSearch result, with no UI or
+database changes. AI-T2-C1 defines deterministic transport/response safety checks
+using the existing validator. Provider-wide quota admission and actual model search
+quality remain integration gates; this slice handles 429 without automatic retry.

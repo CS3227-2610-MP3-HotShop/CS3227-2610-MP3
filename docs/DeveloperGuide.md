@@ -489,6 +489,11 @@ that lifecycle. PostgreSQL test success does not establish two-browser hosting r
 
 ## Acknowledgements
 
+The SoC connection benchmark reuses the controlled localhost HTTPS fixture and
+synthetic test certificates from teammate branch `llm-feature`, commit `7d028e4`.
+Its documented request/response conventions informed AI-T2-C1; unfinished transport
+implementation was not imported. Gson 2.14.0 supplies JSON streaming APIs.
+
 See [Acknowledgements](developerGuide/Acknowledgements.html) for the sources of
 reused or adapted ideas, code, documentation, tools, and third-party libraries.
 
@@ -550,3 +555,13 @@ published; supply database credentials through the process/server environment.
 The owner authorised an early contract/validator comparison on multiagent-search and singleagent-search. AI-P1/AI-T1 and BENCH-P1 are appended to the existing workflow documents. This pure Java boundary accepts decoded proposal maps and returns existing ListingSearch criteria; no provider/database/UI integration or new dependency is part of this slice. Both arms use identical frozen tests, starting code and Luna implementation model. Record actual correctness/security results, timings, interventions and usage only where exposed; preparation is separate and one paired run is a limited case study.
 
 The initial buyer-search validator benchmark is complete locally: both branches pass the same 76 cases, including 42 security-tagged cases, and Checkstyle. Comparison details, the shared fixture correction and timing/coverage limitations are in workflow/PLAN.md under AI search benchmark results; machine-readable metrics are in workflow/benchmark-results.csv. SoC generation and UI integration are not implemented by this slice. No exact token/credit telemetry was available.
+
+The requested larger SoC-client comparison is drafted as AI-T2/BENCH-P2. Each measured run requires a manually recorded credit baseline and a pause for its ending reading; the second run requires a fresh ready signal. Provider contract and seller-client coordination are pending. No SoC implementation or live connection has been verified.
+
+Inspection of llm-feature at 7d028e4 found reusable configuration/request conventions, but its HTTPS transport and response parser are unfinished and its build still uses SQLite. AI-T2 records the supplied SoC endpoint/model and this provenance. Reuse selected LLM components only after shared ownership is settled; preserve this branch's PostgreSQL setup.
+
+The owner clarified that the larger benchmark should independently implement transport, response parsing and the buyer adapter, accepting overlap with the seller branch for later reconciliation. Both arms must start from one common frozen baseline; neither waits for the seller transport. No transport changes or credit measurement have started here. Later reconciliation is outside the benchmark.
+
+SOC-SETUP now prepares the common declarations and offline HTTPS oracle on multiagent-soc-search, using AI-T2-C1. Gson 2.14.0 is selected to match the seller branch (official release: https://github.com/google/gson/releases). Java's standard library supplies HTTP/TLS. These checks target transport and validation; they do not establish live model quality or provider-wide quota compliance.
+
+The common oracle is ready: 73 executable cases, including two independently passing HTTPS fixture checks; the remaining 71 fail against missing declaration-stub behaviour. Both Checkstyle tasks pass. Independent readiness review found no contradictory required assertions; exact request-byte boundary and network-disconnect coverage remain limited. Measured implementations have not started.

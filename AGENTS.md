@@ -611,3 +611,11 @@ and consolidated feature summary. Public CA certificate stays outside the repo.
 Active AI-search benchmark: see AI-P1/AI-T1 and BENCH-P1 in existing workflow specs/plan. Owner authorised sequential multiagent-search then singleagent-search from one frozen contract/test checkpoint. Runtime SoC/UI remains separate. Fixed tests/specs are read-only to measured implementation agents; do not share arm-specific results. Workers return messages, no Markdown logs.
 
 AI-search validator benchmark completed locally on multiagent-search and singleagent-search from b87d215. Both pass 76 cases, including 42 security-tagged cases, and Checkstyle. Read workflow/PLAN.md results and workflow/benchmark-results.csv for observations and limits; no task logs. One common setup correction (1/1) was approved; measured arms had no post-submission corrections. SoC/UI integration is pending. Do not infer a general workflow winner or runtime LLM safety from this paired validator case.
+
+For the proposed larger SoC benchmark, follow AI-T2/BENCH-P2: manual starting/ending credit readings, one measured workflow at a time, and explicit user readiness before starting each window. Preserve Task 1 branches/results. Resolve provider and seller shared-client contracts before measured implementation; never read keys into logs or use live SoC for automated tests.
+
+Friend's llm-feature snapshot 7d028e4 has unfinished transport/parser and still uses SQLite. Consult AI-T2 before reusing its LLM code; preserve PostgreSQL and resolve shared transport ownership rather than importing its build/workflow wholesale.
+
+Owner clarified scope: independently implement transport/parser plus buyer adapter for the larger benchmark; overlap with friend's work is accepted for later reconciliation. Do not edit/merge his branch or wait for its transport. Freeze one common contract/test baseline before both arms and require each manual starting credit reading/ready signal. Reconciliation is separate from measured work.
+
+SoC benchmark common setup is SOC-SETUP/AI-T2-C1 on multiagent-soc-search. A testing specialist owns new declarations/tests and Gson-only dependency addition; this is outside measured runs. Per-account/provider admission and UI wiring are excluded; do not claim 429 handling establishes quota compliance.

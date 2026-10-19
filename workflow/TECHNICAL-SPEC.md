@@ -207,3 +207,132 @@ Future sequence:SoC client (reuse agreed seller-client boundary), JSON/response 
 async buyer preview/apply UI, then service/UI/security integration checks. Endpoint,
 model, request budget shared with seller feature, timeout and quota policies require
 SoC guide and owner agreement before that slice. No Supabase/demo automated tests.
+
+### AI-T2 — SoC connection benchmark draft, 2026-10-20
+
+Owner requested this next slice; design is not yet ready for implementation.
+Repository inspection found no SoC client in current application sources and no
+declared JSON dependency in build.gradle. Recheck the seller owner's branch before
+adding a shared client. Java 25 provides HTTP transport; JSON dependency choice
+requires provider-format inspection and compatibility verification.
+
+Proposed coverage: configured server-side credentials and endpoint/model, bounded
+requests and responses, transport timeouts, quota admission and rate-limit handling,
+strict response/JSON decoding including duplicate keys, and delegation to the
+existing AiSearchProposalValidator. No database tools or automatic marketplace
+actions. Exact limits, retry policy and response semantics remain open; they must
+not be inferred from an unrelated provider's API. Errors must not expose credentials
+or raw provider responses. Buyer UI and seller-feature implementation are excluded.
+
+Use a deterministic local HTTP fixture for common acceptance/security scoring;
+never call the live provider in automated tests. An optional, separately reported
+manual SoC smoke check follows both runs, outside comparative timing/credit windows.
+Both arms must start from the same validator implementation, approved provider
+contract, dependencies and frozen evaluation suite, rather than their different
+Task 1 implementations. New branches preserve both completed Task 1 candidates.
+
+Blocking inputs: non-secret SoC request/response example, endpoint, model, auth
+header format and quota rules; seller shared-client agreement. Official guide fetch
+failed in this session. No provider contract, numeric limits or live success claimed.
+
+Preparation evidence, 2026-10-20: owner supplied the full endpoint
+`https://soclaas-api.comp.nus.edu.sg/v1/responses` and model `default`.
+`SOCLAAS_BASE_URL` in that example is a full operation URI; never append another
+`/responses`. Fetch/inspection of origin/llm-feature at 7d028e4 found existing
+LlmConfiguration, description-specific LlmClient, request-only HttpLlmClient and
+DescriptionQuota. No HTTP dispatch or response parser is implemented there yet;
+seller plan TASK-007/008 reserves that work. This is source inspection, not executed
+test evidence. The branch declares Gson 2.14.0 and still SQLite; do not merge its
+build/database/workflow changes wholesale into PostgreSQL branches.
+
+Seller technical contract specifies Bearer auth, exact model/input request strings,
+completed status and authoritative top-level output_text. Seller configuration uses
+HOTSHOP_LLM_ENDPOINT/HOTSHOP_LLM_BEARER_TOKEN/HOTSHOP_LLM_MODEL rather than the
+owner's SOCLAAS aliases. Reconcile names in the shared design before implementation.
+Its 10-second connect/45-second total deadline, 8 KiB request/64 KiB response and
+5/minute, 30/hour per-account limits are seller application policies, not verified
+provider quotas. Shared aggregate provider budget remains unresolved. Reuse and
+adapt selected components with attribution rather than treating description-specific
+generate(title, condition) as a generic buyer interface. Shared transport ownership
+has been put to the owner; no import or measured run has begun.
+
+Owner resolution, 2026-10-20: do not implement the seller's shared transport or
+parser. AI-T2 now targets only the buyer adapter after those components are ready:
+encode buyer intent using the agreed transport contract, decode returned proposal
+JSON strictly, invoke AiSearchProposalValidator and map failures to safe buyer
+outcomes. Exact interface and acceptance tests await the completed transport.
+Use the identical pinned transport snapshot in both benchmark arms; transport code
+and its development cost belong to common preparation, not either measured arm.
+Existing transport security checks still require integration verification; their
+implementation is excluded from adapter timing and scoring attribution.
+
+Superseding owner clarification, 2026-10-20: implement the connection layer
+independently despite overlapping seller work; reconcile duplicates later. Restore
+transport, response-envelope parsing and buyer adapter to the measured scope.
+Use the inspected seller request/response conventions as documented input, not its
+unfinished transport as a prerequisite or finished code to credit to either arm.
+Both arms receive the same existing validator and selected configuration/JSON
+scaffolding. Pin reused source and dependencies before measurement; specify strict
+buyer-proposal parsing separately from provider-envelope parsing. Do not merge or
+edit llm-feature. Existing seller deadline/size policies are design references, not
+provider quota evidence. Final acceptance details remain to be frozen before runs.
+
+### AI-T2-C1 — common setup contract
+
+Bounded implementation target: new `hotshop.llm.SocSearchClient`, AutoCloseable.
+Public constructor `(URI endpoint, String bearerToken, String model)` uses Java
+HttpClient with normal TLS, no redirects and 10-second connection timeout. The
+endpoint is the full trusted operator-supplied HTTPS URI; reject credentials in
+URI, fragment, missing host, invalid token/header controls and blank model using a
+fixed `IllegalArgumentException("Invalid SoC configuration")`, no cause or values.
+No .env reading in this slice; application startup injection is later integration.
+Package-private test constructor adds `(HttpClient client, Duration deadline)` to
+those three parameters. Injected client must use Redirect.NEVER; deadline positive.
+The caller owns an injected HTTP client; closing SocSearchClient must not close it.
+
+`CompletableFuture<Result> propose(String buyerText)` is nonblocking and returns
+only `Proposed(ListingSearch search)` or `Failed(Failure kind)` nested records of
+sealed Result. Failure enum: INVALID_INPUT, TIMEOUT, PROVIDER_AUTH, PROVIDER_BUSY,
+NETWORK, INVALID_RESPONSE, CLOSED. Invalid buyer text is null/blank or over 1,000
+Unicode code points after strip; reject before dispatch. Strip outside whitespace,
+preserve interior text. Encode exactly model/input string fields; fixed instruction
+describes the existing filter keys/enums, SGD integer cents and JSON-object-only
+output. Encode buyer text as untrusted JSON data within input, not raw JSON/string
+interpolation. No tool fields, extra messages, app credentials or listing records.
+Request maximum 8,192 UTF-8 bytes; oversize is INVALID_INPUT before dispatch.
+
+POST once to the configured URI; Bearer auth, application/json Content-Type/Accept,
+Accept-Encoding identity. Never redirect, retry, repoll, execute tools or fetch URLs.
+200 only is success; 401/403 PROVIDER_AUTH; 429/5xx PROVIDER_BUSY; all other HTTP
+statuses INVALID_RESPONSE. Transport failures NETWORK; connect/total deadlines
+TIMEOUT. Total default deadline 45 seconds includes dispatch/body collection/parsing.
+Cancel underlying HTTP/body work on deadline or close; ignore late completion and
+finish pending outcomes exactly once. Close is idempotent; subsequent calls CLOSED.
+Concurrent calls must remain isolated; no global mutable state or credential logs.
+
+Accept identity/no Content-Encoding only; reject compressed/unsupported encoding.
+Collect at most 65,536 response bytes, enforce on actual streamed bytes, not only
+Content-Length; reject oversize and invalid UTF-8 as INVALID_RESPONSE. Envelope
+must be one strict JSON object: no comments/trailing JSON/duplicate keys, nesting
+at most 32 containers (root counts 1). Require status="completed" and nonblank
+string output_text. Metadata may be skipped only after structural validation.
+If output exists, require an array of completed assistant message objects whose
+content items have type output_text and string text. Empty arrays allowed; no
+fallback to nested text. Reject tool/refusal/other item types, wrong role/status.
+Top-level output_text is authoritative even if nested text differs.
+
+output_text itself must be one strict JSON object under the same duplicate/depth
+rules; no Markdown fences/trailing JSON. Convert JSON integers to BigInteger,
+reject fractional/exponent numeric tokens rather than silently rounding; pass the
+decoded map to unchanged AiSearchProposalValidator. Invalid proposals/envelopes
+become INVALID_RESPONSE with no raw response, request, token or nested exception
+in public results. Valid proposals return the validator's immutable search object.
+
+Reuse Gson 2.14.0 (same as seller; official release confirmed) for JSON streaming;
+new dependency is common setup, not arm implementation. Use owned local HTTPS
+fixtures, no production trust override. Tests cover request/response boundaries,
+JSON/Unicode/security partitions, redirects, streaming limits, failures, lifecycle
+and concurrent isolation. Keep fixture faults distinct from meaningful stub red.
+These are application bounds, not verified SoC provider limits. Per-account/global
+quota admission, UI/session wiring, live model quality and deployment are excluded;
+429 handling and no automatic retry do not establish provider quota compliance.

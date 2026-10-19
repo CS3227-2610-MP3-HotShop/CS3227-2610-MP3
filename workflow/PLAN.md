@@ -879,3 +879,138 @@ gradle.projectsEvaluated {
     }
 }
 ```
+
+## SoC connection benchmark — BENCH-P2 draft, 2026-10-20
+
+Source: product second-benchmark scope and AI-T2. Owner requested the larger task
+and manually monitored credit windows. Preparation is authorised; measured work
+awaits the provider contract and a user-reported starting credit reading.
+Task 1 entries and results remain historical and unchanged.
+
+Proposed sequence, not completed tasks:
+
+1. Resolve provider/shared-client inputs; finalise product/design acceptance and
+   create explicit execution tasks with one shared starting checkpoint and oracle.
+2. Prepare new branches from the same selected Task 1 validator implementation;
+   freeze common tests and configuration scaffolding before credit measurement.
+3. User records starting credits and says ready; run only the first workflow.
+   Pause after its implementation and applicable final reviews, before aggregation.
+4. User records ending credits, then a new baseline and ready signal for workflow
+   two. Do not start workflow two automatically. Use fresh Luna specialists, no
+   history or access to the other run's findings, same model and requirements.
+5. After the second ending reading, evaluate common checks and consolidate results
+   once. Record manual credit deltas and their dashboard precision/lag; separate
+   preparation, common evaluation and live smoke checks from both measured windows.
+
+Metrics: acceptance/security tests, elapsed time, implementation self-corrections,
+review findings, human interventions, specialist count and manually reported credit
+delta. Avoid unrelated Codex activity during each credit window; report background
+usage or delayed dashboard updates as confounders. One pair remains a case study.
+No measured agent dispatched, new benchmark branch created or live SoC call made.
+
+Preparation update: fetched origin/llm-feature at 7d028e4. Existing configuration,
+request encoding and seller quota code can inform the common starting point;
+transport/parser remain seller TASK-007/008, creating an ownership overlap. Owner
+has been asked whether to coordinate shared transport ownership or wait for that
+work and benchmark only its buyer adapter. Endpoint/model supplied; provider-wide
+quota remains unknown. Preserve PostgreSQL and completed benchmark branches.
+
+Owner decision, 2026-10-20: keep seller transport/parser work separate; benchmark
+the buyer adapter only after it is ready. No transport implementation is assigned
+here. Next prerequisite is the seller's ready commit/interface, followed by review
+of selected reusable components and one common pinned baseline. Do not start a
+measured run or ask for starting credits while this dependency remains unresolved.
+Retain manual credit checkpoints, fresh agents and identical transport in both arms.
+
+Superseding owner clarification, 2026-10-20: proceed with independent transport,
+parser and buyer adapter implementation for the benchmark; overlap can be reconciled
+later. Remove the wait-for-seller prerequisite from the proposed sequence above.
+Next authorised preparation: finalise the bounded connection/adapter contract and
+fixed offline tests, then create two new branches from one common checkpoint.
+Neither measured arm starts before its manual credit baseline/ready signal.
+Seller reconciliation, live smoke checks and common evaluation stay outside runs.
+
+Credit checkpoint: owner reported 46% before common setup was frozen. Preserve as
+a preliminary raw dashboard reading; request a fresh reading at actual dispatch.
+Run order remains multi-agent first, single-agent second. Do not interpret percent
+as consumed versus remaining or calculate a credit delta without dashboard meaning.
+
+### SOC-SETUP — Freeze common declarations and offline evaluation
+
+- Task ID: SOC-SETUP. Dependencies: None. Specification: AI-T2-C1.
+- Owner: one Luna testing specialist; approver: repository owner through current
+  request to proceed. Coordinator owns plan/specs/Git; worker owns new SocSearchClient
+  declaration stub, focused tests/resources and Gson-only build dependency addition.
+- Scope: common setup only, no transport/parser/adapter production behaviour.
+  Preserve PostgreSQL, Task 1 validator/tests, uncommitted documentation and seller
+  branch. No logs, live provider calls, credentials or hosted database access.
+- Steps: prepare runnable stub/API and isolated local HTTPS fixture; write fixed
+  acceptance/security tests; run focused test and styles; distinguish behavioural
+  red from setup/compiler failures. Report test counts and fixture limitations.
+- Acceptance: compile/style checks pass and specified missing behaviour reaches
+  meaningful runtime assertions; no implementation behavior supplied by stub.
+- Completed: Yes — 2026-10-20. Author ran 73 cases: 60 UnsupportedOperationException
+  and 11 assertion failures for missing stub behaviour; 2 independent HTTPS fixture
+  self-checks pass. Both styles pass, coordinator inspected XML with zero style
+  errors. No production connection behaviour supplied. Outside measured windows.
+
+### SOC-READY — Review the common test snapshot
+
+- Task ID: SOC-READY. Dependency: SOC-SETUP. Spec: AI-T2-C1.
+- Owner: independent Luna specification reviewer, read-only new contract/tests and
+  fixture evidence; human approver: repository owner under current benchmark request.
+- Steps: check fixture assertions, positive/negative partitions and actual red causes;
+  report blockers separately from coverage limitations. No production implementation.
+- Acceptance: no contradictory required assertions or invalid fixture paths; common
+  baseline and source hashes recorded by coordinator. No extra logs.
+- Completed: Yes — 2026-10-20. Luna read-only review found no invalid fixture or
+  contradictory assertion and explicitly cleared representative oracle readiness.
+  Reviewer initially misclassified missing exact request-byte edge as a blocker,
+  then corrected that classification against the actual acceptance criterion.
+  Exact 8192-byte request edge and network-disconnect mapping remain coverage gaps;
+  no tests changed after submission/review. Outside both measured windows.
+
+### SOC-MULTI — Implement the connection slice with final independent reviews
+
+- Task ID: SOC-MULTI. Dependencies: SOC-SETUP, SOC-READY and first user credit/ready
+  checkpoint. Spec: AI-T2-C1; branch multiagent-soc-search. Human approver: owner.
+- Owner: fresh Luna implementer owns new client implementation/helper files only;
+  fixed tests/dependencies and existing validator are read-only. Coordinator owns
+  Git/metrics; final Luna specification and security reviewers inspect stable code.
+- Steps: implement all specified transport/parser/adapter behaviour, run common
+  focused tests/styles and required checks, submit candidate; independent reviewers
+  inspect the final candidate once. No interleaved reviews or test weakening.
+- Acceptance: frozen common tests and styles pass; final findings recorded. One
+  explicitly approved post-review correction cycle maximum; preserve any failed
+  initial candidate/metrics rather than silently rerunning or resetting the clock.
+- Completed: No. Do not dispatch before fresh manual baseline/ready signal.
+
+### SOC-SINGLE — Implement the same slice with one agent
+
+- Task ID: SOC-SINGLE. Dependencies: SOC-SETUP, SOC-READY; scheduling after SOC-MULTI,
+  its ending reading and separate second user credit/ready checkpoint. Spec AI-T2-C1.
+- Owner: fresh Luna implementer, same code ownership/commands as SOC-MULTI; branch
+  singleagent-soc-search from the identical common checkpoint. Human approver: owner.
+- Steps: independently implement and self-verify the same fixed contract without
+  access to multi findings/code. No independent development reviewers in this arm.
+- Acceptance: common tests/styles pass and iterations recorded; same correction
+  policy and model, usage recorded only from actual user readings/runtime evidence.
+- Completed: No. Do not start automatically after the first arm.
+
+### SOC-RESULTS — Score and consolidate once
+
+- Task ID: SOC-RESULTS. Dependencies: SOC-MULTI, SOC-SINGLE and both ending readings.
+- Owner: coordinator; human approver: owner. Allowed files: existing guides,
+  instructions, workflow specs/plan/results CSV and current handoff.
+- Steps: inspect fixed-suite hashes/XML/style reports; run identical common scoring
+  outside measured windows; record timing phases, raw credit readings, manual deltas
+  only when dashboard semantics are known, interventions/findings and limitations.
+- Acceptance: reproducible commits/checks, transparent costs and test limitations;
+  do not claim provider quota compliance, live quality or general workflow advantage.
+- Completed: No. No push, deployment or seller merge is included.
+
+Common frozen source hashes (Git blobs): SocSearchClientTest
+`b67b9e8f24eef1067b8caa22bf039c2ff6f7b830`; ControlledHttpsServer
+`f17ee62da31262a0217af84c7faa43aea4817916`. Both arms will inherit these unchanged.
+Shared setup is complete; multi measured implementation awaits fresh credit/ready
+signal. Original 46% is preliminary, not the measured baseline. No live SoC call.
