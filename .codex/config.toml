@@ -1,0 +1,28 @@
+
+# Enable Codex multi-agent delegation
+[features]
+multi_agent = true
+
+[agents]
+enabled = true
+max_concurrent_threads_per_session = 4
+
+[agents.javafx_developer]
+description = "JavaFX specialist. Use for layouts, controls, events, navigation, bindings, service integration, styling, FXML when requested, and UI threading/lifecycle."
+config_file = "agents/javafx_developer.toml"
+
+[agents.app_architect]
+description = "Application architecture specialist. Use for Java services, models, repositories, and business logic."
+config_file = "agents/app_architect.toml"
+
+[agents.testing_agent]
+description = "JavaFX testing specialist. Use for JUnit tests, regression checks, UI behavior verification, and build validation."
+config_file = "agents/testing_agent.toml"
+
+[agents.css_specialist]
+description = "JavaFX CSS specialist. Use for stylesheets, visual themes, accessibility, and component styling."
+config_file = "agents/css_specialist.toml"
+
+[agents.code_reviewer]
+description = "Read-only JavaFX code reviewer. Use for correctness, concurrency, architecture, performance, and maintainability reviews."
+config_file = "agents/code_reviewer.toml"
