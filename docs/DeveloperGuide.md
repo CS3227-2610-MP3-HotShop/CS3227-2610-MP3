@@ -200,60 +200,6 @@ This applies to application changes, agent configuration, documentation changes,
 and newly agreed workflow rules. Explanatory conversations without a completed
 change do not require edits. User-facing changes also update the User Guide.
 
-### Migration collaboration workflow
-
-The [migration workflow](../workflow/MIGRATION-WORKFLOW.md) records agreed scope,
-frontend/backend ownership and approval rules, shared-interface handoffs, and
-integration requirements. The agreed policy and remaining implementation gates are tracked in
-[issue #3](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/issues/3).
-Use its issue links for setup/discovery tracking and its remaining implementation prerequisites
-before starting dependent work. Setup issues are published; feature discovery has started with a documentation pass. Worker configuration files are written and four custom types launched in the supplied smoke-test report. Generic-dispatch behaviour was exercised; native loading after instruction edits and migration implementation remain unverified or pending.
-The agreed sequence is to review and approve the full feature inventory first,
-then develop detailed specifications feature by feature. The inventory establishes
-scope; implementation still requires approved details and satisfied prerequisites.
-See the [initial feature inventory](../workflow/FEATURE-INVENTORY.md) for documented
-feature groups and deferred functionality. The [source evidence](../workflow/FEATURE-EVIDENCE.md)
-traces all 16 audited groups to implementation paths and representative existing
-assertions at commit 1d812ef; no tests or manual walkthrough were executed in that
-inspection. A later guide-derived recheck on 2026-10-17 removed no group and added
-INV-17, platform and data foundations, which covers web session and authentication,
-concurrent access control, demo data lifecycle, atomic changes and the
-refusal-message standard. INV-17 has no source trace because it is not an existing
-JavaFX screen feature. Two scope decisions were agreed the same day: the web
-application supports concurrent multi-user access instead of one logged-in user at a
-time, so the database integrity constraints replace the desktop service worker's
-serialisation; and the 960 x 640 minimum window size and fixed layout units are not
-target criteria, since the web layout adapts to arbitrary viewport sizes.
-Coverage of the 17 groups was approved on 2026-10-17; that approval covers the feature
-list only and does not authorise implementation. The migration source baseline is frozen
-at commit 1d812ef on the same date. Specifications cite behaviour at that commit, and a
-later JavaFX source change requires a proposed re-baseline with a diff and explicit
-approval before it affects scope. Resolve recorded listing-access, chat-creation
-and meetup UI/service distinctions in the affected detailed specifications.
-Superseded on 2026-10-17: the web application has no reset feature and uses a hosted
-PostgreSQL database from the start. Reset was a property of the desktop app's local data
-folder and has no web equivalent, and interim ephemeral server state would vanish between
-deployments and cold starts, which users would experience as an uncontrolled reset. Fresh
-demo data still applies, so existing accounts, records and images are not imported. Provisioning creates seeded accounts and a spread of listings and no seeded offers, sales or
-meetups, so every deal state a viewer sees was produced by the real flow. The technical
-specification will define the database choice, seed provisioning and image handling
-before storage-dependent implementation.
-The agreed testing policy combines focused unit tests, server/storage integration
-tests, and Playwright coverage of critical integrated journeys. Use independent
-seeded test state and avoid repeating every edge case in each layer. Feature
-completion also requires the agreed reviews, configured checks, and documentation;
-see the workflow for the authoritative gates. Tools and commands are not yet configured.
-
-A [workflow consistency audit](agents/WorkflowConsistencyCheck.md)
-records the cross-skill/role checks and corrections. Java checks apply to the
-JavaFX source; web test/build commands remain target-setup decisions. Document
-consistency does not establish agent runtime behaviour or feature correctness.
-
-The implementer may edit production code and explicitly assigned documentation/evidence;
-tests, fixtures and test configuration remain tester-owned. Its TOML now matches
-the existing role brief. The updated instructions were exercised through generic dispatch; native configuration loading has not been revalidated.
-See the agent configuration document for smoke-test provenance and limitations.
-
 ### Feature and task issues
 
 Use a feature parent issue for behaviour, specification links, acceptance criteria,

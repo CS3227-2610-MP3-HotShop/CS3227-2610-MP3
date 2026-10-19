@@ -62,3 +62,6 @@
   and [Java security providers](https://docs.oracle.com/en/java/javase/25/security/oracle-providers.html):
   password-storage implementation guidance. The user-selected composition policy
   is a project requirement, not a claim of NIST compliance.
+- [JPro](https://www.jpro.one): run existing Java and JavaFX files on a browser
+- [Docker Desktop](https://www.docker.com): containerization of application to be hosted
+- [Render](https://render.com): application hosting
