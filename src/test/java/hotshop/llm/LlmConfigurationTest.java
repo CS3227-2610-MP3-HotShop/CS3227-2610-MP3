@@ -26,9 +26,9 @@ import hotshop.model.Condition;
 import hotshop.service.ListingDraft;
 
 class LlmConfigurationTest {
-    private static final String ENDPOINT_KEY = "HOTSHOP_LLM_ENDPOINT";
-    private static final String TOKEN_KEY = "HOTSHOP_LLM_BEARER_TOKEN";
-    private static final String MODEL_KEY = "HOTSHOP_LLM_MODEL";
+    private static final String ENDPOINT_KEY = "SOCLAAS_BASE_URL";
+    private static final String TOKEN_KEY = "SOCLAAS_API_KEY";
+    private static final String MODEL_KEY = "SOCLAAS_MODEL";
     private static final String ENDPOINT = "https://gateway.invalid/custom/v1?route=a=b&mode=private";
     private static final String TOKEN = "synthetic-config-canary==";
     private static final String MODEL = "synthetic-model";

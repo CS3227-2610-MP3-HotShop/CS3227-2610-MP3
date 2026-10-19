@@ -264,6 +264,108 @@ class DescriptionQuotaTest {
         }
     }
 
+    @Test
+    void markDispatched_delayedStart_anchorsMinuteWindowToActualDispatch() {
+        var delayed = quota.reserve(ACCOUNT).reservation();
+        clock.set(44 * SECOND);
+        assertTrue(quota.markDispatched(delayed));
+        assertTrue(quota.release(delayed));
+        dispatchAndComplete(4);
+        clock.set(MINUTE);
+        assertRateLimited(quota.reserve(ACCOUNT), 44);
+        clock.set(104 * SECOND);
+        assertAdmitted(quota.reserve(ACCOUNT));
+    }
+
+    @Test
+    void markDispatched_repeatedCallback_preservesFirstDispatchTime() {
+        var delayed = quota.reserve(ACCOUNT).reservation();
+        clock.set(44 * SECOND);
+        assertTrue(quota.markDispatched(delayed));
+        clock.set(50 * SECOND);
+        quota.markDispatched(delayed);
+        assertTrue(quota.release(delayed));
+        dispatchAndComplete(4);
+        clock.set(104 * SECOND);
+        assertAdmitted(quota.reserve(ACCOUNT));
+    }
+
+    @Test
+    void markDispatched_staleReservation_doesNotRetimestampNewRequest() {
+        var stale = quota.reserve(ACCOUNT).reservation();
+        assertTrue(quota.rollback(stale));
+        var current = quota.reserve(ACCOUNT).reservation();
+        clock.set(44 * SECOND);
+        assertFalse(quota.markDispatched(stale));
+        assertTrue(quota.markDispatched(current));
+        assertTrue(quota.release(current));
+        dispatchAndComplete(4);
+        clock.set(MINUTE);
+        assertRateLimited(quota.reserve(ACCOUNT), 44);
+    }
+
+    @Test
+    void markDispatched_forgedRequestId_doesNotTakeReservationOwnership() {
+        var current = quota.reserve(ACCOUNT).reservation();
+        clock.set(44 * SECOND);
+        assertFalse(quota.markDispatched(new DescriptionQuota.Reservation(ACCOUNT, UUID.randomUUID())));
+        assertTrue(quota.markDispatched(current));
+        assertActive(quota.reserve(ACCOUNT));
+        assertTrue(quota.release(current));
+    }
+
+    @Test
+    void markDispatched_releasedReservation_doesNotChangeRetainedTimestamp() {
+        var old = quota.reserve(ACCOUNT).reservation();
+        assertTrue(quota.markDispatched(old));
+        assertTrue(quota.release(old));
+        clock.set(44 * SECOND);
+        assertFalse(quota.markDispatched(old));
+        dispatchAndComplete(4);
+        clock.set(MINUTE);
+        assertAdmitted(quota.reserve(ACCOUNT));
+    }
+
+    @Test
+    void rollback_markedReservation_preservesChargeAndRequiresMatchingRelease() {
+        var reservation = quota.reserve(ACCOUNT).reservation();
+        assertTrue(quota.markDispatched(reservation));
+        assertFalse(quota.rollback(reservation));
+        assertActive(quota.reserve(ACCOUNT));
+        assertTrue(quota.release(reservation));
+        dispatchAndComplete(4);
+        assertRateLimited(quota.reserve(ACCOUNT), 60);
+    }
+
+    @Test
+    void markDispatched_pendingBeyondHour_retainsOwnershipAndRecordsActualSend() {
+        var pending = quota.reserve(ACCOUNT).reservation();
+        clock.set(HOUR + 44 * SECOND);
+        var other = quota.reserve(OTHER_ACCOUNT);
+        assertAdmitted(other);
+        assertTrue(quota.rollback(other.reservation()));
+        assertTrue(quota.markDispatched(pending));
+        assertTrue(quota.release(pending));
+        dispatchAndComplete(4);
+        clock.set(HOUR + MINUTE);
+        assertRateLimited(quota.reserve(ACCOUNT), 44);
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {-9000000000000L, 9223372036854775797L})
+    void markDispatched_arbitraryClockOrigin_preservesElapsedWindows(long origin) {
+        clock.set(origin);
+        var delayed = quota.reserve(ACCOUNT).reservation();
+        clock.set(origin + 44 * SECOND);
+        assertTrue(quota.markDispatched(delayed));
+        assertTrue(quota.release(delayed));
+        dispatchAndComplete(4);
+        clock.set(origin + MINUTE);
+        assertRateLimited(quota.reserve(ACCOUNT), 44);
+        clock.set(origin + 104 * SECOND);
+        assertAdmitted(quota.reserve(ACCOUNT));
+    }
+
     private void dispatchAndComplete(int count) {
         for (int request = 0; request < count; request++) {
             var admission = quota.reserve(ACCOUNT);

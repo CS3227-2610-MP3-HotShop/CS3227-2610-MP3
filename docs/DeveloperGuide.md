@@ -323,7 +323,8 @@ The proposed [LLM technical specification](../workflow/LLM_FEATURE_TECHNICAL_SPE
 defines the session-bound service, asynchronous Java HTTP transport, strict bounded
 JSON handling, configuration loader and stale-result guards. TASK-002 added Gson
 2.14.0 as the sole JSON dependency and a typed `hotshop.llm.LlmClient` seam;
-production HTTP generation remains future work. Upstream release/security review
+TASK-008 now implements the transport, with application wiring still pending.
+Upstream release/security review
 and local Java 25 strict-streaming tests support this dependency choice.
 The user approved one server and in-memory quota reset on restart. Current runtime
 session/locking behaviour does not establish independent JPro browser-client
@@ -362,7 +363,9 @@ calls or changing global TLS settings. See the
 
 `hotshop.llm.LlmConfiguration.load(Path workingDirectory)` now reads one immutable
 UTF-8 snapshot from that directory's `.env`. Required keys are
-`HOTSHOP_LLM_ENDPOINT`, `HOTSHOP_LLM_BEARER_TOKEN` and `HOTSHOP_LLM_MODEL`.
+`SOCLAAS_BASE_URL`, `SOCLAAS_API_KEY` and `SOCLAAS_MODEL`.
+The user confirmed these names on 2026-10-20, replacing the earlier HOTSHOP_LLM_*
+names. BASE_URL is still the exact full HTTPS endpoint; no path is appended.
 It splits at the first `=`, trims surrounding syntax whitespace, accepts matching
 outer single/double quotes, preserves quoted contents literally and ignores blank
 lines, whole-line comments and unrelated assignments. There is no shell expansion,
@@ -397,8 +400,8 @@ must supply one server-owned instance across services; this primitive does not
 establish runtime wiring or independent hosted session identity. Its deterministic
 suite is `.\gradlew.bat test --tests '*DescriptionQuotaTest'`.
 
-`hotshop.llm.HttpLlmClient` currently builds requests only. It does not implement
-network generation or the `LlmClient` transport interface yet. Its internal
+`hotshop.llm.HttpLlmClient` builds bounded requests and implements asynchronous
+`LlmClient` transport; it is not wired to the application. Its internal
 `buildRequest` checks a stripped title of 1–120 Unicode code points, a non-null
 condition and available immutable settings. Gson `JsonWriter` encodes the title
 and canonical enum condition as product facts, then encodes a separate outer JSON
@@ -417,6 +420,107 @@ synthetic configuration only. No new dependencies were added in TASK-005–006.
 The selected batch passed 818 full-suite tests, Checkstyle and `check build` on
 2026-10-20; see the
 [integration/review evidence](../logs/2026-10-20-llm-task005-006-integration.md).
+
+TASK-007 adds the package-private `LlmResponseParser`, reached through
+`HttpLlmClient.parseResponse(byte[])`. It strictly decodes the complete bounded
+UTF-8 body and traverses one JSON object, checking duplicate names in all objects
+and a maximum container depth of 32 including the root. It requires completed
+status and canonical top-level string `output_text`. Optional output arrays must
+contain completed assistant messages with only output-text content; tool/refusal
+variants fail safely. Nested text never replaces or supplements canonical text.
+
+Descriptions are stripped, then checked for 1–100 words and at most 5,000 Unicode
+code points without truncation. Words are maximal runs separated by Unicode
+whitespace or space characters that contain at least one letter/digit; hyphens
+remain within one word and punctuation-only runs do not count. Unknown metadata
+is traversed within the same bounds. Parser failures expose only a fixed typed
+`INVALID_RESPONSE` result. Structural validation cannot identify every textual
+refusal, fabricated fact or injected instruction; live semantic evaluation remains
+TASK-014. Focused response tests use
+`.\gradlew.bat test --tests '*LlmResponseTest'` with synthetic inputs.
+
+TASK-008 creates the reusable Java HTTP client, dedicated virtual-thread executor
+and deadline scheduler lazily on first generation. Request-only construction
+starts no transport resources. The package-private test constructor transfers
+ownership of its injected client, worker and scheduler; close cancels pending work
+and shuts resources down without waiting for HTTP-client close or termination.
+Production uses standard certificate/hostname verification, redirects disabled,
+a 10-second connection timeout and exact configured POST URI. Only the bearer
+header carries the token. Requests send JSON content/accept headers and request
+identity encoding; there is one application dispatch and no automatic retry.
+
+Each operation has a 45-second request timeout plus an independent deadline that
+covers receiving, decoding and parsing the body. The internal
+`BoundedLlmBodySubscriber` counts every incoming buffer before copying, retains
+one bounded chunk and requests further data as the worker consumes it. Identity
+or incremental gzip decoding enforces separate 65,536-byte limits for wire input
+and decoded output. Content-Length is only an early rejection hint. Java 25 gzip
+member handling was checked against
+[OpenJDK source](https://github.com/openjdk/jdk/blob/jdk-25-ga/src/java.base/share/classes/java/util/zip/GZIPInputStream.java)
+and verified with split/coalesced members and a JSON document
+spanning members; remaining bounded wire data is consumed through HTTP EOF.
+
+Timeout, cancellation and close terminate once and cancel HTTP futures,
+subscriptions, decoder streams and deadlines, including late resource arrivals.
+Only HTTP 200 with JSON media type and valid response structure succeeds.
+401/403 map to `PROVIDER_AUTH`, 429/5xx to `PROVIDER_BUSY`, other 4xx to
+`UNAVAILABLE`, unsupported status/media/encoding or invalid bodies to
+`INVALID_RESPONSE`, timeout to `TIMEOUT`, and other transport failures to
+`NETWORK`. Raw provider text, headers, URI and exception causes are not returned
+or logged. Run `.\gradlew.bat test --tests '*HttpLlmClientTest'` for synthetic
+transport verification. No new dependencies were added in TASK-007–008.
+TASK-009 adds session authorisation and shared quota admission through
+`DescriptionService`; runtime/UI integration remains TASK-010 onward. The transport
+must be reached through the session-bound service when wired for users.
+Live evaluation and provider/hosting assurance
+remain unverified. See the
+[selected-task integration record](../logs/2026-10-20-llm-task007-008-integration.md).
+The selected TASK-007–008 batch passed
+`.\gradlew.bat test checkstyleMain checkstyleTest check build` on 2026-10-20:
+1,014 tests across 35 suites, zero failures/errors/skips, both Checkstyle checks
+and JAR/distribution packaging. This includes 127 response and 69 transport cases.
+Independent review has no outstanding material findings. These results do not
+establish live model semantics, provider tool disabling or hosted session isolation.
+
+TASK-009 adds `DescriptionService(worker, session, quota, client)` with nested
+typed `GenerationResult`, `Generated`, `Failed` and `FailureKind` outcomes.
+`generateDescription(title, condition)` authorises from the worker-owned session,
+validates minimum inputs and captures both account and login revision. Every
+accepted login/logout increments the revision, so logging back into the same
+account cannot receive a result from its previous session. The service rechecks
+identity before admission and before result delivery; it has no listing,
+repository, image or database dependency.
+
+`LlmClient.prepare` performs encoding and the 8,192-byte check on the transport
+executor before quota admission. It returns an opaque single-use prepared request.
+The service reserves the shared account slot and starts a nonblocking attempt.
+A trusted before-send callback records actual HTTP start time once for the matching
+reservation, so time spent queued does not shorten the rolling frequency window.
+The attempt reports whether HTTP dispatch was attempted after reaching a terminal
+state. Known pre-dispatch failures roll back; dispatched failures retain their
+charge. Unknown failures from malformed injected collaborators conservatively
+retain charges and return fixed safe outcomes.
+
+The shared worker remains available for account/logout operations while generation
+is pending. Cancelling the returned service future alone retains the transport's
+active quota slot until transport termination. Closing the service cancels its
+own pending work and rejects new calls without closing the injected worker/client
+or clearing shared quota history. The transport settles its dispatch marker and
+cleanup before publishing cancellation, preventing a late dispatch after refund.
+Unexpected failures log only the fixed `LLM_SERVICE_UNEXPECTED` code. The numeric
+retry delay is nonzero only for local rate-limit feedback. Runtime ownership and
+startup wiring remain TASK-010; no user-facing generation control is available yet.
+See [TASK-009 evidence](../logs/2026-10-20-llm-task009-integration.md).
+Final TASK-009 verification on 2026-10-20:
+`.\gradlew.bat test checkstyleMain checkstyleTest check build` passed, with 1,106
+tests across 37 suites and zero failures/errors/skips. Includes 61 service,
+22 preparation and 37 quota cases. Independent review has no outstanding material
+findings; no live provider calls or runtime/UI acceptance are claimed.
+
+TASK-007–009 changes are grouped into exactly three task commits. The shared
+transport file is split across parser, HTTPS transport and prepared-dispatch
+orchestration revisions. Final shared completion records accompany TASK-009;
+see the [grouping record](../logs/2026-10-20-llm-task007-009-commit-grouping.md).
 
 TASK-001–006 changes are grouped into one commit per task, followed by a shared
 documentation commit for completion records and integration evidence. Unrelated

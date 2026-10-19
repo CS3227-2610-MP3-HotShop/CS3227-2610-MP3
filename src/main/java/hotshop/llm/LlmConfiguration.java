@@ -11,9 +11,9 @@ import java.util.Set;
 
 /** Immutable startup configuration for private generation settings. */
 public final class LlmConfiguration {
-    private static final String ENDPOINT_KEY = "HOTSHOP_LLM_ENDPOINT";
-    private static final String TOKEN_KEY = "HOTSHOP_LLM_BEARER_TOKEN";
-    private static final String MODEL_KEY = "HOTSHOP_LLM_MODEL";
+    private static final String ENDPOINT_KEY = "SOCLAAS_BASE_URL";
+    private static final String TOKEN_KEY = "SOCLAAS_API_KEY";
+    private static final String MODEL_KEY = "SOCLAAS_MODEL";
     private static final Set<String> REQUIRED_KEYS = Set.of(ENDPOINT_KEY, TOKEN_KEY, MODEL_KEY);
     private static final String UNAVAILABLE_MESSAGE = "Description generation configuration is unavailable";
     private static final int MAX_HEADER_CODE_POINT = 0xff;

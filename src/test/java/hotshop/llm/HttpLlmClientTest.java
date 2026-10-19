@@ -507,8 +507,8 @@ class HttpLlmClientTest {
     }
 
     private LlmConfiguration configuration(URI endpoint) throws Exception {
-        Files.writeString(directory.resolve(".env"), "HOTSHOP_LLM_ENDPOINT=" + endpoint + "\n"
-                + "HOTSHOP_LLM_BEARER_TOKEN=" + TOKEN + "\nHOTSHOP_LLM_MODEL=synthetic-model\n");
+        Files.writeString(directory.resolve(".env"), "SOCLAAS_BASE_URL=" + endpoint + "\n"
+                + "SOCLAAS_API_KEY=" + TOKEN + "\nSOCLAAS_MODEL=synthetic-model\n");
         LlmConfiguration configuration = LlmConfiguration.load(directory);
         assertTrue(configuration.isAvailable());
         return configuration;

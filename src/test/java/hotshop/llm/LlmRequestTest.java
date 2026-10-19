@@ -123,7 +123,7 @@ class LlmRequestTest {
         LlmConfiguration configuration = configuration(MODEL);
         String context = "synthetic-source-history-account-description-database-canary";
         Files.writeString(directory.resolve("private-context.txt"), context);
-        Files.writeString(directory.resolve(".env"), "HOTSHOP_LLM_MODEL=changed-after-startup\n");
+        Files.writeString(directory.resolve(".env"), "SOCLAAS_MODEL=changed-after-startup\n");
         String body = new String(new HttpLlmClient(configuration).buildRequest("Chair", Condition.GOOD),
                 StandardCharsets.UTF_8);
         assertFalse(body.contains(TOKEN));
@@ -165,9 +165,9 @@ class LlmRequestTest {
     }
 
     private LlmConfiguration configuration(String model) throws Exception {
-        Files.writeString(directory.resolve(".env"), "HOTSHOP_LLM_ENDPOINT=" + ENDPOINT + "\n"
-                + "HOTSHOP_LLM_BEARER_TOKEN=" + TOKEN + "\n"
-                + "HOTSHOP_LLM_MODEL='" + model + "'\n", StandardCharsets.UTF_8);
+        Files.writeString(directory.resolve(".env"), "SOCLAAS_BASE_URL=" + ENDPOINT + "\n"
+                + "SOCLAAS_API_KEY=" + TOKEN + "\n"
+                + "SOCLAAS_MODEL='" + model + "'\n", StandardCharsets.UTF_8);
         LlmConfiguration configuration = LlmConfiguration.load(directory);
         assertTrue(configuration.isAvailable());
         return configuration;

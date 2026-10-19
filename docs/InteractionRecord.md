@@ -1,5 +1,115 @@
 # Project decisions and interactions
 
+## 2026-10-20 — Commit TASK-007–009 separately
+
+User requests exactly three commits on the current llm-feature branch, aligned
+with completed tasks. Split shared HttpLlmClient changes by task; include parser
+tests/logs in TASK-007, HTTP streaming fixtures/tests/logs in TASK-008 and service,
+preparation, actual-dispatch quota and approved SOCLAAS naming in TASK-009.
+Shared completion records accompany TASK-009. Separate agent-rule removals and
+untracked workflow skills stay uncommitted. No push or deployment authorised.
+See [commit grouping](../logs/2026-10-20-llm-task007-009-commit-grouping.md).
+Verification: exported TASK-007 snapshot passed 150 response/request cases and
+both styles; TASK-008 passed all 298 offline LLM cases and both styles. Final
+check/build succeeded using up-to-date outputs. Task commits begin with
+064752e (TASK-007) and ff3ba6b (TASK-008); TASK-009 contains remaining service
+work and shared completion records. Separate AGENTS.md rule removals remain
+unstaged; no application source changes remain outside the three-commit scope.
+
+## 2026-10-20 — TASK-009 completed after resume
+
+Completed session-bound DescriptionService, login/logout revisions, asynchronous
+prepared requests and shared quota orchestration. Review found actual HTTP start
+could lag admission timestamps; failing regressions preceded the matching,
+idempotent before-send timestamp correction. One existing expiry-cleanup test
+caught a regression during correction; production cleanup was fixed and the
+valid test retained. Final independent review has no outstanding material findings.
+
+Final `.\gradlew.bat test checkstyleMain checkstyleTest check build` passed in
+4m58s: 1,106 tests across 37 suites, zero failures/errors/skips, both Checkstyle
+checks and packaging passed. Includes 61 service, 22 preparation and 37 quota
+cases. No real configuration inspected or live provider calls made. Current
+SOCLAAS configuration names remain as explicitly approved. See
+[integration evidence](../logs/2026-10-20-llm-task009-integration.md).
+
+Current handoff: branch llm-feature; TASK-001–009 completed, TASK-010–017
+incomplete/unselected. Existing uncommitted TASK-007–008 work, unrelated skill
+directories and separate AGENTS.md edits preserved. No new commits, pushes or
+deployment. Runtime/UI wiring, hosted identity, provider tool assurance and live
+semantic acceptance remain pending; further implementation needs new selection.
+
+## 2026-10-20 — Resume unfinished TASK-009
+
+User requests finishing TASK-009 after the session stopped. Existing service,
+preparation and lifecycle green evidence is preserved. Independent review found
+one unresolved quota integration issue: admission timestamps could precede actual
+HTTP dispatch after executor delay. Resume with regression-first correction using
+a trusted before-send callback and matching, idempotent quota timestamp update.
+This implements the already-approved rolling dispatch limits, without changing
+their values or reopening completed prerequisite tasks. TASK-010 remains excluded.
+Coordinator resumed testing, implementation and independent review owners; no
+live-call, commit or deployment permission is inferred.
+
+## 2026-10-20 — LLM TASK-009 selected and configuration names confirmed
+
+User selects TASK-009 using implement-task-short; the intended plan remains
+workflow/LLM_FEATURE_PLAN.md from the active LLM implementation conversation.
+All direct/transitive prerequisites TASK-001–008 have completion evidence.
+Scope: session-bound description orchestration and session revision, with the
+minimal preparation/dispatch transport seams needed for quota correctness.
+TASK-010 runtime wiring and later UI tasks remain unselected.
+
+Inspection found an existing uncommitted configuration-key rename. User explicitly
+confirmed: keep SOCLAAS_BASE_URL, SOCLAAS_API_KEY and SOCLAAS_MODEL and align
+synthetic tests/current documentation. This supersedes HOTSHOP_LLM_* names in
+current setup guidance; historical task logs remain historical. BASE_URL still
+means the exact full configured HTTPS request URI; no path is appended. No real
+.env contents were read. Existing TASK-007–008 and unrelated skill edits preserved.
+
+Coordinator owns records/key-name alignment; testing specialist owns service
+tests and red evidence; application specialist owns production after red;
+independent reviewer assesses the stable candidate. Offline readiness persists;
+no live calls, commits or deployment inferred. Branch: llm-feature.
+
+## 2026-10-20 — LLM TASK-007–008 completed
+
+Implemented strict full-envelope response validation and bounded asynchronous
+HTTPS transport after verified behavioural red handoffs, then focused green
+checks and independent review. Response tests cover canonical text, strict
+UTF-8/JSON, complete output structures and Unicode limits. Transport tests cover
+exact destination/headers, TLS, status mappings, wire/decoded limits, gzip,
+deadlines, backpressure, cancellation and late resources. A suspected older-JDK
+gzip issue was withdrawn after passing regressions and Java 25 source inspection;
+no production correction or extra decoder was introduced.
+
+Final `.\gradlew.bat test checkstyleMain checkstyleTest check build` passed in
+4m46s: 1,014 tests across 35 suites, zero failures/errors/skips, both Checkstyle
+checks, JAR and distribution tasks passed. Local JAR entry inspection found the
+new transport classes and no .env or synthetic keystore/corpus entries.
+Independent review has no outstanding demonstrated material findings. See
+[integration/review evidence](../logs/2026-10-20-llm-task007-008-integration.md).
+
+Current handoff: workspace unchanged, branch llm-feature; TASK-001–008 completed,
+TASK-009–017 remain incomplete and unselected. No live calls, real configuration
+reads, runtime/UI integration, new commits, pushes or deployment. Unrelated
+untracked short-workflow skills preserved. Provider-tool, live semantic and
+hosted identity gates remain open. Next implementation requires a new selection.
+
+## 2026-10-20 — LLM TASK-007–008 selected
+
+User selects TASK-007 and TASK-008 in workflow/LLM_FEATURE_PLAN.md using
+implement-task-short. All transitive prerequisites TASK-001–006 are completed
+with dated evidence; preserve those entries. TASK-007 response validation must
+pass before TASK-008 transport implementation. Offline readiness persists;
+no live-call permission or real configuration inspection is inferred.
+
+Coordinator owns shared records and final verification. Testing specialist owns
+specification-derived tests and behavioural red evidence; application specialist
+owns production changes after red; independent review covers the stable candidate.
+One writer at a time owns HttpLlmClient. Scope excludes service/runtime/UI work
+in TASK-009 onward, provider assurance, deployment and commits. Existing untracked
+short-workflow skill directories remain untouched. Branch: llm-feature.
+
 ## 2026-10-20 — Commit completed LLM tasks
 
 User requests committing the completed TASK-001–006 work on the current branch,
@@ -136,7 +246,7 @@ Next is a read-only custom-agent smoke test before issue #6. Confirm actual conf
 
 ## Current handoff
 
-### Active LLM specification and planning handoff — updated 2026-10-20
+### Historical LLM specification and planning handoff — before TASK-001 execution
 
 - Workspace: C:/Users/Yeo Jian Ming/y3/cs3227/CS3227-2610-MP3; observed branch:
   `llm-feature`. Older migration handoffs below are historical context.
@@ -184,7 +294,7 @@ Next is a read-only custom-agent smoke test before issue #6. Confirm actual conf
   commands and source coverage. Read-only delegated review found no material issues.
   No implementation, test execution or credential access occurred. See
   [planning log](../logs/2026-10-20-llm-implementation-plan.md).
-- Current progress: 0/17; configuration readiness and selected execution scope are
+- At planning time: 0/17; configuration readiness and selected execution scope were
   unconfirmed. Provider no-tool assurance and JPro multi-user release gates remain open.
 - Next authorised scope: await user-selected implementation tasks/scope; retain explicit provider-side
   tool-assurance limitation. See the [deployment/limits log](../logs/2026-10-19-llm-deployment-limits-proposal.md) and

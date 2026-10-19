@@ -26,52 +26,8 @@ Do not assume that a feature exists merely because it is described as part of th
 
 ## Project Specifications
 
-The proposed LLM description feature is specified separately in
-`workflow/LLM_FEATURE_PRODUCT_SPEC.md`; see the Developer Guide's LLM specification
-note. Generation is not implemented. The user selected TASK-001–004 in
-`workflow/LLM_FEATURE_PLAN.md` and confirmed endpoint/key readiness on 2026-10-20;
-offline tests may run. Live calls still require separate explicit authorisation.
-Preserve private configuration, no-tool scope and immediate description replacement.
-Resolve its draft questions before implementing affected behaviour.
-Generated descriptions have a 100-word hard maximum and a 50–70-word target;
-this does not change manual description/save limits.
-Use confirmed top-level `output_text` without nested fallback. The target is
-JavaFX/JPro, later Docker/Render; credentials stay in untracked root `.env` on the
-trusted Java side and outside container images. Do not read credentials into logs
-or model context. A no-tool prompt is required but does not verify provider tool
-disabling; expose no application tools. OQ-04 limits are user-approved: 10s connect,
-45s total, 8 KiB request/64 KiB response, one active request/account, 5/minute and
-30/hour/account, no automatic retries. Do not assume the response example model
-is configured.
-The feature design is in `workflow/LLM_FEATURE_TECHNICAL_SPEC.md`. The user approved
-one server with in-memory per-account quotas resetting on restart. Keep HTTP work
-off both JavaFX and ServiceWorker, and guard results by session/form revision.
-Current runtime identity/locking does not establish independent JPro client sessions;
-do not claim multi-user hosting safety from the LLM integration alone.
-Implementation tasks are in `workflow/LLM_FEATURE_PLAN.md`. Planning authorises no
-execution; keep tasks incomplete until their own acceptance evidence exists. Follow
-test-first task order and the user's deferred-test readiness condition. Provider
-tool assurance and JPro multi-user release gates cannot be closed by local tests.
-TASK-002 added Gson 2.14.0, typed `LlmClient` and synthetic offline fixtures;
-ordinary checks exclude `llm-live`. TASK-003's corpus requires a later TASK-014
-production adapter and human semantic review; compilation is not live acceptance.
-`LlmConfiguration.load(Path)` creates a private immutable `.env` snapshot; keep
-its settings access package-private, diagnostics redacted and tests synthetic.
-Startup wiring remains TASK-010. See the Developer Guide's LLM preparation section
-for literal syntax, header compatibility and verification limits. The next user
-selection authorises TASK-005–006 only; TASK-007 onward needs a new selection.
-`DescriptionQuota` is an explicit shared registry, not a per-form limiter or global
-singleton. Keep matching reservation ownership, dispatched charges, pre-dispatch
-rollback and signed monotonic-time arithmetic. Runtime/server injection remains
-TASK-010; quota primitive tests do not establish hosted session isolation.
-`HttpLlmClient` currently builds bounded request bytes only; it does not implement
-`LlmClient` or dispatch HTTP yet. Keep two-stage streaming JSON encoding and the
-8,192-byte UTF-8 limit before future quota admission. Only configured model,
-fixed instruction and title/condition belong in the payload; never add token,
-endpoint, history or tool definitions. Request-building tests are not live-model
-security evidence; transport/response/service/UI work remains TASK-007 onward.
-TASK-001–006 commit grouping and verification are recorded in the Developer
-Guide's LLM preparation section and `logs/2026-10-20-llm-task-commit-grouping.md`.
+For LLM session-bound generation and its current limits, see the LLM preparation
+section in `docs/DeveloperGuide.md` and `workflow/LLM_FEATURE_PLAN.md` (TASK-009).
 
 The Java/Gradle/JUnit versions, Java source directories, Java coding conventions,
 and Gradle verification commands below apply to the existing JavaFX application.

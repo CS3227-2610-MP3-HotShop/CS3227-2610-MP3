@@ -50,6 +50,7 @@ public final class DescriptionQuota {
         }
         Reservation reservation = new Reservation(accountId, UUID.randomUUID());
         state.active = reservation;
+        state.dispatched = false;
         state.attempts.add(new Attempt(reservation.requestId(), now));
         return new Admission(reservation, null, 0);
     }
@@ -62,6 +63,24 @@ public final class DescriptionQuota {
     /** Removes the matching still-active reservation when dispatch could not start locally. */
     synchronized boolean rollback(Reservation reservation) {
         return finish(reservation, true);
+    }
+
+    /** Records the matching active request's actual HTTP start time exactly once. */
+    synchronized boolean markDispatched(Reservation reservation) {
+        Objects.requireNonNull(reservation);
+        AccountState state = accounts.get(reservation.accountId());
+        if (state == null || !reservation.equals(state.active) || state.dispatched) {
+            return false;
+        }
+        long now = clock.getAsLong();
+        for (int index = 0; index < state.attempts.size(); index++) {
+            if (state.attempts.get(index).requestId().equals(reservation.requestId())) {
+                state.attempts.set(index, new Attempt(reservation.requestId(), now));
+                state.dispatched = true;
+                return true;
+            }
+        }
+        return false;
     }
 
     /** Observes retained registry state without triggering expiry or other mutations. */
@@ -77,10 +96,14 @@ public final class DescriptionQuota {
         if (state == null || !reservation.equals(state.active)) {
             return false;
         }
+        if (rollback && state.dispatched) {
+            return false;
+        }
         if (rollback) {
             state.attempts.removeIf(attempt -> attempt.requestId().equals(reservation.requestId()));
         }
         state.active = null;
+        state.attempts.removeIf(attempt -> now - attempt.startedAt() >= HOUR_NANOS);
         if (state.attempts.isEmpty()) {
             accounts.remove(reservation.accountId());
         }
@@ -92,7 +115,8 @@ public final class DescriptionQuota {
         while (iterator.hasNext()) {
             AccountState state = iterator.next();
             // Subtract elapsed times instead of comparing absolute nanoTime values: origins may be negative or wrap.
-            state.attempts.removeIf(attempt -> now - attempt.startedAt() >= HOUR_NANOS);
+            state.attempts.removeIf(attempt -> now - attempt.startedAt() >= HOUR_NANOS
+                    && (state.active == null || !attempt.requestId().equals(state.active.requestId())));
             if (state.active == null && state.attempts.isEmpty()) {
                 iterator.remove();
             }
@@ -122,6 +146,7 @@ public final class DescriptionQuota {
     private static final class AccountState {
         private final List<Attempt> attempts = new ArrayList<>();
         private Reservation active;
+        private boolean dispatched;
     }
 
     private record Attempt(UUID requestId, long startedAt) {

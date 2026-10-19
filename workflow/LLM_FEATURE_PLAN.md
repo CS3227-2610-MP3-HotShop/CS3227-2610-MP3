@@ -6,8 +6,8 @@ NFR-001–007, TC-01–12 and UC-001–003. Created 2026-10-20.
 
 The plan itself authorises no execution or deployment. On 2026-10-20 the user
 explicitly selected TASK-001–004 and confirmed configuration readiness; see their
-execution records below. The next user request selects TASK-005–006 only;
-TASK-007 onward remains unauthorised. Initial source
+execution records below. Subsequent selections completed TASK-005–008 and now
+authorise TASK-009 only; TASK-010 onward remains unauthorised. Initial source
 inspection found the JavaFX editor, single service worker/session and runtime lock,
 but no feature implementation, JSON dependency or `llmLiveTest` task. Inspection
 is not passing runtime evidence. No SQL migration is planned; generation never
@@ -17,7 +17,7 @@ saves a listing.
 
 | Gate | Current state / affected work | Resolution |
 | --- | --- | --- |
-| G-01: implementation scope | Resolved 2026-10-20: TASK-001–004 completed; user subsequently selected TASK-005–006. | Design contracts govern the selected scope; TASK-007 onward remains unauthorised. |
+| G-01: implementation scope | Resolved 2026-10-20: TASK-001–008 completed; user subsequently selected TASK-009. | Design contracts govern the selected scope; TASK-010 onward remains unauthorised. |
 | G-02: deferred tests | Resolved 2026-10-20: user explicitly confirmed endpoints and API key are ready. No secrets inspected. | Offline verification authorised; live calls still require separate explicit authorisation. |
 | G-03: provider tools | Provider-side tools cannot be confirmed disabled. Blocks full end-to-end no-tool security acceptance in TASK-015/017, not independent local-boundary implementation after G-01/02. | Obtain provider capability assurance/configuration evidence, or explicit product-spec revision accepting a narrower guarantee. Prompt instructions or passing samples alone do not close this gate. |
 | G-04: hosted identity | Independent concurrent JPro client identity/session isolation is not established in current code. Multi-user hosted acceptance in TASK-017 remains blocked. | Separately approved lifecycle/session integration review/work; do not add an authentication rewrite to this plan. Local/isolated runtime acceptance can be recorded separately. |
@@ -244,7 +244,15 @@ Evidence: [red log](../logs/2026-10-20-llm-task006-request-red.md),
 the transport component; no nested fallback or reflection-based deserialisation.
 **Source:** Technical 1.2, 2.2, 4; FR-004; NFR-003/005; TC-03/08/12.
 **Dependencies:** TASK-006 — transport component seam and JSON dependency.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. Verified behavioural red (124 cases, 29 expected
+failures), then 127 passing response tests and 219 passing response/request/config
+tests with Checkstyle Main passing. Independent read-only review found no
+material issues. Strict full-envelope validation, canonical text, UTF-8,
+duplicate/depth and word/code-point/byte limits verified; semantic model behaviour
+remains unproven. Evidence:
+[red log](../logs/2026-10-20-llm-task007-response-red.md),
+[implementation log](../logs/2026-10-20-llm-task007-response-implementation.md),
+[integration/review log](../logs/2026-10-20-llm-task007-008-integration.md).
 
 **Steps**
 
@@ -259,9 +267,9 @@ the transport component; no nested fallback or reflection-based deserialisation.
 
 **Acceptance criteria**
 
-- [ ] Valid text extracted once; metadata/nested text never override canonical top-level text.
-- [ ] Structural invalid/refusal/tool responses and hard-limit violations fail safely.
-- [ ] Evidence explicitly distinguishes structural validation from unproven semantic detection.
+- [x] Valid text extracted once; metadata/nested text never override canonical top-level text.
+- [x] Structural invalid/refusal/tool responses and hard-limit violations fail safely.
+- [x] Evidence explicitly distinguishes structural validation from unproven semantic detection.
 
 ### TASK-008: Implement bounded asynchronous HTTPS transport through TDD
 
@@ -269,7 +277,15 @@ the transport component; no nested fallback or reflection-based deserialisation.
 scheduled deadline and bounded identity/gzip response collection.
 **Source:** Technical 2.2/2.3, 5.1; NFR-002/003/005; TC-04/08/09/10.
 **Dependencies:** TASK-007 — request/response contract and focused passing suites.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. Verified 53 behavioural red cases followed by
+69 passing transport cases covering HTTPS policy, status/error mappings,
+independent deadline, streamed identity/gzip limits and cancellation/late arrivals.
+Independent review has no outstanding material findings. Full test, both
+Checkstyle tasks, check and build passed: 1,014 tests, zero failures/errors/skips.
+No provider calls or application wiring added. Evidence:
+[red log](../logs/2026-10-20-llm-task008-transport-red.md),
+[implementation log](../logs/2026-10-20-llm-task008-transport-implementation.md),
+[integration/review log](../logs/2026-10-20-llm-task007-008-integration.md).
 
 **Steps**
 
@@ -285,9 +301,9 @@ scheduled deadline and bounded identity/gzip response collection.
 
 **Acceptance criteria**
 
-- [ ] Timeouts, stream bounds and HTTPS/error mappings pass; no unbounded body buffering.
-- [ ] No extra destination/tool execution; cancellation closes local resources and no retry occurs.
-- [ ] Raw HTTP failures, response bodies and credentials never escape as display/log payloads.
+- [x] Timeouts, stream bounds and HTTPS/error mappings pass; no unbounded body buffering.
+- [x] No extra destination/tool execution; cancellation closes local resources and no retry occurs.
+- [x] Raw HTTP failures, response bodies and credentials never escape as display/log payloads.
 
 ### TASK-009: Implement session-bound generation orchestration through TDD
 
@@ -295,7 +311,16 @@ scheduled deadline and bounded identity/gzip response collection.
 revision; keep network/parsing off JavaFX and the serial service worker.
 **Source:** Technical 1.2/1.3, 2.1, 3.1; FR-001–006; TC-01/02/07/10.
 **Dependencies:** TASK-005 — quota; TASK-008 — transport contract.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. Verified service/preparation behavioural red,
+then 61 passing service, 22 preparation and 37 quota tests with account/transport
+regressions. Session revision guards, responsive logout, actual-dispatch quota
+timestamps and safe terminal ownership are verified. Independent review has no
+outstanding material findings. Final test/style/check/build passed: 1,106 tests,
+zero failures/errors/skips. Runtime wiring remains TASK-010. Evidence:
+[service red](../logs/2026-10-20-llm-task009-service-red.md),
+[preparation red](../logs/2026-10-20-llm-task009-preparation-red.md),
+[implementation](../logs/2026-10-20-llm-task009-service-implementation.md),
+[integration/review](../logs/2026-10-20-llm-task009-integration.md).
 
 **Steps**
 
@@ -310,9 +335,9 @@ revision; keep network/parsing off JavaFX and the serial service worker.
 
 **Acceptance criteria**
 
-- [ ] Service authorises from session, has no caller user-ID parameter or listing mutation dependency.
-- [ ] Pending LLM does not block account/logout work; changed session gets no description.
-- [ ] Quota and all safe outcomes retain specified semantics with passing regression evidence.
+- [x] Service authorises from session, has no caller user-ID parameter or listing mutation dependency.
+- [x] Pending LLM does not block account/logout work; changed session gets no description.
+- [x] Quota and all safe outcomes retain specified semantics with passing regression evidence.
 
 ### TASK-010: Wire runtime, shared quota and shutdown through TDD
 
@@ -529,9 +554,10 @@ documentation reviewer checks traceability before feature Done.
 | TC-05/06/11 | TASK-003/006/013/014/015 |
 | TC-10 | TASK-005/008–013 |
 
-Current progress: **6/17 tasks complete** (TASK-001–006, dated evidence above).
-Selected TASK-005–006 are complete; TASK-001–004 records were preserved. Final
-check/build: 818 passing tests, both Checkstyle checks and JAR packaging passed.
+Current progress: **9/17 tasks complete** (TASK-001–009, dated evidence above).
+Selected TASK-009 is complete; TASK-001–008 records were preserved.
+Final test/style/check/build: 1,106 passing tests, both Checkstyle checks and
+JAR/distribution packaging passed. Generation is not wired into the application.
 Existing configuration readiness permits offline verification only. G-03/04
 still constrain final acceptance; no live calls, runtime/UI integration,
-deployment or execution of TASK-007 onward is authorised by this selection.
+deployment or execution of TASK-010 onward is authorised by this selection.

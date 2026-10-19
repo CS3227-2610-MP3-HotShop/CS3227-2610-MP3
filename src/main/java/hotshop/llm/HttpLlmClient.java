@@ -42,6 +42,7 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
 
     private final LlmConfiguration configuration;
     private final Set<Operation> operations = new HashSet<>();
+    private final Set<CompletableFuture<PreparedRequest>> preparations = new HashSet<>();
     private HttpClient httpClient;
     private ExecutorService worker;
     private DeadlineScheduler scheduler;
@@ -71,6 +72,49 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
     }
 
     @Override
+    public synchronized CompletableFuture<PreparedRequest> prepare(String title, Condition condition) {
+        if (closed || !configuration.isAvailable()) {
+            return CompletableFuture.failedFuture(new PreparationException(
+                    closed ? Failure.CLOSED : Failure.UNAVAILABLE));
+        }
+        CompletableFuture<PreparedRequest> preparation = new CompletableFuture<>();
+        preparations.add(preparation);
+        preparation.whenComplete((value, failure) -> {
+            synchronized (HttpLlmClient.this) {
+                preparations.remove(preparation);
+            }
+        });
+        try {
+            initializeResources();
+            worker.execute(() -> encodePreparation(title, condition, preparation));
+        } catch (RuntimeException failure) {
+            preparation.completeExceptionally(new PreparationException(Failure.UNAVAILABLE));
+        }
+        return preparation;
+    }
+
+    private void encodePreparation(String title, Condition condition,
+            CompletableFuture<PreparedRequest> preparation) {
+        if (preparation.isDone()) {
+            return;
+        }
+        try {
+            byte[] bytes = buildRequest(title, condition);
+            synchronized (this) {
+                if (closed) {
+                    preparation.completeExceptionally(new PreparationException(Failure.CLOSED));
+                } else {
+                    preparation.complete(new Prepared(bytes));
+                }
+            }
+        } catch (IllegalArgumentException failure) {
+            preparation.completeExceptionally(new IllegalArgumentException(INVALID_INPUT));
+        } catch (RuntimeException failure) {
+            preparation.completeExceptionally(new PreparationException(Failure.UNAVAILABLE));
+        }
+    }
+
+    @Override
     public synchronized CompletableFuture<LlmClient.Result> generate(String title, Condition condition) {
         if (closed) {
             return CompletableFuture.completedFuture(new Failed(Failure.CLOSED));
@@ -81,12 +125,24 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
         } catch (IllegalArgumentException | IllegalStateException failure) {
             return CompletableFuture.completedFuture(new Failed(Failure.UNAVAILABLE));
         }
+        initializeResources();
+        return startAttempt(request, () -> { }).result();
+    }
+
+    private void initializeResources() {
         if (worker == null) {
             worker = Executors.newVirtualThreadPerTaskExecutor();
             scheduler = new ScheduledDeadline();
             httpClient = createHttpClient(worker);
         }
-        Operation operation = new Operation(request);
+    }
+
+    private synchronized Attempt startAttempt(byte[] request, Runnable beforeSend) {
+        Operation operation = new Operation(request, beforeSend);
+        if (closed) {
+            operation.finish(new Failed(Failure.CLOSED));
+            return operation;
+        }
         operations.add(operation);
         try {
             operation.registerDeadline(scheduler.schedule(() -> operation.finish(new Failed(Failure.TIMEOUT)),
@@ -95,19 +151,22 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
         } catch (RuntimeException failure) {
             operation.finish(new Failed(Failure.UNAVAILABLE));
         }
-        return operation.result;
+        return operation;
     }
 
     @Override
     public void close() {
         List<Operation> pending;
+        List<CompletableFuture<PreparedRequest>> preparing;
         synchronized (this) {
             if (closed) {
                 return;
             }
             closed = true;
             pending = List.copyOf(operations);
+            preparing = List.copyOf(preparations);
         }
+        preparing.forEach(preparation -> preparation.completeExceptionally(new PreparationException(Failure.CLOSED)));
         pending.forEach(operation -> operation.finish(new Failed(Failure.CLOSED)));
         if (httpClient != null) {
             httpClient.shutdownNow();
@@ -151,21 +210,58 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
         }
     }
 
-    private final class Operation {
+    private final class Prepared implements PreparedRequest {
+        private final byte[] bytes;
+        private boolean consumed;
+
+        Prepared(byte[] bytes) {
+            this.bytes = bytes;
+        }
+
+        @Override
+        public synchronized Attempt dispatch(Runnable beforeSend) {
+            if (consumed) {
+                Operation rejected = new Operation(new byte[0], () -> { });
+                rejected.finish(new Failed(Failure.UNAVAILABLE));
+                return rejected;
+            }
+            consumed = true;
+            return startAttempt(bytes, beforeSend);
+        }
+    }
+
+    private final class Operation implements Attempt {
         private final byte[] request;
-        private final CompletableFuture<LlmClient.Result> result = new CompletableFuture<>();
+        private final Runnable beforeSend;
+        private final CompletableFuture<LlmClient.Result> result = new CompletableFuture<>() {
+            @Override
+            public boolean cancel(boolean mayInterruptIfRunning) {
+                if (!claimTerminal()) {
+                    return isCancelled();
+                }
+                cleanup();
+                return super.cancel(mayInterruptIfRunning);
+            }
+        };
         private CompletableFuture<HttpResponse<byte[]>> exchange;
         private BoundedLlmBodySubscriber subscriber;
         private Cancellable deadline;
         private boolean terminal;
+        private volatile boolean dispatched;
 
-        Operation(byte[] request) {
+        Operation(byte[] request, Runnable beforeSend) {
             this.request = request;
-            result.whenComplete((value, failure) -> {
-                if (result.isCancelled()) {
-                    finish(new Failed(Failure.CLOSED));
-                }
-            });
+            this.beforeSend = beforeSend;
+        }
+
+        @Override
+        public CompletableFuture<LlmClient.Result> result() {
+            return result;
+        }
+
+        @Override
+        public boolean wasDispatched() {
+            return dispatched;
         }
 
         synchronized void registerDeadline(Cancellable incoming) {
@@ -188,6 +284,17 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
                                 .header("Content-Type", "application/json").header("Accept", "application/json")
                                 .header("Accept-Encoding", "identity").timeout(REQUEST_TIMEOUT)
                                 .POST(HttpRequest.BodyPublishers.ofByteArray(request)).build();
+                        try {
+                            beforeSend.run();
+                        } catch (RuntimeException failure) {
+                            finish(new Failed(Failure.UNAVAILABLE));
+                            return;
+                        }
+                        if (terminal || closed) {
+                            finish(new Failed(Failure.CLOSED));
+                            return;
+                        }
+                        dispatched = true;
                         sent = httpClient.sendAsync(post, this::handleBody);
                         exchange = sent;
                         if (terminal) {
@@ -230,14 +337,25 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
         }
 
         void finish(LlmClient.Result outcome) {
+            if (claimTerminal()) {
+                cleanup();
+                result.complete(outcome);
+            }
+        }
+
+        private synchronized boolean claimTerminal() {
+            if (terminal) {
+                return false;
+            }
+            terminal = true;
+            return true;
+        }
+
+        private void cleanup() {
             CompletableFuture<HttpResponse<byte[]>> currentExchange;
             BoundedLlmBodySubscriber currentSubscriber;
             Cancellable currentDeadline;
             synchronized (this) {
-                if (terminal) {
-                    return;
-                }
-                terminal = true;
                 currentExchange = exchange;
                 currentSubscriber = subscriber;
                 currentDeadline = deadline;
@@ -254,7 +372,6 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
             synchronized (HttpLlmClient.this) {
                 operations.remove(this);
             }
-            result.complete(outcome);
         }
     }
 

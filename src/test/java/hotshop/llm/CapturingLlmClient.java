@@ -14,6 +14,25 @@ final class CapturingLlmClient implements LlmClient {
     private final AtomicInteger count = new AtomicInteger();
 
     @Override
+    public CompletableFuture<PreparedRequest> prepare(String title, Condition condition) {
+        return CompletableFuture.completedFuture(beforeSend -> {
+            beforeSend.run();
+            CompletableFuture<Result> completion = generate(title, condition);
+            return new Attempt() {
+                @Override
+                public CompletableFuture<Result> result() {
+                    return completion;
+                }
+
+                @Override
+                public boolean wasDispatched() {
+                    return true;
+                }
+            };
+        });
+    }
+
+    @Override
     public CompletableFuture<Result> generate(String title, Condition condition) {
         CompletableFuture<Result> completion = new CompletableFuture<>();
         calls.add(new Call(title, condition, completion));
