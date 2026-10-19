@@ -33,6 +33,11 @@ public final class HttpLlmClient {
         this.configuration = Objects.requireNonNull(configuration);
     }
 
+    /** Parses an already bounded provider response into a safe result. */
+    static LlmClient.Result parseResponse(byte[] body) {
+        return LlmResponseParser.parse(body);
+    }
+
     /** Encodes only validated product facts and the configured model, before any quota admission. */
     byte[] buildRequest(String title, Condition condition) {
         if (title == null || condition == null) {
