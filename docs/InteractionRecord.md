@@ -1,5 +1,105 @@
 # Project decisions and interactions
 
+## 2026-10-20 — Commit completed LLM tasks
+
+User requests committing the completed TASK-001–006 work on the current branch,
+using task boundaries to group changes. Approved scope: local commits on
+`llm-feature`; no push or further implementation. Group readiness, infrastructure,
+security corpus, configuration, quota and request encoding separately, followed
+by shared completion documentation and integration records. Preserve the four
+untracked short-workflow skill directories outside these commits.
+
+Verification: `.\gradlew.bat check build` succeeded with all 15 actionable tasks
+up-to-date; existing test/build outputs were reused. `git diff --check` passed.
+Handoff: TASK-001–006 complete; generation and TASK-007 onward remain pending.
+Provider tools, live evaluation and hosted identity gates remain open. Commit
+details and final repository checks are recorded in
+[the grouping log](../logs/2026-10-20-llm-task-commit-grouping.md).
+
+## 2026-10-20 — LLM TASK-005–006 completed
+
+Implemented account quota admission and fixed-prompt request encoding using
+delegated test-first handoffs and independent read-only reviews. The quota tests
+cover races, expiry, reservation ownership, rollback, cleanup and signed/wrapped
+monotonic clocks. Review found overstated retry delays for staggered attempts;
+two failing regressions preceded the correction. Request tests cover both JSON
+layers, permitted fields, canonical conditions, code-point and UTF-8 byte limits,
+safe failures and private configuration isolation. No API scope or product
+decision was expanded; TASK-007 onward remains unselected.
+
+Handoff: branch llm-feature; TASK-001–006 Completed Yes, TASK-007–017 remain No.
+Final `.\gradlew.bat check build` passed: 818 tests, zero failures/errors/skips,
+both Checkstyle checks and JAR/distribution tasks passed. Initial sandbox cache
+lock failure was resolved by retrying with the approved wrapper permission.
+Local JAR inspection found no .env or test keystore/corpus entries. Independent
+review has no unresolved material findings. Source/tests/docs/logs updated;
+existing edits preserved, no commits/pushes/deployment. No real private settings
+were read and no live calls made. Actual transport, shared server wiring,
+runtime/UI, semantic evaluation and provider-tool/hosted-identity assurance remain
+pending. Next implementation needs new selected scope. See
+[integration and review log](../logs/2026-10-20-llm-task005-006-integration.md).
+
+## 2026-10-20 — LLM TASK-005–006 selected
+
+User requests implement-task-short for TASK-005 and TASK-006 in the LLM plan.
+Prerequisites TASK-001–004 retain completed evidence; TASK-005 precedes TASK-006,
+and no unfinished prerequisite lies outside selection. The stale 0/17 plan footer
+is reconciled to its four completed entries without reopening them. Scope is
+quota admission and request encoding only; offline readiness persists, with no
+permission for live calls or real-secret inspection. Testing and application
+owners use sequential red/green handoffs; coordinator owns records/integration
+and independent review. TASK-007 onward remains outside this selection.
+
+## 2026-10-20 — LLM TASK-001–004 completed
+
+Executed only the selected plan tasks, with delegated testing, application
+implementation and independent read-only review. TASK-001 records readiness and
+688-test baseline; TASK-002 adds Gson 2.14.0, typed transport seam and isolated
+fixtures; TASK-003 adds the unrun 26-case live corpus/rubric; TASK-004 adds private
+immutable configuration with verified red/green evidence. Review-found quote and
+HTTP header character boundaries received failing regressions before correction.
+Final review has no unresolved material findings. No live calls or real settings
+reads occurred. No broader implementation or release acceptance is implied.
+
+Handoff: branch llm-feature; TASK-001–004 Completed Yes, TASK-005–017 remain No.
+Final `.\gradlew.bat check build shadowJar` passed, 767 tests with zero
+failures/errors/skips; both Checkstyle checks passed. Local JAR excludes .env and
+test fixtures. Existing workspace edits preserved; no commit/push/deployment.
+Generation/runtime/UI, live semantics, provider-tool assurance and hosted session
+isolation remain pending. Next implementation needs a new selected scope; there
+are no incomplete selected tasks. See
+[integration and review evidence](../logs/2026-10-20-llm-task-001-004-integration.md).
+
+## 2026-10-20 — LLM plan selection and configuration readiness confirmed
+
+The user confirmed `workflow/LLM_FEATURE_PLAN.md` as the intended plan and stated
+that endpoints and API key are ready. This resolves the preceding selection
+blocker and the deferred offline-test readiness condition. Scope is TASK-001–004
+only, using the plan's specified design contracts; no live-call permission is
+inferred. No real configuration values were inspected. Provider-tool assurance
+and independent JPro client identity remain unresolved release gates.
+
+Coordinator owns records/integration; testing specialists own infrastructure,
+prewritten live corpus and configuration tests; application specialist implements
+configuration after behavioural red evidence; reviewer checks the final candidate.
+All selected prerequisites are within this batch. Further execution evidence and
+the final handoff will be recorded here and in task logs.
+
+## 2026-10-20 — TASK-001 through TASK-004 selection blocked
+
+The user authorised TASK-001 through TASK-004 using implement-task-short, with
+delegation where appropriate. Its default `workflow/PLAN.md` is absent. The
+candidate `workflow/LLM_FEATURE_PLAN.md` requires explicit selection clarification;
+its existing configuration-readiness restriction still applies to all test runs.
+No implementation, tests, plan completion or delegation occurred. No previous
+decision is superseded. See logs/2026-10-20-task-001-004-plan-selection-blocked.md.
+
+Handoff: branch llm-feature; existing workspace edits preserved. Only this request
+record and its log were added. TASK-001 through TASK-004 remain unverified and
+unexecuted. Next authorised step is to confirm the intended plan and, if it is the
+LLM plan, obtain configuration readiness before gated execution. Do not inspect
+secret values to infer readiness.
+
 ## Current development agreement
 
 - MP3 is the migration source; verify all existing features against guides, code, and tests.
@@ -35,6 +135,65 @@ Agreed to update this record after every decision, including discussion-only tur
 Next is a read-only custom-agent smoke test before issue #6. Confirm actual configured-type discovery and launch; generic agents with copied instructions do not establish TOML discovery. The suggested issue structure (feature parents with frontend/backend tasks where useful) remains a proposal until agreed.
 
 ## Current handoff
+
+### Active LLM specification and planning handoff — updated 2026-10-20
+
+- Workspace: C:/Users/Yeo Jian Ming/y3/cs3227/CS3227-2610-MP3; observed branch:
+  `llm-feature`. Older migration handoffs below are historical context.
+- Completed: requested draft `workflow/LLM_FEATURE_PRODUCT_SPEC.md`, with six
+  sections, observable criteria and security test specifications; supporting guide,
+  agent instructions and feature/task records updated.
+- User decisions: successful generation replaces existing description immediately;
+  provider details remain private and will be inserted through configuration;
+  tests run only after the user inserts endpoint and bearer token.
+- Status: specification only. No application code, executable tests or live LLM
+  requests. No implementation or security acceptance claimed.
+- Resolved OQ-01: maximum 100 generated words, normally 50–70; target is not a
+  minimum. Updated acceptance and word-boundary test definitions; manual limits
+  unchanged. See [follow-up log](../logs/2026-10-19-llm-description-length-decision.md).
+- OQ-02 partially resolved: user supplied response JSON with `status: completed`,
+  top-level `output_text`, equivalent nested assistant text and usage metadata.
+  Example recorded under FR-003; parsing cases added as TC-12. Example model is
+  not a configured-model decision. User now confirms top-level `output_text` is
+  always present: authoritative extraction, no nested fallback. Provider tools
+  cannot be confirmed disabled; user requests a no-tool prompt. App-side execution
+  remains prohibited; provider-side non-use is unverified, not guaranteed by prompt.
+- OQ-03 resolved: current JavaFX/JPro, later Docker/Render; untracked root `.env`
+  holds credentials on the trusted Java side. Git ignore/tracking checks confirm
+  `.env` is ignored/untracked; contents not read. Packaging/secrets not implemented.
+- OQ-04 resolved: user approves 10s connect/45s total, 8 KiB
+  request/64 KiB response, one active request/account, 5/minute and 30/hour/account,
+  no automatic retry. Recorded as requirements and updated TC-10 boundary cases;
+  see [approval log](../logs/2026-10-19-llm-limits-approval.md).
+- Verification: documentation structure, local links and whitespace/diff review;
+  see the task log for executed checks. Runtime and security tests unverified.
+- Technical design requested and drafted in `workflow/LLM_FEATURE_TECHNICAL_SPEC.md`:
+  service/transport contracts, strict JSON response handling, session/form revisions,
+  private config, quota, failure recovery and planned verification. No runtime edits.
+- Design clarification: user approved one server; quota resets on restart. Product
+  NFR-005 updated in place. No persistent/shared cross-replica limiter planned.
+- Read-only delegated integration inspection found existing single session/runtime
+  and exclusive data lock; independent JPro browser users are not established safe.
+  This limitation is recorded without an authentication rewrite. See
+  [technical-spec log](../logs/2026-10-19-llm-technical-spec.md).
+- Technical-spec review complete: added explicit window-disposal guard after
+  delegated review; five-section/reference/local-link/whitespace checks passed.
+  No runtime or security tests executed.
+- Implementation planning requested and completed in `workflow/LLM_FEATURE_PLAN.md`:
+  17 ordered incomplete tasks with ownership, dependencies, TDD steps, acceptance,
+  commands and source coverage. Read-only delegated review found no material issues.
+  No implementation, test execution or credential access occurred. See
+  [planning log](../logs/2026-10-20-llm-implementation-plan.md).
+- Current progress: 0/17; configuration readiness and selected execution scope are
+  unconfirmed. Provider no-tool assurance and JPro multi-user release gates remain open.
+- Next authorised scope: await user-selected implementation tasks/scope; retain explicit provider-side
+  tool-assurance limitation. See the [deployment/limits log](../logs/2026-10-19-llm-deployment-limits-proposal.md) and
+  [response-format log](../logs/2026-10-19-llm-response-format-decision.md).
+  Implementation needs a separate task and resolution of affected open decisions.
+- Records: [task log](../logs/2026-10-19-llm-product-spec.md) and
+  [feature summary](../logs/2026-10-19-feature-llm-description-sdd-summary.md).
+
+### Earlier migration handoff
 
 - Target workspace: E:/CS3227-2610-MP3. The originating chat is attached to MP2; use a fresh MP3 project chat for configuration discovery.
 - Working branch: codex/migration-workflow; verify before changing files.

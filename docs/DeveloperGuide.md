@@ -291,7 +291,151 @@ Workflow approvals and smoke-test evidence are already recorded. The user select
 No additional Projects permission is needed. Issue #6 records publication evidence for the
 tracker documentation.
 
+### LLM description preparation and specification
+
+[LLM Feature Product Specification](../workflow/LLM_FEATURE_PRODUCT_SPEC.md)
+defines proposed optional description generation for Create Listing. A valid result
+immediately replaces existing description text. Provider endpoint, bearer token and
+model will be supplied privately through configuration; no real values belong in
+source control. The LLM receives title and condition only, alongside fixed task
+instructions, with no tools, secrets or internal application context.
+
+Generation is not yet available in the application. The user selected TASK-001–004
+and confirmed endpoint/key readiness on 2026-10-20, permitting offline tests without
+reading real settings. Live calls require separate explicit authorisation. Generated
+descriptions have a hard maximum of 100 words and normally target 50–70 words;
+the target is not a minimum, and manual description limits remain unchanged.
+The user supplied a JSON response example containing completed assistant output
+and duplicate top-level/nested text; see FR-003. Insert description text once,
+without metadata, using confirmed top-level `output_text` without nested fallback.
+Target the current JavaFX/JPro application, later Docker on Render. Load private
+configuration from untracked project-root `.env` on the trusted Java side; never
+include it in container images or browser assets. Existing ignore rules exclude
+`.env` from Git, but container secret provisioning/exclusion is not implemented.
+The user requests a no-tool prompt; expose no application tools and execute no
+returned calls. Provider-side tools cannot currently be confirmed disabled; a
+prompt cannot establish that guarantee. OQ-04 contains user-approved limits:
+10-second connect / 45-second total timeout, 8 KiB request / 64 KiB response,
+one active request/account, 5/minute and 30/hour per account, no automatic retries.
+Technical design must record the approved settings before implementation;
+finite adversarial testing cannot establish immunity to all prompt injections.
+The proposed [LLM technical specification](../workflow/LLM_FEATURE_TECHNICAL_SPEC.md)
+defines the session-bound service, asynchronous Java HTTP transport, strict bounded
+JSON handling, configuration loader and stale-result guards. TASK-002 added Gson
+2.14.0 as the sole JSON dependency and a typed `hotshop.llm.LlmClient` seam;
+production HTTP generation remains future work. Upstream release/security review
+and local Java 25 strict-streaming tests support this dependency choice.
+The user approved one server and in-memory quota reset on restart. Current runtime
+session/locking behaviour does not establish independent JPro browser-client
+identity; multi-user hosting needs a separate lifecycle review. The design can feed
+planning for its limited scope; provider tool assurance/live semantic security
+evaluation and future container release checks remain unverified.
+The [LLM implementation plan](../workflow/LLM_FEATURE_PLAN.md) contains 17 ordered
+tasks, all initially incomplete. Behaviour tasks require runnable tests and verified
+behavioural failures before production changes, then passing checks and refactoring.
+Testing and implementation owners coordinate shared-file edits; the coordinator
+maintains completion evidence. The configuration-readiness gate is resolved; live
+evaluation still requires explicit authorisation. The plan itself authorises
+no execution. Provider-side tool assurance and independent JPro client identity
+remain acceptance gaps; later Docker/Render work is outside the local task scope.
+See the [feature summary](../logs/2026-10-19-feature-llm-description-sdd-summary.md)
+for decisions and verification limits. User Guide changes wait for implemented
+behaviour so proposed controls are not described as existing functionality.
+
+Offline LLM tests and synthetic fixtures live under `src/test/java/hotshop/llm/`
+and `src/test/resources/hotshop/llm/`. Run them with
+`.\gradlew.bat test --tests 'hotshop.llm.*'`. Ordinary `test`, `check` and `build`
+exclude the `llm-live` tag. The separate `.\gradlew.bat llmLiveTest` task is never
+automatically included; do not run it without live-call authorisation. Its tagged
+26-case corpus compiles, but TASK-014 must first register a production
+`LiveLlmClientFactory` adapter. Missing adapters fail explicitly rather than skip.
+See the [evaluation rubric](../src/test/resources/hotshop/llm/SECURITY-EVALUATION.md)
+for mandatory human review and secure evidence requirements. No passing live
+evaluation or provider-side tool assurance is claimed.
+
+The HTTPS fixture trusts a synthetic CA only in its injected test client, binds
+loopback, retains hostname verification and uses synthetic tokens. Its public
+test keystore is not an application credential and stays in test resources.
+Manual clocks, scheduler and completion gates control timing without provider
+calls or changing global TLS settings. See the
+[fixture guide](../src/test/resources/hotshop/llm/HTTPS-FIXTURES.md).
+
+`hotshop.llm.LlmConfiguration.load(Path workingDirectory)` now reads one immutable
+UTF-8 snapshot from that directory's `.env`. Required keys are
+`HOTSHOP_LLM_ENDPOINT`, `HOTSHOP_LLM_BEARER_TOKEN` and `HOTSHOP_LLM_MODEL`.
+It splits at the first `=`, trims surrounding syntax whitespace, accepts matching
+outer single/double quotes, preserves quoted contents literally and ignores blank
+lines, whole-line comments and unrelated assignments. There is no shell expansion,
+escape processing or inline-comment removal. Duplicate required keys, malformed
+standalone lines, unquoted quote characters, unmatched outer quotes and embedded
+CR/LF/NUL invalidate the snapshot. CRLF and LF line endings are supported.
+
+The endpoint must be absolute HTTPS with a host and no user-info or fragment;
+its path/query remain exact and internal hosts are allowed. The model must be
+nonblank. Tokens must be nonempty, contain no whitespace/control characters and
+fit Java HTTP header characters (through U+00FF). Invalid/missing/unreadable files
+return a safe unavailable snapshot with no raw exception or settings in diagnostics.
+Settings access is package-private and guarded; `toString` exposes availability
+only. Loading writes no files. Rewriting/deleting `.env` does not change an existing
+snapshot; startup wiring that loads once belongs to TASK-010 and is not implemented.
+Manual listing creation/persistence still works with missing configuration.
+
+`hotshop.service.DescriptionQuota` now provides the account admission primitive.
+An explicitly owned registry can be shared across session services; it has no
+global singleton or persistent state. It reserves one active slot per account
+and counts at most five attempts in rolling 60 seconds and thirty in rolling
+3,600 seconds. Exact expiry boundaries stop counting; retry seconds round up
+from the earliest capacity in each full window, taking the larger window delay.
+Monotonic elapsed-time arithmetic supports signed/wrapped `System.nanoTime` values.
+
+Matching reservation IDs make terminal release idempotent and keep dispatched
+failures counted. A still-active reservation can instead roll back if dispatch
+never started locally; stale rollback cannot erase charged history or release a
+newer request. Registry operations prune expired inactive accounts while retaining
+active ownership until completion. A new server registry starts empty. TASK-010
+must supply one server-owned instance across services; this primitive does not
+establish runtime wiring or independent hosted session identity. Its deterministic
+suite is `.\gradlew.bat test --tests '*DescriptionQuotaTest'`.
+
+`hotshop.llm.HttpLlmClient` currently builds requests only. It does not implement
+network generation or the `LlmClient` transport interface yet. Its internal
+`buildRequest` checks a stripped title of 1–120 Unicode code points, a non-null
+condition and available immutable settings. Gson `JsonWriter` encodes the title
+and canonical enum condition as product facts, then encodes a separate outer JSON
+object containing exactly `model` and `input` strings. The fixed instruction
+requests grounded plain text, a 50–70-word target, a 100-word maximum and no tools.
+These instructions do not prove model compliance or provider tool disabling.
+
+The builder returns fresh UTF-8 bytes, accepts exactly 8,192 bytes and rejects
+larger bodies with fixed safe diagnostics. Endpoint/token, previous descriptions,
+identity, history and application data do not enter the body. Product text cannot
+alter configuration, and legitimate titles containing words such as “system” are
+accepted. Validation and byte-size checks occur without any quota admission;
+later orchestration must prepare successfully before reserving a dispatch slot.
+Request encoding tests use `.\gradlew.bat test --tests '*LlmRequestTest'` with
+synthetic configuration only. No new dependencies were added in TASK-005–006.
+The selected batch passed 818 full-suite tests, Checkstyle and `check build` on
+2026-10-20; see the
+[integration/review evidence](../logs/2026-10-20-llm-task005-006-integration.md).
+
+TASK-001–006 changes are grouped into one commit per task, followed by a shared
+documentation commit for completion records and integration evidence. Unrelated
+short-workflow skill directories are excluded. During commit preparation,
+`.\gradlew.bat check build` succeeded with all 15 actionable tasks up-to-date;
+this reused existing verification outputs rather than executing tests again.
+See the [commit-grouping log](../logs/2026-10-20-llm-task-commit-grouping.md).
+
 ## Acknowledgements
+
+The LLM specification's distinction between prompt instructions and enforced
+capability boundaries is informed by
+[OWASP prompt injection guidance](https://genai.owasp.org/llmrisk/llm01-prompt-injection/)
+and [system prompt leakage guidance](https://genai.owasp.org/llmrisk/llm072025-system-prompt-leakage/).
+The technical design also consults the official
+[Java HTTP APIs](https://docs.oracle.com/en/java/javase/25/docs/api/java.net.http/java/net/http/HttpClient.html),
+[Gson project](https://github.com/google/gson),
+[Docker secret guidance](https://docs.docker.com/build/building/secrets/) and
+[Render secret-file documentation](https://render.com/docs/configure-environment-variables).
 
 See [Acknowledgements](developerGuide/Acknowledgements.html) for the sources of
 reused or adapted ideas, code, documentation, tools, and third-party libraries.
