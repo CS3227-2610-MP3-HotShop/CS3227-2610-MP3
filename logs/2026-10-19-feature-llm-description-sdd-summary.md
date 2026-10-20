@@ -6,8 +6,8 @@ Stable identifier: llm-description; no issue assigned in this task. TASK-001–0
 are recorded complete, including runtime/UI integration, stale-result protection,
 deterministic boundary checks, two live corpus runs and final independent local
 reviews. The user accepted all 26 second-run semantic results; the first run's
-failure is preserved. TASK-016 completes final documentation; TASK-017 scoped acceptance recording
-remains pending: 16/17 plan tasks recorded complete on 2026-10-20. See the [acceptance report](../docs/developerGuide/LlmAcceptance.md)
+failure is preserved. TASK-016/017 complete final documentation and scoped
+acceptance: 17/17 plan tasks recorded complete on 2026-10-20. See the [acceptance report](../docs/developerGuide/LlmAcceptance.md)
 for their final status and evidence. **Feature not Done:** provider tool assurance
 (G-03) and independent hosted-client session isolation (G-04) remain open.
 

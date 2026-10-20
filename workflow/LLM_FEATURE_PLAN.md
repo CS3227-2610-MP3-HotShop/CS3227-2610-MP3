@@ -617,7 +617,16 @@ all exclusions and future container/Render gates are explicit. Evidence:
 documentation reviewer checks traceability before feature Done.
 **Source:** Technical readiness statement; all FR/NFR and TC IDs; repository Done gates.
 **Dependencies:** TASK-015 — final reviewed candidate; TASK-016 — reviewed docs/packaging evidence.
-**Completed:** No
+**Completed:** Yes — 2026-10-20, for scoped acceptance recording. The
+[acceptance report](../docs/developerGuide/LlmAcceptance.md) traces every FR/NFR,
+TC-01–12 and UC-001–003 to source, tests, actual recorded outcomes and reviews.
+TASK-015/016 prerequisites are complete; independent documentation review
+confirmed traceability and explicit exclusions. Documentation/dependency/link
+checks and whitespace checks passed with two pre-existing unrelated deleted-doc
+links reported. No new runtime, packaging or manual check is claimed. **Feature
+not Done:** G-03/G-04 still block full security/hosted acceptance. Evidence:
+[task log](../logs/2026-10-20-task017-scoped-acceptance.md),
+[independent review](../logs/2026-10-20-task016-017-documentation-review.md).
 
 **Steps**
 
@@ -631,10 +640,10 @@ documentation reviewer checks traceability before feature Done.
 
 **Acceptance criteria**
 
-- [ ] Acceptance report links actual source/tests/results/reviews and documents residual limits.
-- [ ] Full security and hosted acceptance blocked until G-03/G-04 respectively resolved;
+- [x] Acceptance report links actual source/tests/results/reviews and documents residual limits.
+- [x] Full security and hosted acceptance blocked until G-03/G-04 respectively resolved;
   local completion and feature-level completion are distinguished honestly.
-- [ ] Required guide/AGENTS/SDD/log gates satisfied before any feature Done declaration.
+- [x] Required guide/AGENTS/SDD/log gates satisfied before any feature Done declaration.
 
 ## Coverage and handoff
 
@@ -653,8 +662,8 @@ documentation reviewer checks traceability before feature Done.
 | TC-05/06/11 | TASK-003/006/013/014/015 |
 | TC-10 | TASK-005/008–013 |
 
-Current progress: **16/17 tasks recorded complete**, with dated supporting evidence.
-TASK-016 is complete; TASK-017 scoped acceptance recording remains pending. Completed prerequisite entries
+Current progress: **17/17 tasks recorded complete**, with dated supporting evidence.
+TASK-016/017 complete documentation and scoped acceptance only. Completed prerequisite entries
 are preserved. TASK-014 has historical unchecked acceptance boxes alongside its
 explicit Completed Yes/user acceptance record; this discrepancy is reported
 rather than reopening or rewriting that completed task.

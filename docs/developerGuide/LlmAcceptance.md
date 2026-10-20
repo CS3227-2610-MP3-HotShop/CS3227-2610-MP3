@@ -86,7 +86,10 @@ artifact was changed or staged.
   record fresh full-suite/build, packaging and manual browser results when actually
   performed. Do not infer them from the focused checks above.
 
-TASK-016 documentation is complete; TASK-017 consolidates this scoped acceptance
-record separately, with the exclusions above remaining explicit.
+TASK-016/017 completed on 2026-10-20 after
+[independent documentation review](../../logs/2026-10-20-task016-017-documentation-review.md)
+and coordinator checks. The review found no material issue; its deadline wording
+clarification was applied. All 17 plan tasks now have dated completion records,
+with these exclusions explicit.
 They do not grant feature-level Done, full security acceptance or hosted release
 acceptance, and do not authorize subsequent implementation.

@@ -424,8 +424,8 @@ repeated. These are scoped local findings, not a blanket security guarantee.
 The user confirmed that no independent provider assurance is available: G-03
 remains open and full end-to-end no-tool acceptance remains blocked. G-04 also
 remains open; independent concurrent JPro client identity/session safety was not
-verified. TASK-016 completed documentation on 2026-10-20 after independent documentation
-review; TASK-017 records scoped acceptance. The feature
+verified. TASK-016/017 completed documentation and scoped acceptance recording
+on 2026-10-20 after independent documentation review; the feature
 remains **not Done**. See the [acceptance report](developerGuide/LlmAcceptance.md),
 [attributed reviews](../logs/2026-10-20-task015-independent-reviews.md)
 and [checks/scope record](../logs/2026-10-20-task015-final-reviews.md).
