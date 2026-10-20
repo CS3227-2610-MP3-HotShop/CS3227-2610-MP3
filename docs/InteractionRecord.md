@@ -1,39 +1,52 @@
 # Current project handoff
 
-## UI setup accepted; freezing common checkpoint
+## Shared UI benchmark setup frozen; fresh readings required
 
-Branch: codex/ai-search-ui-setup. Owner approved BENCH-P3 implementation and the
-single setup test/documentation correction. Correction1/1 is complete; both final
-focused reviews accept the packet. No measured UI implementation or run started.
+UI-SETUP and UI-FREEZE are accepted in PLAN. The owner-approved setup correction1/1
+is complete; both final focused reviews passed. Common source/test checkpoint is
+3bb5d1960a2997f3c7bc3a8b00d43be0ad8db9c8. A following shared metadata-only revision
+records this freeze and is advanced identically to both arms before dispatch.
+Use their verified current HEAD as the final common revision in the run brief.
 
-Frozen UI suite:21 cases,3 baseline pass/18 expected missing-ai-search assertion
-failures,0 errors/skips,31.039s. Root inspected XML/hashes. Test style and diff pass.
-Unchanged prior client159, legacy UI2, main style and packaging evidence reused;
-no repeated full DB suite, no live calls. Test SHA256:
+Branches/workspaces:
+- codex/multiagent-ai-search-ui: tools/benchmark/multiagent-ai-search-ui
+- codex/singleagent-ai-search-ui: tools/benchmark/singleagent-ai-search-ui
+Both are clean, identical, with frozen test blob be4e072d0de179fe17988de6162e5559b3e5ff45.
+No measured implementation or timer has started. Old37% five-hour/27% weekly readings
+are pre-setup only. Ask fresh current readings and explicit ready before multi;
+then stop after its final reviews/candidate for ending readings. Single needs its
+own separate fresh ready/start reading. Never share arm results or code.
+
+## Frozen packet and ownership
+
+AI-P3/AI-T3/BENCH-P3 define exact AI Search button beside one existing query field,
+normal search zero provider calls, preview/Apply/Dismiss, pending/failure feedback
+and stale edit/page/session guards. UI21 baseline:3pass/18 expected missing-button
+assertion failures,0 errors/skips,31.039s. Corrected test SHA256:
 FA8791E97D6EC34F5342B785AAA23B813801936A7C1FDD0808343DD2956AC05D.
-MarketplaceUi seam SHA256:
-2ED59E588402F72E804823687E23369ACAE55D4168FF6652E5554B59AABE61E7.
-Main/SearchPage unchanged. Both arms receive the same borrowed-provider seam/tests.
+Seam SHA256:2ED59E588402F72E804823687E23369ACAE55D4168FF6652E5554B59AABE61E7.
+Unchanged client159/legacyUI2/mainstyle/packaging evidence reused; correction ran
+only changed UI tests/test style/diff. No full DB suite or provider calls repeated.
 
-Common SOURCE assessment after both candidates must also check Main environment
-configuration/client ownership and visible safe unavailable-config feedback; fixed
-UI tests alone do not prove that path. AI-UI-06 remains required. This allocation
-is disclosed and applies equally to both arms. See AI-P3/AI-T3/BENCH-P3 in specs/PLAN.
+Both arms: fresh no-history Luna implementer, same role, own SearchPage/small UI
+helpers, necessary SearchState, Main wiring, arm-local tests and guides. Frozen
+common tests/client/provider seam/specs/PLAN are read-only. Multi receives final
+independent Luna spec/security reviews after stable code; single self-checks only.
+Common evaluator assesses both saved snapshots afterward. All have the same source
+assessment for Main env/client ownership AND visible safe missing-config feedback;
+disabled-state UI test alone does not satisfy that requirement. No requirement waived.
 
-UI-FREEZE in progress: commit only approved prerequisites/setup/docs, exclude
-.env.local/presentation drafts and preserve old benchmark branches/results CSV.
-Create identical isolated multi/single UI branches. Then request FRESH credit/ready
-before multi, stop for ending reading, and separately confirm single start. Supplied
-37% five-hour/27% weekly is pre-setup only. Do not start a timer from that old reading.
-Fresh measured workers get no inherited chat or other arm results, same Luna role.
+Measured checks: wrapper UI benchmark test + main/test styles, then check/build/
+shadowJar -x test; no broad unchanged DB suite in timing. Record focused/full limits
+honestly. No post-submission fixes without grouped owner approval; preserve initial
+candidates and coarse manual credit readings, no token/dollar estimates. No worker
+reporting Markdown; coordinator maintains existing shared records.
 
-## Prerequisites and constraints
+## Preservation
 
-SoC Chat Completions client accepted, including close/scheduler fix; historical
-readiness passes2/2 consumed. One prior live synthetic proposal accepted; no general
-quality/quota/deployment claim. Original validator/connection benchmark snapshots
-and CSV remain unchanged. Smoke helper is included intentionally despite tools ignore.
-Preserve untracked presentation drafts and Canva DAHYgpyzhe4 combined deck.
-One implementer per batch, final reviews, no worker reporting Markdown. PostgreSQL
-all environments; fake provider/local disposable DB tests only. No hosted DB tests,
-deployment, seller merge, credentials in records or JPro session redesign authorised.
+Original validator/connection benchmark branches/commits/results CSV unchanged.
+Accepted Chat Completions client and lifecycle fixes included in common checkpoint;
+historical readiness2/2 consumed. No new client repair authorised. Local .env.local
+ignored/key preserved, no secrets in commits/briefs; no live calls/hosted DB tests.
+Presentation drafts remain untracked and excluded; Canva DAHYgpyzhe4 unchanged.
+No deployment, seller merge or JPro session redesign authorised.
