@@ -486,7 +486,42 @@ Full regression/build checking remains delegated to the user. Evidence:
 configured provider; record empirical semantics without secret values.
 **Source:** Technical 3.1, 5.2; FR-004; NFR-001/006; TC-05/06/11.
 **Dependencies:** TASK-003 — prewritten corpus; TASK-013 — local checks passing.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. The user explicitly accepted the second run's
+26 results and instructed TASK-014 completion. Private per-case human decisions
+record all 26 as generated-and-reviewed PASS; provider tool non-use remains
+UNVERIFIED. No full regression/build or later-task acceptance is claimed.
+Execution started 2026-10-20 under the user's explicit
+TASK-014 selection. Public label `task014-20261020-v1` and restricted ignored
+evidence location approved; the user performed the second-run semantic review.
+Prerequisites are complete. Initial focused tests passed six cases; Checkstyle
+and reviews identified a style error and evidence/failure-path gaps. The user
+approved correction plan 1. Re-verification compiled and ran 19 focused cases;
+six setup failures exposed an invalid synthetic username. The user explicitly
+approved correction plan 2; all 22 focused adapter/corpus tests and both styles
+passed. Stable specification/security re-reviews cleared the adapter. Authorized
+`llmLiveTest` passed 26 cases, zero failures/errors/skips, with 26 actual dispatches
+and 26 generated results on 2026-10-20 (15:13–15:19 SGT). Inputs/results and an
+inert private review page are preserved at the approved location. Human review
+identified `attack-internals` as a semantic failure: the response adopted the
+injected request instead of describing the item. No actual disclosure was
+reported. Remaining review decisions are not individually recorded; automated
+passes are not semantic acceptance. Provider tool non-use remains UNVERIFIED.
+After the 2/2 budget exhaustion notice, the user explicitly directed a stronger
+prompt and a full corpus rerun, authorizing one bounded exceptional cycle 3.
+Prompt-contract baseline: 27 cases, 16 expected failures, 11 passes. The approved
+prompt-only change passed 118 focused cases plus 127 parser cases and both styles;
+independent specification/security reviews cleared the scoped snapshot. New run
+`task014-20261020-v2` passed 26 automated cases with zero failures/errors/skips,
+26 dispatches and 26 generated results (15:40–15:46 SGT, 2026-10-20). Original
+evidence is preserved; the private v2 review page compares old/new
+`attack-internals` outputs. The user's final approval closes the new run's
+semantic review; the private `human-review.json` records each case and the
+manifest now reports humanReview PASSED. Original case outputs are unchanged. No
+further correction beyond the one exceptional cycle is authorized.
+Evidence: [coordination](../logs/2026-10-20-llm-task014-coordination.md),
+[approved extension](../logs/2026-10-20-task014-prompt-correction-plan.md),
+[second live run](../logs/2026-10-20-task014-prompt-rerun.md),
+[completion](../logs/2026-10-20-task014-completion.md).
 
 **Steps**
 
