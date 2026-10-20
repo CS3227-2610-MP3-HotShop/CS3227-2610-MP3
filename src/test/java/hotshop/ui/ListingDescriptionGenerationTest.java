@@ -37,6 +37,7 @@ import hotshop.DescriptionRuntime;
 import hotshop.llm.LlmClient;
 import hotshop.model.Category;
 import hotshop.model.Condition;
+import hotshop.service.DescriptionService;
 import hotshop.service.ListingDraft;
 import javafx.application.Platform;
 import javafx.scene.Node;
@@ -48,6 +49,8 @@ import javafx.scene.image.PixelFormat;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.stage.Stage;
+import javafx.stage.Window;
+import javafx.stage.WindowEvent;
 
 /** Real-control checks against temporary storage and a controlled, network-free transport. */
 class ListingDescriptionGenerationTest {
@@ -415,6 +418,299 @@ class ListingDescriptionGenerationTest {
         }
         busy.get(10, TimeUnit.SECONDS);
         runtime.closeAsync().get(10, TimeUnit.SECONDS);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"title", "description", "condition"})
+    void generateDescription_relevantFieldEdited_preservesDraftAndAllowsRetry(String field) throws Exception {
+        fullDraft();
+        click("generate-description");
+        var attempt = client.next();
+        editGenerationField(field);
+        String expected = fx(() -> text("description"));
+        completeAndDrain(attempt);
+        assertEquals(expected, fx(() -> text("description")));
+        assertFalse(fx(() -> button("generate-description").isDisabled()));
+        assertFalse(fx(() -> node("generation-progress").isVisible()));
+        assertTrue(fx(() -> label("generation-status").getText().toLowerCase().contains("chang")));
+        click("generate-description");
+        client.next().result().complete(new LlmClient.Generated(DESCRIPTION));
+        awaitFinished();
+        assertEquals(DESCRIPTION, fx(() -> text("description")));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"title", "description", "condition"})
+    void generateDescription_relevantFieldEditedThenReverted_rejectsOldResult(String field) throws Exception {
+        fullDraft();
+        click("generate-description");
+        var attempt = client.next();
+        editGenerationField(field);
+        if (field.equals("condition")) {
+            fx(() -> {
+                ((ComboBox<?>) node("condition")).getSelectionModel().select(Condition.GOOD.ordinal());
+                return null;
+            });
+        } else {
+            type(field, field.equals("title") ? "Chair" : "Manual draft");
+        }
+        completeAndDrain(attempt);
+        assertEquals("Manual draft", fx(() -> text("description")));
+        assertFalse(fx(() -> button("generate-description").isDisabled()));
+        assertTrue(fx(() -> label("generation-status").getText().toLowerCase().contains("chang")));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"navigate", "back", "replace", "login", "relogin", "logout", "save", "hide"})
+    void generateDescription_lifecycleInvalidated_doesNotMutateOldControls(String action) throws Exception {
+        if (action.equals("back")) {
+            fx(() -> {
+                ui.navigate(() -> new ListingEditor(ui, null));
+                return null;
+            });
+            await(() -> node("title") != null && !node("page-body").isDisabled());
+        }
+        fullDraft();
+        click("generate-description");
+        var attempt = client.next();
+        var before = captureGeneration();
+        if (action.equals("navigate") || action.equals("back") || action.equals("logout")) {
+            confirmAction(() -> {
+                if (action.equals("navigate")) {
+                    button("nav-search").fire();
+                } else if (action.equals("back")) {
+                    ui.back();
+                } else {
+                    button("nav-logout").fire();
+                }
+            }, "Discard Changes");
+        } else if (action.equals("save")) {
+            click("save-listing");
+            await(() -> label("page-title").getText().equals("Listing Details")
+                    && !node("page-body").isDisabled());
+        } else if (action.equals("relogin")) {
+            runtime.getAccounts().logout().get(10, TimeUnit.SECONDS);
+            var user = runtime.getAccounts().login("alice", "Sample1!").get(10, TimeUnit.SECONDS);
+            fx(() -> {
+                ui.loggedIn(user);
+                return null;
+            });
+        } else {
+            fx(() -> {
+                switch (action) {
+                    case "replace":
+                        ui.replace(() -> new ListingEditor(ui, null));
+                        break;
+                    case "login":
+                        ui.login("");
+                        break;
+                    case "hide":
+                        stage.hide();
+                        break;
+                    default:
+                        throw new AssertionError(action);
+                }
+                return null;
+            });
+        }
+        completeAndDrain(attempt);
+        assertUnchanged(before);
+    }
+
+    @Test
+    void generateDescription_detachedPage_retainsAccountAdmissionUntilTransportTerminates() throws Exception {
+        fullDraft();
+        click("generate-description");
+        var attempt = client.next();
+        fx(() -> {
+            ui.replace(() -> new ListingEditor(ui, null));
+            return null;
+        });
+        var denied = runtime.getDescriptions().generateDescription("Other chair", Condition.GOOD)
+                .get(10, TimeUnit.SECONDS);
+        assertEquals(DescriptionService.FailureKind.IN_FLIGHT, ((DescriptionService.Failed) denied).kind());
+        assertFalse(attempt.result().isCancelled());
+        assertEquals(0, client.attempts.size());
+        completeAndDrain(attempt);
+        var next = runtime.getDescriptions().generateDescription("Other chair", Condition.GOOD);
+        client.next().result().complete(new LlmClient.Generated(DESCRIPTION));
+        assertTrue(next.get(10, TimeUnit.SECONDS) instanceof DescriptionService.Generated);
+    }
+
+    @Test
+    void generateDescription_cancelledClose_keepsPendingFormUsable() throws Exception {
+        fullDraft();
+        click("generate-description");
+        var attempt = client.next();
+        confirmAction(() -> stage.fireEvent(new WindowEvent(stage, WindowEvent.WINDOW_CLOSE_REQUEST)), "Cancel");
+        assertTrue(fx(() -> stage.isShowing()));
+        completeAndDrain(attempt);
+        assertEquals(DESCRIPTION, fx(() -> text("description")));
+        assertFalse(fx(() -> button("generate-description").isDisabled()));
+        type("description", "Still editable");
+        assertEquals("Still editable", fx(() -> text("description")));
+    }
+
+    @Test
+    void generateDescription_acceptedClose_doesNotMutateOldControls() throws Exception {
+        fullDraft();
+        click("generate-description");
+        var attempt = client.next();
+        var before = captureGeneration();
+        confirmAction(() -> stage.fireEvent(new WindowEvent(stage, WindowEvent.WINDOW_CLOSE_REQUEST)),
+                "Discard Changes");
+        completeAndDrain(attempt);
+        assertUnchanged(before);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"accept-close", "cancel-close", "logout", "relogin"})
+    void generateDescription_completionQueuedBeforeLifecycleChange_checksFinalDecision(String action) throws Exception {
+        fullDraft();
+        click("generate-description");
+        var attempt = client.next();
+        var before = captureGeneration();
+        CountDownLatch entered = new CountDownLatch(1);
+        CountDownLatch release = new CountDownLatch(1);
+        CompletableFuture<Void> closed = new CompletableFuture<>();
+        var runtimeUser = runtime.getAccounts().getOwnProfile().get(10, TimeUnit.SECONDS);
+        CountDownLatch workerEntered = new CountDownLatch(1);
+        CountDownLatch workerRelease = new CountDownLatch(1);
+        Platform.runLater(() -> {
+            entered.countDown();
+            try {
+                assertTrue(release.await(10, TimeUnit.SECONDS));
+                if (action.equals("logout")) {
+                    button("nav-logout").fire();
+                } else if (action.equals("relogin")) {
+                    ui.loggedIn(runtimeUser);
+                } else {
+                    stage.fireEvent(new WindowEvent(stage, WindowEvent.WINDOW_CLOSE_REQUEST));
+                }
+                closed.complete(null);
+            } catch (Throwable failure) {
+                closed.completeExceptionally(failure);
+            }
+        });
+        assertTrue(entered.await(10, TimeUnit.SECONDS));
+        try {
+            attempt.result().complete(new LlmClient.Generated(DESCRIPTION));
+            runtime.getAccounts().getCurrentUserId().get(10, TimeUnit.SECONDS);
+            if (action.equals("relogin")) {
+                runtime.getAccounts().logout().get(10, TimeUnit.SECONDS);
+                runtime.getAccounts().login("alice", "Sample1!").get(10, TimeUnit.SECONDS);
+            }
+            if (action.equals("logout")) {
+                runtime.getAccounts().changePassword("Sample1!", "Other2!Password").thenRun(() -> {
+                    workerEntered.countDown();
+                    try {
+                        assertTrue(workerRelease.await(10, TimeUnit.SECONDS));
+                    } catch (InterruptedException failure) {
+                        Thread.currentThread().interrupt();
+                        throw new AssertionError(failure);
+                    }
+                });
+                assertTrue(workerEntered.await(10, TimeUnit.SECONDS));
+            }
+        } finally {
+            release.countDown();
+        }
+        try {
+            if (!action.equals("relogin")) {
+                acceptDialog(action.equals("cancel-close") ? "Cancel" : "Discard Changes");
+            }
+            closed.get(10, TimeUnit.SECONDS);
+            fx(() -> null);
+            if (action.equals("cancel-close")) {
+                assertTrue(fx(() -> stage.isShowing()));
+                assertEquals(DESCRIPTION, fx(() -> text("description")));
+                assertFalse(fx(() -> button("generate-description").isDisabled()));
+            } else if (action.equals("logout")) {
+                fx(() -> {
+                    assertEquals(before.text(), before.description().getText());
+                    assertEquals(before.message(), before.status().getText());
+                    return null;
+                });
+            } else {
+                assertUnchanged(before);
+            }
+        } finally {
+            workerRelease.countDown();
+        }
+    }
+
+    @Test
+    void generateDescription_failureAfterFieldEdit_preservesDraftAndReportsChangedDraft() throws Exception {
+        fullDraft();
+        click("generate-description");
+        var attempt = client.next();
+        type("description", "New manual draft");
+        attempt.result().complete(new LlmClient.Failed(LlmClient.Failure.NETWORK));
+        runtime.getAccounts().getCurrentUserId().get(10, TimeUnit.SECONDS);
+        awaitFinished();
+        assertEquals("New manual draft", fx(() -> text("description")));
+        assertTrue(fx(() -> label("generation-status").getText().toLowerCase().contains("chang")));
+    }
+
+    private void editGenerationField(String field) throws Exception {
+        if (field.equals("condition")) {
+            fx(() -> {
+                ((ComboBox<?>) node("condition")).getSelectionModel().select(Condition.NEW.ordinal());
+                return null;
+            });
+        } else {
+            type(field, "Changed draft");
+        }
+    }
+
+    private GenerationControls captureGeneration() throws Exception {
+        return fx(() -> new GenerationControls((TextInputControl) node("description"),
+                label("generation-status"), button("generate-description"), node("generation-progress"),
+                text("description"), label("generation-status").getText(),
+                button("generate-description").isDisabled(), node("generation-progress").isVisible()));
+    }
+
+    private void assertUnchanged(GenerationControls before) throws Exception {
+        fx(() -> {
+            assertEquals(before.text(), before.description().getText());
+            assertEquals(before.message(), before.status().getText());
+            assertEquals(before.disabled(), before.generate().isDisabled());
+            assertEquals(before.visible(), before.progress().isVisible());
+            return null;
+        });
+    }
+
+    private void completeAndDrain(PendingAttempt attempt) throws Exception {
+        attempt.result().complete(new LlmClient.Generated(DESCRIPTION));
+        runtime.getAccounts().getCurrentUserId().get(10, TimeUnit.SECONDS);
+        fx(() -> null);
+        fx(() -> null);
+    }
+
+    private void confirmAction(Runnable action, String choice) throws Exception {
+        Platform.runLater(action);
+        acceptDialog(choice);
+        fx(() -> null);
+    }
+
+    private void acceptDialog(String choice) throws Exception {
+        await(() -> {
+            for (Window window : List.copyOf(Window.getWindows())) {
+                if (window != stage && window.isShowing()) {
+                    for (Node node : window.getScene().getRoot().lookupAll(".button")) {
+                        if (node instanceof Button button && button.getText().equals(choice)) {
+                            button.fire();
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        });
+    }
+
+    private record GenerationControls(TextInputControl description, Label status, Button generate, Node progress,
+            String text, String message, boolean disabled, boolean visible) {
     }
 
     private void fullDraft() throws Exception {

@@ -50,10 +50,12 @@ it as needed. It remains unsaved until you fill in the required listing fields
 and choose **Save Listing**. Generation is available only when creating a listing.
 
 While generating, progress appears and Generate is disabled. You can still edit,
-save manually or leave using the usual unsaved-changes confirmation. Currently,
-wait for generation to finish before editing title, condition or description:
-a result can replace edits made while you remain on that form. Further protection
-for edits and window disposal is still pending.
+save manually or leave using the usual unsaved-changes confirmation. Editing the
+title, condition or description while generation is pending makes that result
+stale, even if you change the value back. Your draft is kept and you can request
+generation again after the earlier attempt finishes. Leaving, logging out or
+closing the window also prevents its result from updating that form. Cancelling
+the discard/close confirmation keeps the form usable.
 
 Failures show feedback beside Generate and preserve your draft. You can retry
 deliberately or write your own description; missing provider settings do not

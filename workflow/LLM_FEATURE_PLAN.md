@@ -6,8 +6,9 @@ NFR-001–007, TC-01–12 and UC-001–003. Created 2026-10-20.
 
 The plan itself authorises no execution or deployment. On 2026-10-20 the user
 explicitly selected TASK-001–004 and confirmed configuration readiness; see their
-execution records below. Subsequent selections completed TASK-005–009; the user
-has now selected TASK-010–011 and confirmed this plan. TASK-012 onward remains
+execution records below. Subsequent selections completed TASK-005–011; the user
+has now selected TASK-012–013 in this plan, with one commit per task and full
+regression verification deferred to the user. TASK-014 onward remains
 unauthorised. Initial source
 inspection found the JavaFX editor, single service worker/session and runtime lock,
 but no feature implementation, JSON dependency or `llmLiveTest` task. Inspection
@@ -18,7 +19,7 @@ saves a listing.
 
 | Gate | Current state / affected work | Resolution |
 | --- | --- | --- |
-| G-01: implementation scope | Resolved 2026-10-20: TASK-001–009 completed; user selected TASK-010–011 and confirmed this plan. | Design contracts govern the selected scope; TASK-012 onward remains unauthorised. |
+| G-01: implementation scope | Resolved 2026-10-20: TASK-001–011 completed; user selected TASK-012–013. | Design contracts govern the selected scope; TASK-014 onward remains unauthorised. |
 | G-02: deferred tests | Resolved 2026-10-20: user explicitly confirmed endpoints and API key are ready. No secrets inspected. | Offline verification authorised; live calls still require separate explicit authorisation. |
 | G-03: provider tools | Provider-side tools cannot be confirmed disabled. Blocks full end-to-end no-tool security acceptance in TASK-015/017, not independent local-boundary implementation after G-01/02. | Obtain provider capability assurance/configuration evidence, or explicit product-spec revision accepting a narrower guarantee. Prompt instructions or passing samples alone do not close this gate. |
 | G-04: hosted identity | Independent concurrent JPro client identity/session isolation is not established in current code. Multi-user hosted acceptance in TASK-017 remains blocked. | Separately approved lifecycle/session integration review/work; do not add an authentication rewrite to this plan. Local/isolated runtime acceptance can be recorded separately. |
@@ -56,6 +57,13 @@ requires separate explicit live-run authorisation. No live calls through ordinar
 `test`, `check` or `build`. Use synthetic secrets and controlled clients for all
 ordinary tests. Baseline/check/build failures outside this feature are reported
 separately; do not weaken tests or Checkstyle.
+
+**TASK-012–013 verification override (2026-10-20):** the user explicitly requests
+no full regression suite after each task and will handle that checking. Run
+focused new/related tests and both Checkstyle tasks; do not run unfiltered `test`
+or `check build` as part of this selection. Record focused outcomes and leave
+full-suite/build verification delegated to the user, without claiming it passed.
+This overrides the full-command step in TASK-013 for this selected execution.
 
 ## Ordered tasks
 
@@ -410,7 +418,16 @@ TASK-012 revision/disposal safeguards remain outside this completion. Evidence:
 for field revisions, routes, authentication and accepted disposal.
 **Source:** Technical 2.1, 4/5.1; FR-006; TC-10; UC-003.
 **Dependencies:** TASK-011 — generation controls and completion path.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. Behavioral red (49 cases, nine expected failures)
+preceded guards. Combined generation/marketplace UI suites passed 115 tests
+(53 generation, 62 marketplace), zero failures/errors/skips; both Checkstyle
+tasks passed. Field edit/revert, route/auth changes, accepted/cancelled close,
+hidden/queued completion and retained admission are verified. Independent review
+found no substantial issues. Full regression/build checks are delegated to the
+user by the execution override above. Evidence:
+[red](../logs/2026-10-20-llm-task012-stale-ui-tests-red.md),
+[implementation](../logs/2026-10-20-llm-task012-ui-implementation.md),
+[integration](../logs/2026-10-20-llm-task012-integration.md).
 
 **Steps**
 
@@ -425,9 +442,9 @@ for field revisions, routes, authentication and accepted disposal.
 
 **Acceptance criteria**
 
-- [ ] No late result/status reaches disposed, detached, edited or differently authenticated UI.
-- [ ] Cancelled close leaves usable form; existing dirty/discard/navigation behaviour preserved.
-- [ ] Full new/related UI regression suites pass deterministically.
+- [x] No late result/status reaches disposed, detached, edited or differently authenticated UI.
+- [x] Cancelled close leaves usable form; existing dirty/discard/navigation behaviour preserved.
+- [x] Full new/related UI regression suites pass deterministically.
 
 ### TASK-013: Verify integrated security boundaries and regressions
 
@@ -571,11 +588,13 @@ documentation reviewer checks traceability before feature Done.
 | TC-05/06/11 | TASK-003/006/013/014/015 |
 | TC-10 | TASK-005/008–013 |
 
-Current progress: **11/17 tasks complete** (TASK-001–011, dated evidence above).
-Selected TASK-010–011 are complete; TASK-001–009 records were preserved.
-Final full verification passed with 1,149 tests across 39 suites, zero
+Current progress: **12/17 tasks complete** (TASK-001–012, dated evidence above).
+Selected TASK-012 is complete; TASK-013 is eligible. TASK-001–011 records were preserved.
+Prior TASK-010–011 full verification passed with 1,149 tests across 39 suites, zero
 failures/errors/skips, both Checkstyle checks, check and build. Guides and logs
-describe the implemented runtime/UI behavior and pending TASK-012 safeguards.
+describe the implemented runtime/UI behavior. TASK-012 focused verification passed
+115 UI tests and both styles. Full regression/build checks for this selection are
+delegated to the user; no current full-suite result is claimed.
 Existing configuration readiness permits offline verification only. G-03/04
 still constrain final acceptance. No live calls, deployment or execution of
-TASK-012 onward is authorised by this selection.
+TASK-014 onward is authorised by this selection.

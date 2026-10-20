@@ -44,11 +44,14 @@ final class ListingEditor {
     private TextField title;
     private TextArea description;
     private List<String> initialFields;
+    private long formRevision;
+    private long generationSequence;
 
     ListingEditor(MarketplaceUi app, Listing original) {
         this.app = app;
         this.original = original;
         page = app.page(original == null ? "Create Listing" : "Edit Listing");
+        page.setLeaving(() -> generationSequence++);
         if (original == null) {
             page.load(app.runtime.getAccounts()::getOwnProfile,
                     user -> build(user.getPreferredPickupLocation().orElse("")));
@@ -81,6 +84,9 @@ final class ListingEditor {
                         UiControls.button("Cancel", "cancel-edit", app::back)));
         page.body.getChildren().add(form);
         initialFields = fields();
+        title.textProperty().addListener((observable, previous, value) -> formRevision++);
+        description.textProperty().addListener((observable, previous, value) -> formRevision++);
+        condition.valueProperty().addListener((observable, previous, value) -> formRevision++);
         page.setDirty(() -> !initialFields.equals(fields()) || !originalPhotos().equals(photos));
         renderPhotos();
     }
@@ -117,16 +123,30 @@ final class ListingEditor {
         generate.setDisable(true);
         generationProgress.setVisible(true);
         generationMessage("Generating description… You can keep editing or save your listing.", "muted");
+        long sequence = ++generationSequence;
+        long revision = formRevision;
+        long authentication = app.authenticationRevision();
         try {
             app.runtime.getDescriptions().generateDescription(title.getText(), condition.getValue())
-                    .whenComplete((result, failure) -> Platform.runLater(() -> {
-                        if (app.isCurrent(page)) {
-                            finishGeneration(failure == null ? result : null);
-                        }
-                    }));
+                    .whenComplete((result, failure) -> Platform.runLater(() -> app.completeGeneration(() ->
+                            completeGeneration(sequence, revision, authentication, failure == null ? result : null))));
         } catch (RuntimeException failure) {
-            finishGeneration(null);
+            completeGeneration(sequence, revision, authentication, null);
         }
+    }
+
+    private void completeGeneration(long sequence, long revision, long authentication,
+            DescriptionService.GenerationResult result) {
+        if (!app.isGenerationCurrent(page, authentication) || sequence != generationSequence) {
+            return;
+        }
+        if (revision != formRevision) {
+            generate.setDisable(false);
+            generationProgress.setVisible(false);
+            generationMessage("Your draft changed. Generate a new description when you are ready.", "muted");
+            return;
+        }
+        finishGeneration(result);
     }
 
     private void finishGeneration(DescriptionService.GenerationResult result) {

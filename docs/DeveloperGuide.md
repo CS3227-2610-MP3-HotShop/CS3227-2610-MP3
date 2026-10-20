@@ -323,7 +323,8 @@ The proposed [LLM technical specification](../workflow/LLM_FEATURE_TECHNICAL_SPE
 defines the session-bound service, asynchronous Java HTTP transport, strict bounded
 JSON handling, configuration loader and stale-result guards. TASK-002 added Gson
 2.14.0 as the sole JSON dependency and a typed `hotshop.llm.LlmClient` seam;
-TASK-008 now implements the transport, with application wiring still pending.
+TASK-008 implements transport, TASK-010–011 wire the runtime/UI, and TASK-012
+guards stale UI completions.
 Upstream release/security review
 and local Java 25 strict-streaming tests support this dependency choice.
 The user approved one server and in-memory quota reset on restart. Current runtime
@@ -341,7 +342,7 @@ no execution. Provider-side tool assurance and independent JPro client identity
 remain acceptance gaps; later Docker/Render work is outside the local task scope.
 See the [feature summary](../logs/2026-10-19-feature-llm-description-sdd-summary.md)
 for decisions and verification limits. The User Guide describes implemented
-generation controls and identifies the remaining UI lifecycle restrictions.
+generation controls, lifecycle behavior and remaining hosting/security limits.
 
 Offline LLM tests and synthetic fixtures live under `src/test/java/hotshop/llm/`
 and `src/test/resources/hotshop/llm/`. Run them with
@@ -552,14 +553,35 @@ Success sets the retained Description text area once and leaves `initialFields`
 unchanged, preserving normal dirty tracking. No generation callback saves a listing.
 Failures preserve the draft and local rate-limit feedback displays safe retry seconds.
 
-TASK-011 checks the current page before applying a queued completion. It does not
-yet track field revisions, authentication-route revisions or accepted window
-disposal; these safeguards remain TASK-012. A result can still overwrite edits on
-the active form. Do not infer complete stale-result protection or feature-wide
-acceptance from these controls. The User Guide records this restriction.
+TASK-012 adds monotonically increasing title/condition/description revisions and
+request sequences. Even an edit changed back invalidates the earlier result.
+Completion also checks the current page, UI authentication revision and disposed
+state before changing generation controls. An edited active form retains its
+draft, shows changed-draft feedback and permits another explicit request after
+termination. Detached, differently authenticated and disposed forms receive no
+generation field or status updates.
+
+The shell invokes the outgoing page's leave hook before navigation, back,
+replacement and login routes. Accepted logout increments the UI authentication
+revision before service logout is queued; logging into the same account is still
+a new UI revision. Accepted close and window hidden dispose the UI. A dirty
+confirmation runs a nested JavaFX loop, so generation completions are deferred
+until the caller has handled its decision. Accepted actions invalidate before
+delivery; cancelled confirmation retains normal usability. Page invalidation
+does not cancel transport or release shared admission while a request is active.
+These guards do not establish multi-user JPro session isolation or live semantics.
 The new `ListingDescriptionGenerationTest` uses real JavaFX controls, temporary
 SQLite data and a controlled transport. Both UI test suites tolerate an already
 started JavaFX toolkit so they can run together in one test JVM.
+
+TASK-012 focused verification (2026-10-20) passed
+`.\gradlew.bat test --tests '*ListingDescriptionGenerationTest' --tests '*MarketplaceUiTest'`:
+115 tests (53 generation, 62 marketplace), zero failures/errors/skips. Both
+Checkstyle tasks passed, and independent review found no substantial issues.
+The user explicitly delegates full regression and build checking to themselves
+for TASK-012–013; no unfiltered test/check/build was run for these changes.
+Each selected task is committed separately, including its guides, plan and logs.
+See [TASK-012 evidence](../logs/2026-10-20-llm-task012-integration.md).
 
 Final TASK-010–011 verification on 2026-10-20 passed
 `.\gradlew.bat test checkstyleMain checkstyleTest check build`: 1,149 tests across
