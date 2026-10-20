@@ -20,3 +20,4 @@ _markbind/logs/
 tools/
 node_modules/
 .env
+logs/jpro.*

@@ -32,7 +32,7 @@ and helpers inside these components rather than creating parallel frameworks.
 | `src/main/java/hotshop/service/DescriptionService.java` | Session authorisation, validation, admission, asynchronous orchestration and safe result/failure types. Exposes no user-ID parameter. |
 | `src/main/java/hotshop/llm/LlmClient.java` | Small injectable transport contract accepting only permitted product input and returning validated text; production implementation uses HTTPS. |
 | `src/main/java/hotshop/llm/HttpLlmClient.java` | Fixed prompt, JSON encoding/decoding, bounded response collection, HTTPS and response checks. No tool dispatcher. |
-| `src/main/java/hotshop/llm/LlmConfiguration.java` | Immutable private endpoint/token/model settings and `.env` loading; safe availability result when invalid. Never generate a credential-bearing `toString`. |
+| `src/main/java/hotshop/llm/LlmConfiguration.java` | Immutable private endpoint/token/model settings; environment-first startup loading with file-only/injected test seams and `.env` fallback. Safe unavailable result; never generate a credential-bearing `toString`. |
 | `src/main/java/hotshop/service/DescriptionQuota.java` | Account-keyed admission state shared by all description services in one server process. Atomic reservation, rolling windows and release. |
 | Existing `ApplicationRuntime.java` | Owns session-bound service, injects transport/quota, closes pending work. Existing open overloads retained; test injection uses explicit fake configuration/client. |
 | Existing `AuthenticatedSession.java` | Add a monotonically increasing session revision on login and logout; capture/recheck identity and revision on `ServiceWorker`. |
@@ -58,7 +58,7 @@ security advisories before implementation; this document adds no dependency.
 | Service snapshot | account `UUID`, session `long revision` | Captured by the service worker; not provided by the UI or sent to provider. Same account after logout/login is a different session. |
 | Form snapshot | request sequence, form instance, UI auth revision, input/description revision | Local only; monotonically increment revision on every title/condition/description edit, even if changed back. Snapshot raw UI values as well as normalised request input. |
 | Quota entry | account UUID, deque of monotonic dispatch timestamps, active reservation ID | At most 30 relevant timestamps/account; shared in process, no prompt, credential or description storage. |
-| Configuration | `URI endpoint`, private token string, model string | All required for availability; UTF-8 settings described in section 3. Not exposed as UI/model data. |
+| Configuration | `URI endpoint`, private token string, model string | One complete runtime environment or UTF-8 file source, selected as described in section 3. All required for availability; not exposed as UI/model data. |
 
 Word counting: after trimming, split into maximal runs of characters that are
 neither `Character.isWhitespace` nor `Character.isSpaceChar`; count a run as one
@@ -290,12 +290,30 @@ claims about internals are quality/security failures, not evidence of real acces
 
 ### 3.2 Configuration and hosting
 
-Use private root `.env` keys `SOCLAAS_BASE_URL`, `SOCLAAS_API_KEY`,
-`SOCLAAS_MODEL`. The user confirmed these names on 2026-10-20, superseding
-HOTSHOP_LLM_* names. No real values or example provider model are committed.
+Use private runtime environment keys `SOCLAAS_BASE_URL`, `SOCLAAS_API_KEY`,
+`SOCLAAS_MODEL`, with local working-directory `.env` fallback. TASK-018 source
+selection was confirmed on 2026-10-20: presence of any required environment key
+selects that source exclusively. Require all three valid values; partial, empty,
+blank-invalid or malformed settings disable generation without file fallback.
+Only absence of all three required keys permits the existing file loader; ignore
+unrelated environment keys. A complete valid environment bypasses file access,
+even when `.env` is missing, malformed or unreadable. Denied environment access
+returns safe unavailability, without fallback or raw exception details.
+The names supersede HOTSHOP_LLM_* names. No real values are committed.
 BASE_URL remains the exact full HTTPS request URI, without an appended path.
 Resolve `.env` from the configured
 application working directory, never from user-controlled listing data or resources.
+
+`LlmConfiguration.loadFromEnvironment(Path)` is the explicit production startup
+factory, acquiring process environment once through `System.getenv`. A package-local
+supplier overload accepts synthetic environment maps for deterministic tests and
+denied-access cases. Existing `load(Path)` stays file-only; ordinary runtime opens
+and fixtures acquire no ambient settings. `Main` calls the environment-aware
+factory once through its lazy server owner. Neither source writes configuration.
+Environment values are literal strings, with no dotenv unquoting, syntax trimming
+or expansion. Preserve valid values exactly; reject null values and embedded
+CR/LF/NUL. Reuse the same endpoint, header-safe token and nonblank-model validation
+for both sources. The immutable snapshot cannot change after source mutation.
 
 Read UTF-8 `KEY=VALUE` lines with optional matching single/double quotes, blank
 lines and whole-line `#` comments. Split at the first `=`, allow `=` in values,
@@ -315,8 +333,11 @@ only trusted operator configuration can choose the exact destination.
 
 Root `.env` is currently ignored/untracked (checked without reading contents).
 During later containerisation, exclude it from build context via `.dockerignore`
-and from JAR/JPro resources; do not bake it into Docker ARG/ENV/layers. Mount the
-runtime secret file at the working-directory `.env` path with restricted access.
+and from JAR/JPro resources; do not bake credentials into Docker ARG/ENV/layers.
+Supply runtime environment values through the host's private service settings,
+or mount a runtime secret file at the working-directory `.env` path with restricted
+access when all three environment keys are absent. Do not discover `/etc/secrets`
+automatically or export environment values to files.
 Render supports runtime secret files; exact mount/deployment wiring belongs to
 the later packaging task. This feature performs no deployment or secret upload.
 [Docker secret guidance](https://docs.docker.com/build/building/secrets/),
@@ -384,6 +405,15 @@ Tests are to be written under `src/test/java/hotshop/llm/` and existing
 `HttpLlmClientTest`, `DescriptionServiceTest`, `DescriptionQuotaTest`,
 `ListingDescriptionGenerationTest` and separately tagged `LlmLiveSecurityTest`.
 Use JUnit naming `<operation>_<inputOrState>_<expectedOutcome>`.
+
+TASK-018 configuration tests inject a synthetic environment supplier/map and
+temporary files. Cover complete/absent/all six partial key sets, blank/null/invalid
+values, no file access for valid environment, denied environment access, literal
+values, shared validation boundaries, immutable snapshots and safe failures.
+An isolated JVM may verify the public process-environment factory with explicit
+synthetic child settings and an isolated working directory; never mutate the
+parent process environment or load the operator's `.env`. File-only fixtures and
+offline runtime overloads retain their original deterministic behaviour.
 
 | Planned evidence | Product coverage |
 | --- | --- |
