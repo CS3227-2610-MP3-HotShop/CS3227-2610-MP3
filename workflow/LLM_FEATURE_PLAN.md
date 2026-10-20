@@ -546,7 +546,18 @@ Evidence: [coordination](../logs/2026-10-20-llm-task014-coordination.md),
 coverage; coordinator resolves findings without granting unearned security acceptance.
 **Source:** Technical 3.1/3.3, 5.2; NFR-001–007; G-03/04.
 **Dependencies:** TASK-013 — local evidence; TASK-014 — live evidence.
-**Completed:** No
+**Completed:** Yes — 2026-10-20, for the scoped local review only. Three independent
+read-only reviewers assessed candidate `81f71ee578e91a62a7e30be74ecd4d4ecd3ddd9e`
+and found no new material implementation, coverage or security defect in scope.
+The focused offline run passed 586 tests across 15 suites, zero failures/errors/
+skips; both Checkstyle checks were up to date. No source/test correction or live
+rerun was needed. The user confirmed no independent provider assurance is
+available and instructed G-03 remain open: full end-to-end no-tool acceptance
+stays blocked. G-04 remains open, explicitly excluding unverified independent
+hosted-user session safety. No full regression/build, packaging, hosted-browser,
+TASK-016/017 or final feature acceptance is claimed. Evidence:
+[independent reviews](../logs/2026-10-20-task015-independent-reviews.md),
+[scope/checks](../logs/2026-10-20-task015-final-reviews.md).
 
 **Steps**
 
@@ -559,9 +570,9 @@ coverage; coordinator resolves findings without granting unearned security accep
 
 **Acceptance criteria**
 
-- [ ] Review findings, candidate revision and actual corrective evidence recorded.
-- [ ] Important defects resolved; full no-tool acceptance stays blocked while G-03 is open.
-- [ ] Local review explicitly excludes unverified multi-user hosted safety; no blanket approval.
+- [x] Review findings, candidate revision and actual corrective evidence recorded.
+- [x] Important defects resolved; full no-tool acceptance stays blocked while G-03 is open.
+- [x] Local review explicitly excludes unverified multi-user hosted safety; no blanket approval.
 
 ### TASK-016: Complete feature documentation and local packaging evidence
 

@@ -330,8 +330,9 @@ and local Java 25 strict-streaming tests support this dependency choice.
 The user approved one server and in-memory quota reset on restart. Current runtime
 session/locking behaviour does not establish independent JPro browser-client
 identity; multi-user hosting needs a separate lifecycle review. The design can feed
-planning for its limited scope; provider tool assurance/live semantic security
-evaluation and future container release checks remain unverified.
+planning for its limited scope. TASK-014's second live evaluation has recorded
+human acceptance; provider tool assurance and future container release checks
+remain unverified.
 The [LLM implementation plan](../workflow/LLM_FEATURE_PLAN.md) contains 17 ordered
 tasks, all initially incomplete. Behaviour tasks require runnable tests and verified
 behavioural failures before production changes, then passing checks and refactoring.
@@ -410,6 +411,22 @@ includes an acceptance banner. The first run's failure remains preserved.
 TASK-014 is complete; provider tool non-use and later feature/release gates remain
 unverified. Full regression/build checks were not repeated.
 Evidence: [prompt rerun record](../logs/2026-10-20-task014-prompt-rerun.md).
+
+TASK-015 final local review (2026-10-20) assessed candidate
+`81f71ee578e91a62a7e30be74ecd4d4ecd3ddd9e` through independent implementation/
+concurrency, security and specification/coverage reviewers. They found no new
+material defect in the inspected service/UI lifecycle, authorization, shared
+quota, transport/parser bounds, inert output, secret isolation or fixed diagnostic
+paths. The focused offline run passed 586 tests across 15 suites, with zero
+failures/errors/skips; both Checkstyle checks were up to date. No application/test
+code changed, and no live, full regression/build, packaging or browser check was
+repeated. These are scoped local findings, not a blanket security guarantee.
+The user confirmed that no independent provider assurance is available: G-03
+remains open and full end-to-end no-tool acceptance remains blocked. G-04 also
+remains open; independent concurrent JPro client identity/session safety was not
+verified. TASK-016 still owns final guide/packaging reconciliation, and TASK-017
+owns feature acceptance. See the [attributed reviews](../logs/2026-10-20-task015-independent-reviews.md)
+and [checks/scope record](../logs/2026-10-20-task015-final-reviews.md).
 
 The HTTPS fixture trusts a synthetic CA only in its injected test client, binds
 loopback, retains hostname verification and uses synthetic tokens. Its public
