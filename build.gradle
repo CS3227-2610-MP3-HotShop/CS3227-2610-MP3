@@ -67,6 +67,12 @@ tasks.register('llmLiveTest', Test) {
     useJUnitPlatform {
         includeTags 'llm-live'
     }
+    ['runId', 'evidenceDir'].each { key ->
+        def value = providers.gradleProperty("llmLive${key.capitalize()}").orNull
+        if (value != null) {
+            systemProperty "hotshop.llm.live.${key}", value
+        }
+    }
     jvmArgs '--enable-native-access=ALL-UNNAMED'
 }
 
