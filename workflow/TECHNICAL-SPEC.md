@@ -336,3 +336,108 @@ and concurrent isolation. Keep fixture faults distinct from meaningful stub red.
 These are application bounds, not verified SoC provider limits. Per-account/global
 quota admission, UI/session wiring, live model quality and deployment are excluded;
 429 handling and no automatic retry do not establish provider quota compliance.
+
+### AI-T2-C1 readiness correction — owner approved 2026-10-20
+
+SOC-FIX-1 preserves the initial benchmark snapshots and resolves the inner-data
+oracle conflict for integration: input contains fixed instructions followed by a
+separate JSON object with a buyerText string; decoding that object must recover
+the stripped buyer text exactly, including quotes, backslashes and interior space.
+No raw-literal substring requirement applies to encoded input. Deadline/closure
+must coordinate request registration so a completed call cannot leave a newly
+dispatched future uncancelled. A single controlled live smoke request is authorised
+if credentials are available locally; absence is an explicit verification blocker,
+not permission to expose or invent credentials. Automated tests remain offline.
+
+### AI-T2-C2 — documented Chat Completions correction, 2026-10-20
+
+Owner supplied the SoC Python Chat Completions example and explicitly requested
+its use. This supersedes C1's Responses wire schema for the integration client,
+not the historical benchmark snapshots. Keep Java HttpClient and existing bounds.
+Constructor URI now represents the trusted API base (normally ending /v1), with
+optional trailing slash; append /chat/completions exactly once. Reject a base that
+already ends /responses or /chat/completions and reject query/fragment/user info
+to prevent accidental operation-path duplication. Never redirect or retry.
+
+POST fields are exactly model, messages, reasoning_effort. reasoning_effort is
+"none"; model is injected, with documented local smoke model qwen3.5:9b. messages
+has one system message with fixed filter instructions and one user message whose
+content is a JSON object containing buyerText. Preserve stripped buyer text via
+JSON round-trip. Bearer authentication and prior size/UTF-8/deadline limits remain.
+
+Parse the non-streamed Chat Completions choices array. Require at least one choice;
+every choice must be an object with assistant message, nonblank string content,
+finish_reason="stop", and absent/null refusal/function_call or absent/empty
+tool_calls (null also means no tool calls). Reject incomplete, filtered,
+tool/function output and malformed choices;
+use choices[0].message.content only. Do not require Responses status/output_text.
+Apply unchanged strict JSON parsing and proposal validation to the selected text.
+Structurally validate all metadata under the existing duplicate/depth/integer rules.
+
+One synthetic live check after offline checks is authorised by this connection
+request. Local config may replace the former /v1/responses base with /v1 and set
+the documented model; preserve the API key without displaying it. No live retries,
+UI work, quota system or fix to the outstanding close/scheduler race is included.
+
+### AI-T3 — UI benchmark design approved for setup, 2026-10-20
+
+Source AI-P3 / AI-UI-01..06. Owner approved benchmark implementation; retain JavaFX/
+JPro/PostgreSQL. SOC-LIFECYCLE-1 already resolved the known race with final reviews.
+Freeze that working client and minimal injectable UI constructor seam, common tests
+and dependency versions. Historical readiness correction2/2 remains unchanged;
+no extra lifecycle repair is authorised. New UI setup corrections have their own
+one explicitly approved shared correction pass, with no automatic review-fix loop.
+
+Shared seam: MarketplaceUi(Stage, ApplicationRuntime,
+Function<String,CompletableFuture<SocSearchClient.Result>>); existing two-argument
+constructor delegates with absent provider. Store the borrowed provider for SearchPage;
+UI does not own/close it. This is a concrete test seam, not a new framework.
+Shared setup declares/stores the seam only; no measured UI implementation in setup.
+
+Measured implementation owns SearchPage and any small UI helper, necessary
+SearchState changes, Main provider wiring, arm-local tests and associated guides.
+Main constructs/owns SocSearchClient from SOCLAAS_BASE_URL/API_KEY/MODEL process
+environment, passes client::propose and closes it on stop. Missing/invalid optional
+AI config yields unavailable AI controls without blocking app/manual search. No
+implicit .env parser; operator launch supplies environment as for the smoke check.
+
+SearchPage adds IDs ai-search, ai-search-status, ai-search-preview, ai-search-apply,
+ai-search-dismiss.
+The ai-search button's exact visible text is "AI Search" (owner confirmed); keep
+the existing query field and Search button. Fixed UI tests assert this text.
+Preview lists title/category/conditions/minimum/maximum/sort using plain JavaFX
+text only. A validated Proposed search is the only apply candidate;
+Failed/null/exception clears preview and shows fixed safe feedback. Proposed data
+must remain unchanged and separate from SearchState until explicit Apply. Apply
+sets all draft/raw control values, submits once and refreshes via existing service,
+preserving its access rules. Use UiPage isCurrent/page/session and request identity
+guards plus invalidation on edits/manual action; never render late stale results.
+Callbacks mutate controls only on JavaFX thread. Generation uses its own busy state
+so normal search remains available; no automatic retry/AI call on navigation.
+
+Common frozen tests exercise observable real JavaFX controls and provider call
+counts with controlled CompletableFutures. Local disposable PostgreSQL integration
+proves Apply reaches normal search; no hosted data or model calls. Include fast
+state-level cases when useful, plus selected existing manual search regressions.
+No Playwright: retained JavaFX target. Record framework/DB startup overhead separately
+where observable; no broad comparison from one run. Tests get independent oracle
+review against product intent before freezing, avoiding prior shared-contract gaps.
+
+Frozen packet coverage limit: common source assessment after BOTH arms separately
+checks Main environment/client ownership and visible fixed safe unavailable-config
+feedback. The fake-provider UI suite verifies disabled/manual-search behavior but
+does not prove that actual config-feedback path. Preserve AI-UI-06; the same source
+and visible-feedback evidence requirement applies to both arms, never treat a
+disabled button alone as satisfying the feedback requirement.
+
+### SOC-LIFECYCLE-1 — approved close/scheduler repair, 2026-10-20
+
+Owner approved fixing the previously reported lifecycle race only. A concurrent
+close between the last open check and timer.schedule must return a future resolved
+as CLOSED, never leak RejectedExecutionException to the caller. Coordinate call/
+deadline registration with shutdown or safely handle shutdown rejection, ensure
+registered deadlines/transports cannot survive a finished call, and preserve
+normal TIMEOUT/idempotent close. No lifecycle lock may wait for network or execute
+arbitrary future-completion callbacks. A narrow package-private scheduler seam may
+support a deterministic interleaving regression; keep public constructors/wire
+contract unchanged. No extra retry/live request or UI implementation is included.

@@ -620,6 +620,35 @@ Owner clarified scope: independently implement transport/parser plus buyer adapt
 
 SoC benchmark common setup is SOC-SETUP/AI-T2-C1 on multiagent-soc-search. A testing specialist owns new declarations/tests and Gson-only dependency addition; this is outside measured runs. Per-account/provider admission and UI wiring are excluded; do not claim 429 handling establishes quota compliance.
 
-SoC initial runs are complete: multi a47df93 and single 560ffcb pass the same 149 focused tests, 100 security-tagged cases and styles. Common source evaluation finds both fail AI-T2-C1 (4 multi/1 single attributable findings), excluding one shared test/spec encoding conflict as unscorable; see PLAN results and CSV for evidence/limits. Preserve both initial candidates; no correction is approved. User revised multi ending to session28%/weekly42% (original30%/42% retained); single ends25%/41%. Percentages are coarse observations, not exact credits/tokens. No live SoC connection, UI, provider-wide quota or production readiness is established.
+SoC initial runs are complete: multi a47df93 and single 560ffcb pass the same 149 focused tests, 100 security-tagged cases and styles. Common source evaluation finds both fail AI-T2-C1 (4 multi/1 single attributable findings), excluding one shared test/spec encoding conflict as unscorable; see PLAN results and CSV for evidence/limits. Preserve both initial candidates. Owner approved SOC-FIX-1 on 2026-10-20: single-client readiness corrections on codex/soc-client-readiness, cycle 1/1; see the final PLAN task and current handoff. User revised multi ending to session28%/weekly42% (original30%/42% retained); single ends25%/41%. Percentages are coarse observations, not exact credits/tokens. No live SoC connection, UI, provider-wide quota or production readiness is established.
 
 SoC common evaluation packaging passes, PostgreSQL driver present and SQLite absent. Broad regression/build runs were interrupted after approximately14minutes, not passed; Testcontainers PostgreSQL was reachable despite missing Docker CLI. Full regression and contract repairs remain gates before actual feature acceptance.
+
+Current consolidated connection baseline is on codex/soc-client-readiness. AI-T2-C2 /
+SOC-CHAT-1 supersedes the historical Responses format: base /v1 plus /chat/completions,
+messages, reasoning_effort none, local documented model qwen3.5:9b. One live synthetic
+request accepted a validated proposal on2026-10-20; not proof of model quality/quota
+compliance. Never expose .env.local credentials or change benchmark snapshots/CSV.
+
+SOC-LIFECYCLE-1 owner-approved extension resolves the known close/scheduler exception
+race.159 focused tests/styles and remaining build/packaging pass; both final reviews
+accept the fix. See PLAN/DeveloperGuide for exact full-suite limits and evidence.
+Historical SOC-FIX-1 allowance1/1 is preserved; the explicit extension is consumed,
+total readiness repair passes2/2. No further corrective loop without owner direction.
+Shutdown cancels registered raced work; no stronger zero-transient-dispatch guarantee
+was specified. No UI/session redesign, provider-wide quota or deployment claim.
+
+Next UI benchmark is drafted as AI-P3/AI-T3/BENCH-P3 in existing specs/PLAN: explicit
+button labelled exactly "AI Search" beside the existing search field (no new bar),
+preview/Apply, zero provider calls on ordinary search, stale/page/
+session guards and identical frozen fake-provider checks for both arms. Lifecycle
+foundation is fixed. Owner approved UI benchmark implementation on2026-10-20 and
+supplied pre-setup5-hour37%/weekly27%. UI-SETUP is authorised on
+codex/ai-search-ui-setup; setup is outside measured windows. UI-SETUP has one shared
+explicitly approved correction pass maximum; owner approved grouped tests/docs
+correction1/1 on2026-10-20, now accepted after focused re-review; historical client
+readiness2/2 stays consumed. Each measured run still needs fresh manual credit/ready
+after freezing. Do not disclose one arm's code/findings to the other. No measured
+UI implementation or timed run has started; common setup may add only test seam.
+
+UI-SETUP is accepted: fixed UI21 baseline is3 pass/18 expected missing-feature assertion failures, zero errors/skips. Same packet and common SOURCE assessment (including Main configuration/ownership and safe unavailable feedback) apply to both arms; see PLAN for limits. No live provider calls or full-regression claims in timed runs. Await fresh credit/ready after freeze.

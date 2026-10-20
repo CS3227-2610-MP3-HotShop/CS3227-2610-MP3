@@ -98,6 +98,8 @@ committing.
 Targeted development checks:
 
 ```powershell
+.\gradlew.bat test --tests hotshop.ui.AiSearchUiBenchmarkTest
+.\gradlew.bat test --tests hotshop.ui.MarketplaceUiTest --tests hotshop.llm.SocSearchClientTest
 .\gradlew.bat test --tests hotshop.service.AccountServiceTest
 .\gradlew.bat test --tests hotshop.service.ProfileImageTest
 .\gradlew.bat test --tests "hotshop.service.Listing*" --tests hotshop.service.PublicListingsTest
@@ -108,6 +110,13 @@ Targeted development checks:
 .\gradlew.bat test --tests hotshop.storage.ImageStorageTest
 .\gradlew.bat test --tests hotshop.ApplicationRuntimeTest --tests hotshop.database.DatabaseTest
 ```
+
+The shared AI-search UI benchmark tests run against disposable local PostgreSQL
+and inject a provider function; they never call the live service. Run them with
+the first command above. The approved common setup covers the injectable UI seam
+and frozen fake-provider contract. Process-environment ownership is not tested
+through this seam because doing so would require an additional public API. The
+measured AI-search UI implementation remains pending.
 
 ### Product specification workflow
 
@@ -569,3 +578,11 @@ The common oracle has 73 executable cases, including two independently passing H
 The measured candidates are saved as a47df93 (multi) and 560ffcb (single), with 149 focused tests and styles passing on each. Common scoring also executed the same 100 security-tagged cases successfully on both. Independent source evaluation found four multi and one single attributable contract defects, so neither candidate is accepted for production. One shared encoding test/spec conflict is unscorable and excluded from those counts; root audit found the setup reviews had missed it. Initial workflow times were 398 and 271 seconds. Owner-selected dashboard readings were session36% to28% for multi (revised from an earlier30% ending) and28% to25% for single; weekly43% to42% and42% to41%. These are coarse observations, and the revised multi endpoint includes more wrap-up than its timed workflow. Full evidence and limitations are in workflow/PLAN.md and benchmark-results.csv; no corrections or live SoC verification have occurred.
 
 Both standalone shadowJar checks pass; packaged clients include Gson and PostgreSQL with no SQLite classes. Broad check/build regressions were interrupted after approximately 14 minutes in isolated PostgreSQL tests, so no complete regression/build success is claimed. This evaluation ran outside both measured windows.
+
+SOC-CHAT-1 changes the consolidated SoC client to Chat Completions while preserving Java HttpClient, TLS, request/response byte limits, deadlines, and strict JSON/proposal validation. The constructor accepts an HTTPS API base such as `/v1`, optionally with a trailing slash, and appends `/chat/completions`; operation URLs, queries, fragments, and credentials in the URI are rejected. Requests contain only the injected model, a system message with fixed filter instructions, a user message whose content is a JSON `buyerText` object, and `reasoning_effort: none`. The parser requires every choice to be a completed assistant message with nonblank string content and `finish_reason: stop`; it selects the first choice and rejects refusal or tool/function output. The format follows the owner's supplied SoC Python example and the [Chat Completions create reference](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create); the SoC endpoint and model remain operator-supplied, including local model `qwen3.5:9b`.
+
+The optional one-request smoke runner is `tools/benchmark/SocSearchSmoke.java`. With Java 25, `release/HotShop.jar`, and locally supplied `SOCLAAS_BASE_URL`, `SOCLAAS_MODEL`, and `SOCLAAS_API_KEY`, run `java --class-path release/HotShop.jar tools/benchmark/SocSearchSmoke.java`. It prints only a safe result category and suppresses exception details. The current Chat Completions implementation passed 83 focused client cases plus 76 validator cases, and both Checkstyle tasks. The final `check build shadowJar -x test` aggregate passed; it explicitly excluded tests, and the unchanged full PostgreSQL/application suite was not repeated. Final specification/coverage and security reviews of the lifecycle correction passed with no remaining contract finding; their adjacent dispatch-race concern was withdrawn after confirming late HTTP futures are cancelled and raced response bodies are closed. The coordinator made one live synthetic request against the configured `/v1` base with model `qwen3.5:9b`; the smoke runner reported `proposal accepted`. This confirms compatibility for that single request only, not general model quality or reliability. The approved SOC-LIFECYCLE-1 follow-up handles scheduler rejection after close begins by resolving the request as `CLOSED`; its deterministic regression passed, with no transport dispatched or deadline left queued. No additional live request or full database-suite run was performed for this lifecycle correction. UI wiring, quota admission, deployment readiness, and seller integration remain outside this slice.
+
+The next explicit AI-search UI benchmark is specified in AI-P3/AI-T3/BENCH-P3. The owner-confirmed UI uses the existing query field and a separate button labelled exactly "AI Search"; frozen tests assert that label. The lifecycle correction is approved and accepted, and common UI setup is approved. The measured AI-search UI implementation and each sequential measured-run readiness checkpoint remain pending. Existing ordinary search remains the only implemented search UI behavior.
+
+Common UI benchmark setup is accepted after the owner-approved test/documentation correction and focused specification/security re-review. Its 21-case baseline has 3 passing existing-behavior cases and 18 expected missing-AI-control assertion failures, with no errors or skips. Main and SearchPage remain unimplemented for AI search. Both arms receive the same frozen tests and provider seam; the common assessment separately checks actual environment wiring, client ownership and safe unavailable-configuration feedback. The correction reran only the changed UI tests, test style and diff checks; unchanged prerequisite evidence was reused.

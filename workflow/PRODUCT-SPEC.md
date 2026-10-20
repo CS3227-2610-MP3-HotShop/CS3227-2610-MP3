@@ -135,3 +135,34 @@ The connection benchmark stops at a validated ListingSearch result, with no UI o
 database changes. AI-T2-C1 defines deterministic transport/response safety checks
 using the existing validator. Provider-wide quota admission and actual model search
 quality remain integration gates; this slice handles 429 without automatic retry.
+
+### Third benchmark — explicit buyer AI search, AI-P3 approved, 2026-10-20
+
+Owner selected the separate AI-search button as the next benchmark. Existing search
+behavior is verified in SearchPage/SearchState. Owner approved implementation of
+the benchmark after confirming exact "AI Search" text, supplying pre-setup readings
+5-hour37%/weekly27%. Shared setup is authorised; each measured arm still requires
+its own fresh ready/credit checkpoint after the common setup is frozen.
+
+| ID | User-visible acceptance |
+| --- | --- |
+| AI-UI-01 | One existing query field; typing, Enter, Search, filters, sort, Clear and Refresh never invoke AI. A separate button with exact visible text "AI Search" is the only generation trigger. No additional search bar. |
+| AI-UI-02 | Blank or over1,000 Unicode-code-point text is rejected before provider invocation. A valid click issues exactly one request; repeated clicks while pending issue none. Normal search stays usable. |
+| AI-UI-03 | Show loading, then a read-only preview of all proposed filters with Apply filters and Dismiss. Loading/success/dismiss do not alter submitted criteria/results or manual filters. |
+| AI-UI-04 | Apply replaces the complete manual filter draft and submits exactly that validated proposal once through ordinary listing search. Missing filters clear old values. Display SGD values correctly. |
+| AI-UI-05 | Query/filter edits, normal search, leaving the page or changing session invalidate the pending result/preview. Late completion cannot change the current page, session, filters or results. |
+| AI-UI-06 | Failure, exceptional/null response or missing configuration shows fixed safe feedback without model/exception/credential contents; current manual search remains intact and retry is explicit. |
+
+Example: buyer enters "used bicycle under S$200", clicks AI Search, reviews Sports /
+maximum S$200, then Apply filters. This is illustrative, not a recorded model result.
+Preview is read-only; existing manual filters remain the editing surface. AI search
+is disabled when not configured, while ordinary search remains functional.
+
+Include real app wiring to the already-verified SoC client using process environment
+settings; automated checks always inject a fake provider, never live SoC. Preserve
+marketplace availability/session/seller rules and PostgreSQL. No DB schema changes,
+seller integration, provider-wide quota system, deployment or JPro session redesign.
+Each arm gets the same frozen contract/tests/client and isolated workspace. This is
+a new paired case, not pooled with the previous two experiments. No measured run
+starts before its own explicit ready/credit checkpoint. The prior close/scheduling
+race was resolved and accepted in SOC-LIFECYCLE-1 before this setup.

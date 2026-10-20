@@ -1177,3 +1177,212 @@ Post-run common evaluation and result preparation were observed from19:11:28 to
 regressions. This shared overhead is separate from both development windows; its
 credit delta and total pre-run preparation time were not measured. Final result
 commit bookkeeping follows that endpoint.
+
+## SOC-FIX-1 — Approved connection readiness correction, 2026-10-20
+
+- Authority: owner approved the proposed single-candidate repair, regression checks
+  and one controlled live smoke call in chat ("ok can you do run that for me").
+- Baseline: single candidate 560ffcb; corrections live on codex/soc-client-readiness
+  based on current consolidated records. Original benchmark commits, branches,
+  fixed suite and results CSV remain historical and unchanged.
+- Specification: AI-T2-C1. Encode buyer text as a separate JSON data object inside
+  input, retaining its decoded text exactly; replace only the contradictory raw
+  substring assertion. Preserve all valid assertions. No UI/quota/deployment scope.
+- Owner: one Luna implementer, production client/tests/fixtures and relevant guides;
+  coordinator owns specs/plan/AGENTS/current handoff. No new task logs.
+- Steps: adopt single client; reproduce/fix deadline/dispatch cancellation race;
+  test inner JSON round-trip and request byte boundaries/network failure mapping;
+  run focused tests/styles, full test/check/build/shadowJar against disposable local
+  PostgreSQL only; prepare safe opt-in smoke runner, use a locally available SoC
+  credential for at most one request, never print secrets or raw provider content.
+- Acceptance: approved defects resolved with executable coverage; final independent
+  specification/coverage and security reviews; actual full-check results and live
+  compatibility status recorded separately. Missing credentials block only live check.
+- Correction count: single-candidate cycle 1/1 authorised and consumed; no extra
+  correction allowance. Group remaining findings and report rather than looping.
+- Completed: No. Approved encoding and timeout-registration fixes implemented.
+  Final focused tests: 76 client + 76 validator, zero failures/errors/skips; styles
+  pass. Full application test task completed in the 19m44s invocation, whose later
+  Checkstyle failure was an unused test import, subsequently fixed. Exact full test
+  count was not preserved. Additional race/disconnect regressions passed focused
+  checks afterward; production code unchanged. Remaining `check build shadowJar
+  -x test` passed; no final full-suite rerun claimed. `git diff --check` passed.
+  Both final reviewers independently found one unresolved close/scheduler race:
+  `timer.schedule` outside the guarded block can throw RejectedExecutionException
+  if close shuts down the timer between the final closed check and scheduling.
+  No reproducer or further fix was performed. Optional smoke runner retained as
+  intent-to-add despite the tools ignore rule. One live synthetic call using local
+  .env.local credentials returned INVALID_RESPONSE; raw response/status not retained
+  by the safe runner, so cause and provider compatibility remain unverified. No
+  retry, hosted database action or credential output. UI benchmark remains gated.
+
+### Proposed next direction — not authorised
+
+One additional bounded correction pass would cover a deterministic close-versus-
+schedule regression and lifecycle fix, plus one additional diagnostic SoC request
+that retains only HTTP status and structural envelope metadata (never raw content,
+headers/tokens or buyer data) to identify the INVALID_RESPONSE cause. Preserve safe
+failure behavior and document any provider-contract change for owner approval before
+implementation. Then run affected tests/styles/packaging and focused final reviews.
+This exceeds the current 1/1 allowance and requires explicit owner extension.
+
+## SOC-CHAT-1 — owner-directed provider format correction, 2026-10-20
+
+- Authority: owner supplied Chat Completions example, then requested "can we use
+  this ... format". Explicit additional direction covers provider format only;
+  SOC-FIX-1 historical 1/1 exhaustion and outstanding close/scheduler race remain.
+- Spec: AI-T2-C2; dependencies: existing client/validator and supplied API example.
+- Owner: same Luna implementer owns client/tests/fixtures/smoke runner/DeveloperGuide;
+  coordinator owns shared spec/PLAN/AGENTS/handoff and secret-safe local env update.
+- Steps: use API base URI + /chat/completions, messages/reasoning_effort request,
+  choices message parsing and strict safe rejection; update synthetic fixtures and
+  assertions for changed contract while preserving applicable security/boundary tests.
+  Run focused tests/styles and packaging; existing DB/application code unchanged,
+  no repeat of unchanged full PostgreSQL suite. Final independent focused reviews.
+  Coordinator updates nonsecret local base/model only and performs one live smoke.
+- Acceptance: documented wire contract covered and verified, live result recorded;
+  separately disclose the existing lifecycle blocker. Preserve original benchmarks,
+  branches, results CSV and other presentation work. No UI/deployment/seller merge.
+- Completed: Yes — 2026-10-20 for the provider-format correction only. Focused
+  client82 + validator76 =158 tests pass with zero failures/errors/skips, styles
+  pass, `check build shadowJar -x test` and Java25 smoke compilation pass. Initial
+  refusal-field regression failed then passed after correction within this directed
+  work. No unchanged full PostgreSQL suite repeated. Final independent specification/
+  coverage and security reviews pass the format change with no new finding; client
+  SHA256 C6889F1524FEDF30ADDA819A73F8A58E10E67BCE42E90218B3C3E2E002CA1731.
+  Coordinator's one live synthetic SoC call using updated local /v1 base and
+  qwen3.5:9b returned `proposal accepted`; key line preserved and no request, secret
+  or provider content displayed. This proves one successful client/provider exchange,
+  not model quality, quota compliance or full feature readiness. Historical benchmark
+  commits/results unchanged. Prior close/scheduler race remains unresolved; no
+  additional review-fix loop or extension for that lifecycle finding was authorised.
+
+## BENCH-P3 — explicit AI-search UI, approved 2026-10-20
+
+Source AI-P3/AI-T3. Owner approved benchmark implementation in chat on2026-10-20.
+Owner confirmed one existing query field plus a button labelled exactly "AI Search";
+shared acceptance tests must assert that visible text, not "Search with AI".
+Pre-setup readings:5-hour37%/weekly27%; this is not the measured arm baseline.
+Common setup authorised; measured ready/credit checkpoints remain required after
+freezing. UI-SETUP in progress on codex/ai-search-ui-setup. Lifecycle foundation
+accepted under SOC-LIFECYCLE-1; do not repeat or expand its consumed correction.
+
+| Task | Dependencies / ownership | Acceptance / Completed |
+| --- | --- | --- |
+| UI-SETUP | SOC-CHAT-1 and SOC-LIFECYCLE-1 accepted. Fresh Luna implementer owns minimal MarketplaceUi provider seam and frozen UI tests/fixtures; coordinator owns shared records/Git. | Completed: Yes,2026-10-20. Final21 UI cases:3 baseline pass/18 expected missing-button assertion failures,0 errors/skips,31.039s; root XML/hash verified. Test style/diff pass; unchanged159 client,2 legacy UI/main-style/build-packaging evidence reused. Both focused final reviews accept corrected setup with disclosed common SOURCE checks below. No measured UI implemented; setup correction1/1 complete. |
+| UI-FREEZE | UI-SETUP. Coordinator freezes commit, test/production hashes and identical branches/workspaces; arm scope excludes common tests/client/seam. | No secrets, presentation drafts or old result changes included. Both clean workspaces identical. Main/UI measured ownership and exact commands pinned. Completed: No. |
+| UI-MULTI | UI-FREEZE + owner fresh credit/ready. One fresh Luna implementer owns complete UI/Main/tests/guides batch; final independent Luna spec/security reviews only. | AI-UI-01..06 fixed checks/styles and relevant packaging; stable candidate saved; no post-submission fixes unless explicit grouped approval. Completed: No. |
+| UI-SINGLE | UI-FREEZE; scheduled after UI-MULTI ending reading + own fresh ready. Fresh Luna implementer same model/role/scope, self-verification only. | Same requirements/checks; no other arm findings/code supplied. Save candidate and stop for ending reading. Completed: No. |
+| UI-SCORE | Both saved candidates/readings. Independent common evaluator plus coordinator. | Same acceptance/source review for both, including stale-session and no-AI-on-manual paths; times, test counts, findings, interventions, raw coarse usage readings and limits consolidated in existing PLAN/CSV. Completed: No. |
+
+Metrics: elapsed dispatch-to-candidate and workflow completion; acceptance/security
+checks; source findings with severity and proven/inferred status; review overhead;
+post-submission corrections; human interventions; manually recorded session/weekly
+percentage readings. No exact token/cost estimates. Setup/common evaluation excluded
+from measured windows and disclosed. Sequential multi then single as before unless
+owner changes order. One implementation pass plus final reviews; at most one shared,
+explicitly approved correction pass, no silent reset of historical budgets. Preserve
+first-pass results even if later repaired; no artificial failures or weakened tests.
+
+### UI-SETUP initial candidate and approved correction
+
+Candidate seam/test hashes: MarketplaceUi SHA256
+2ED59E588402F72E804823687E23369ACAE55D4168FF6652E5554B59AABE61E7;
+AiSearchUiBenchmarkTest SHA256
+6871DDEF43183CA63D045C236E29D18B1193EC52ECB017C9B3ABF22D6DFDEC2C.
+Root inspected UI XML:15 tests,3pass/12expected missing-ai-search assertion failures,
+0errors/skips,22.459seconds. Worker reports existing client159green, selected legacy
+UI2green, both styles and check/build/shadowJar -x test pass. No feature/UI/Main code
+implemented beyond the constructor seam; no live/provider/hosted calls. Setup source
+and tests remain unfrozen; no measured arm started. Pre-setup37%/27% is not reused.
+
+Independent specification review found three required coverage gaps:
+AI-UI-01 single query surface, AI-UI-03 pending/loading indication and AI-UI-05
+edit-only invalidation (current test combines edits with manual submit, masking
+which action invalidates). Security review found no confirmed security defect;
+its provisional claim of an already-visible AI button was withdrawn because tests
+assert its absence on the initial baseline. Root also found malformed developer
+commands (leading extra backslash) and stale setup approval/test-command pointer.
+
+Owner approved in chat on2026-10-20. UI-SETUP correction cycle1/1, tests/docs only:
+1. Assert only one editable query surface, reusing search-query, excluding existing
+   minimum/maximum price inputs; do not forbid read-only preview fields or impose layout.
+2. Assert observable pending/loading feedback before resolving controlled future,
+   without requiring specific copy or a specific progress-control implementation.
+3. Split query-edit-only, filter-edit-only and manual-submit invalidation; include
+   stale preview as well as pending completion, with no unrelated invalidating action
+   that could hide a defect. Preserve all valid existing assertions.
+4. Correct wrapper commands to dot-backslash gradlew.bat, explicit UI invocation
+   and approved-setup/pending-measured wording in existing DeveloperGuide.
+5. Rerun UI expected-red suite/styles and affected existing baseline checks, then
+   focused re-review of grouped findings before freezing. No production seam/client
+   or UI implementation changes. No extra loop beyond1/1 without explicit direction.
+
+Authority: explicit owner reply "approved". UI-SETUP Completed:Yes; correction1/1
+complete with focused specification and security re-review acceptance. Final test
+SHA256 FA8791E97D6EC34F5342B785AAA23B813801936A7C1FDD0808343DD2956AC05D;
+seam hash unchanged. Preserve initial candidate evidence; no extra repair loop.
+
+Frozen common SOURCE assessment for BOTH saved arm candidates additionally requires:
+Main constructs optional client from the three process environment settings, passes
+the borrowed provider and closes the owned client on stop; missing/invalid config
+keeps app/manual search working and supplies visible fixed safe feedback with AI
+disabled. The fixed UI test verifies disabled/manual behavior but not that actual
+configuration feedback path. This is an explicit coverage limit, not waiver of
+AI-UI-06; both reviewers accept this equal verification allocation before freeze.
+Do not infer feedback correctness merely from a disabled button. Record source/path
+and visible-feedback evidence for each arm in UI-SCORE.
+
+Shared fixture file: src/test/java/hotshop/ui/AiSearchUiBenchmarkTest.java
+with reusable local fake-provider helpers. Common setup check command is
+`./gradlew test --tests hotshop.llm.SocSearchClientTest --tests
+hotshop.service.AiSearchProposalValidatorTest checkstyleMain checkstyleTest`.
+Measured fixed UI command is `./gradlew test --tests
+hotshop.ui.AiSearchUiBenchmarkTest checkstyleMain checkstyleTest`; add exact selected
+legacy search tests to the frozen packet after fixture inspection, plus required
+build/packaging commands. Full regression verification is reported separately from
+focused timing where its unchanged database work dominates. Setup/UI tests and
+commands must be reviewed/frozen before either measured dispatch.
+Measured focused command is the UI21 suite plus both styles as above; then
+`./gradlew check build shadowJar -x test` verifies remaining aggregate/packaging
+tasks without repeating the full marketplace database suite. Selected unchanged
+legacy search regression evidence is common setup only, not silently counted as
+measured new cases. No full-regression success follows from these focused runs.
+All Java checks use wrapper Java25/Gradle9.1. Common preparation and UI timing do not
+use hosted data, live SoC, deployment, secrets or the seller branch.
+
+## SOC-LIFECYCLE-1 — explicit close-race extension, 2026-10-20
+
+- Authority: owner explicitly requested "ok lets fix that race" after the exhausted
+  allowance was disclosed. This grants one additional bounded lifecycle repair pass
+  and final focused reviews only; historical SOC-FIX-1 1/1 remains recorded. Total
+  authorised readiness repair passes now2, this extension is pass2/2; no reset.
+- Dependencies: accepted SOC-CHAT-1 format; unresolved finding from both SOC-FIX-1
+  reviewers at timer.schedule outside try. AI-T2-C2 protocol stays unchanged.
+- Owner: same Luna implementer owns client, relevant tests/fixtures and existing
+  DeveloperGuide note. Coordinator owns PLAN/spec/AGENTS/handoff. No UI setup,
+  benchmark branches, live calls, credentials, unrelated refactors or new logs.
+- Steps: reproduce close between final open check and deadline registration with a
+  deterministic gate, then coordinate registration/shutdown and/or safely resolve
+  scheduler rejection as CLOSED without synchronous exception, leaked call/timer,
+  transport or stream. Preserve normal timeout, concurrency and idempotent close.
+  Avoid waiting on network or user callbacks while holding a lifecycle lock.
+- Acceptance: meaningful behavioral red then green regression; existing focused
+  client+validator tests and styles pass, packaging/build checks pass; final spec/
+  coverage and security reviews against stable candidate with no unresolved finding
+  in this scope. No repeat unchanged full PostgreSQL suite and no live SoC needed.
+- Completed: Yes — 2026-10-20. Deterministic close-during-schedule regression
+  failed with ExecutionException caused by RejectedExecutionException before fix,
+  then passed after guarding scheduler rejection and completing CLOSED. Regression
+  checks no HTTP dispatch, terminated scheduler and empty timer queue. Final83
+  client +76 validator=159 focused tests pass with zero failures/errors/skips;
+  both styles and `check build shadowJar -x test` pass. No unchanged full DB suite
+  repeated and no live calls in this pass. Final specification/coverage and security
+  reviews confirm this race resolved with no remaining confirmed contract finding.
+  A source-inferred transient sendAsync invocation after a raced finish was reviewed:
+  setHttp/finish cancel its future and a late body is closed; both reviewers withdrew
+  their provisional failure classification because the contract requires cleanup,
+  not a stronger guarantee of zero transient invocations. No code changes followed
+  those reviews. Client SHA256
+  48BD0F0BB8E0F3E216AA814F2DAA5B062B5CD7E9DF1BEE9E615EA221C76A60F4.
+  Extension pass2/2 consumed; UI benchmark detail/setup/execution remains pending.

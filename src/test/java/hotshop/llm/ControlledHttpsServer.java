@@ -33,7 +33,7 @@ final class ControlledHttpsServer implements AutoCloseable {
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     private final BlockingQueue<Request> requests = new LinkedBlockingQueue<>();
     private volatile Response response = new Response(200, Map.of("Content-Type", "application/json"), new byte[0],
-            false, null);
+            false, null, false);
     private volatile Function<Request, Response> responder;
 
     ControlledHttpsServer() throws GeneralSecurityException, IOException {
@@ -60,6 +60,11 @@ final class ControlledHttpsServer implements AutoCloseable {
                 current.headers().forEach(exchange.getResponseHeaders()::set);
                 exchange.sendResponseHeaders(current.status(), current.chunked() ? 0 : current.body().length);
                 if (current.stallGate() == null) {
+                    if (current.disconnect()) {
+                        exchange.getResponseBody().write(current.body(), 0, current.body().length / 2);
+                        exchange.getResponseBody().close();
+                        return;
+                    }
                     exchange.getResponseBody().write(current.body());
                 } else {
                     int split = current.body().length / 2;
@@ -88,12 +93,16 @@ final class ControlledHttpsServer implements AutoCloseable {
     }
 
     void respondBytes(int status, Map<String, String> headers, byte[] body, boolean chunked) {
-        response = new Response(status, Map.copyOf(headers), body.clone(), chunked, null);
+        response = new Response(status, Map.copyOf(headers), body.clone(), chunked, null, false);
+    }
+
+    void respondDisconnected(int status, Map<String, String> headers, byte[] body) {
+        response = new Response(status, Map.copyOf(headers), body.clone(), false, null, true);
     }
 
     StallGate respondStalled(int status, Map<String, String> headers, byte[] body) {
         StallGate gate = new StallGate(new CountDownLatch(1), new CountDownLatch(1));
-        response = new Response(status, Map.copyOf(headers), body.clone(), true, gate);
+        response = new Response(status, Map.copyOf(headers), body.clone(), true, gate, false);
         return gate;
     }
 
@@ -157,6 +166,6 @@ final class ControlledHttpsServer implements AutoCloseable {
     }
 
     record Response(int status, Map<String, String> headers, byte[] body, boolean chunked,
-            StallGate stallGate) {
+            StallGate stallGate, boolean disconnect) {
     }
 }

@@ -8,15 +8,30 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.InputStream;
+import java.io.IOException;
+import java.net.Authenticator;
+import java.net.CookieHandler;
+import java.net.ProxySelector;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandler;
+import java.net.http.HttpResponse.PushPromiseHandler;
+import java.net.http.HttpClient.Version;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -84,6 +99,11 @@ class SocSearchClientTest {
         return Stream.of(
                 new Object[] {URI.create("http://localhost/v1"), TOKEN, MODEL},
                 new Object[] {URI.create("https://localhost/v1#fragment"), TOKEN, MODEL},
+                new Object[] {URI.create("https://localhost/v1?x=1"), TOKEN, MODEL},
+                new Object[] {URI.create("https://localhost/v1/responses"), TOKEN, MODEL},
+                new Object[] {URI.create("https://localhost/v1/responses/"), TOKEN, MODEL},
+                new Object[] {URI.create("https://localhost/v1/chat/completions"), TOKEN, MODEL},
+                new Object[] {URI.create("https://localhost/v1/chat/completions/"), TOKEN, MODEL},
                 new Object[] {URI.create("https:/path"), TOKEN, MODEL},
                 new Object[] {URI.create("https://localhost/v1"), "bad\nvalue", MODEL},
                 new Object[] {URI.create("https://localhost/v1"), "bad\rvalue", MODEL},
@@ -155,6 +175,77 @@ class SocSearchClientTest {
         }
     }
 
+    @Test
+    void propose_requestBodyAtExactByteLimit_isDispatched() throws Exception {
+        try (var server = new ControlledHttpsServer(); var transport = server.trustedClient()) {
+            server.respond(200, "application/json", VALID_RESPONSE);
+            byte[] baseline;
+            try (var client = new SocSearchClient(server.uri("/v1"), TOKEN, "x", transport,
+                    Duration.ofSeconds(5))) {
+                await(client.propose("query"));
+                baseline = server.takeRequest().body();
+            }
+            String boundaryModel = "x".repeat(1 + 8_192 - baseline.length);
+            try (var client = new SocSearchClient(server.uri("/v1"), TOKEN, boundaryModel, transport,
+                    Duration.ofSeconds(5))) {
+                await(client.propose("query"));
+                assertEquals(8_192, server.takeRequest().body().length);
+            }
+        }
+    }
+
+    @Test
+    void propose_bodyDisconnect_mapsToNetworkFailure() throws Exception {
+        try (var server = new ControlledHttpsServer(); var transport = server.trustedClient();
+                var client = client(server, transport)) {
+            server.respondDisconnected(200, Map.of("Content-Type", "application/json"),
+                    VALID_RESPONSE.getBytes(StandardCharsets.UTF_8));
+            var failure = assertInstanceOf(SocSearchClient.Failed.class, await(client.propose("query")));
+            assertEquals(SocSearchClient.Failure.NETWORK, failure.kind());
+        }
+    }
+
+    @Test
+    void propose_deadlineBeforeTransportRegistration_cancelsReturnedOperation() throws Exception {
+        try (var server = new ControlledHttpsServer()) {
+            var gatedClient = new RegistrationGateClient();
+            try (var client = new SocSearchClient(server.uri("/v1"), TOKEN, MODEL, gatedClient,
+                    Duration.ofMillis(100))) {
+                var invocation = CompletableFuture.supplyAsync(() -> client.propose("query"));
+                assertTrue(gatedClient.entered.await(5, TimeUnit.SECONDS));
+                Thread.sleep(150);
+                gatedClient.release.countDown();
+                var result = assertInstanceOf(SocSearchClient.Failed.class,
+                        invocation.get(5, TimeUnit.SECONDS).get(5, TimeUnit.SECONDS));
+                assertEquals(SocSearchClient.Failure.TIMEOUT, result.kind());
+                assertTrue(gatedClient.operationCancelled.get());
+            }
+        }
+    }
+
+    @Test
+    void propose_closeDuringDeadlineRegistration_returnsClosedWithoutDispatch() throws Exception {
+        try (var server = new ControlledHttpsServer()) {
+            var scheduler = new GatedScheduler();
+            try (var client = new SocSearchClient(server.uri("/v1"), TOKEN, MODEL,
+                    new RegistrationGateClient(), Duration.ofSeconds(5), scheduler)) {
+                var invocation = CompletableFuture.supplyAsync(() -> client.propose("query"));
+                assertTrue(scheduler.entered.await(5, TimeUnit.SECONDS));
+                client.close();
+                scheduler.release.countDown();
+                var pending = invocation.get(5, TimeUnit.SECONDS);
+                assertEquals(new SocSearchClient.Failed(SocSearchClient.Failure.CLOSED),
+                        pending.get(5, TimeUnit.SECONDS));
+                assertTrue(scheduler.awaitTermination(5, TimeUnit.SECONDS));
+                assertTrue(scheduler.getQueue().isEmpty());
+                assertFalse(server.hasRequest(200, TimeUnit.MILLISECONDS));
+            } finally {
+                scheduler.release.countDown();
+                scheduler.shutdownNow();
+            }
+        }
+    }
+
     @Tag("security")
     @ParameterizedTest
     @MethodSource("providerFailures")
@@ -184,10 +275,11 @@ class SocSearchClientTest {
     }
 
     @Test
-    void propose_success_postsExactContractHeadersAndTwoStringFields() throws Exception {
+    void propose_success_postsExactChatContractAndBuyerData() throws Exception {
         try (var server = new ControlledHttpsServer(); var transport = server.trustedClient()) {
             server.respond(200, "application/json", VALID_RESPONSE);
-            try (var client = client(server, transport)) {
+            try (var client = new SocSearchClient(server.uri("/v1/"), TOKEN, MODEL, transport,
+                    Duration.ofSeconds(5))) {
                 var proposed = assertInstanceOf(SocSearchClient.Proposed.class, await(client.propose("  books  ")));
                 assertEquals("books", proposed.search().titleText());
                 assertEquals(null, proposed.search().category());
@@ -197,16 +289,24 @@ class SocSearchClientTest {
                 assertEquals(ListingSort.NEWEST, proposed.search().sort());
                 var request = server.takeRequest();
                 assertEquals("POST", request.method());
+                assertEquals("/v1/chat/completions", request.uri().getPath());
                 assertEquals("Bearer " + TOKEN, request.header("Authorization"));
                 assertEquals("application/json", request.header("Content-Type"));
                 assertEquals("application/json", request.header("Accept"));
                 assertEquals("identity", request.header("Accept-Encoding"));
                 JsonObject json = JsonParser.parseString(new String(request.body(), StandardCharsets.UTF_8))
                         .getAsJsonObject();
-                assertEquals(java.util.Set.of("model", "input"), json.keySet());
+                assertEquals(java.util.Set.of("model", "messages", "reasoning_effort"), json.keySet());
                 assertEquals(MODEL, json.get("model").getAsString());
-                assertTrue(json.get("input").getAsString().contains("books"));
-                assertFalse(json.get("input").getAsString().contains("  books  "));
+                assertEquals("none", json.get("reasoning_effort").getAsString());
+                var messages = json.getAsJsonArray("messages");
+                assertEquals(2, messages.size());
+                assertEquals(java.util.Set.of("role", "content"), messages.get(0).getAsJsonObject().keySet());
+                assertEquals(java.util.Set.of("role", "content"), messages.get(1).getAsJsonObject().keySet());
+                assertEquals("system", messages.get(0).getAsJsonObject().get("role").getAsString());
+                assertEquals("user", messages.get(1).getAsJsonObject().get("role").getAsString());
+                assertEquals("books", JsonParser.parseString(messages.get(1).getAsJsonObject()
+                        .get("content").getAsString()).getAsJsonObject().get("buyerText").getAsString());
             }
         }
     }
@@ -220,9 +320,10 @@ class SocSearchClientTest {
             server.respond(200, "application/json", VALID_RESPONSE);
             await(client.propose(buyerText));
             JsonObject request = capturedJson(server);
-            assertEquals(java.util.Set.of("model", "input"), request.keySet());
+            assertEquals(java.util.Set.of("model", "messages", "reasoning_effort"), request.keySet());
             assertEquals(MODEL, request.get("model").getAsString());
-            assertTrue(request.get("input").getAsString().contains(buyerText));
+            assertEquals(buyerText, buyerData(request.getAsJsonArray("messages").get(1).getAsJsonObject()
+                    .get("content").getAsString()).get("buyerText").getAsString());
         }
     }
 
@@ -233,9 +334,9 @@ class SocSearchClientTest {
                 var client = client(server, transport)) {
             server.respond(200, "application/json", VALID_RESPONSE);
             await(client.propose(buyerText));
-            String input = capturedJson(server).get("input").getAsString();
-            assertTrue(input.contains("find  the   book"));
-            assertFalse(input.contains("  find  the   book  "));
+            String input = capturedJson(server).getAsJsonArray("messages").get(1).getAsJsonObject()
+                    .get("content").getAsString();
+            assertEquals("find  the   book", buyerData(input).get("buyerText").getAsString());
         }
     }
 
@@ -266,24 +367,26 @@ class SocSearchClientTest {
         return Stream.of(
                 "not json",
                 "{} trailing",
-                "{/*comment*/\"status\":\"completed\",\"output_text\":\"{}\"}",
-                "{\"status\":\"completed\",\"status\":\"completed\",\"output_text\":\"{}\"}",
-                "{\"status\":\"in_progress\",\"output_text\":\"{}\"}",
-                "{\"status\":\"completed\",\"output_text\":\"  \"}",
-                "{\"status\":\"completed\",\"output_text\":3}",
-                nestedObject(33),
-                "{\"status\":\"completed\",\"output_text\":\"{}\",\"output\":["
-                        + "{\"type\":\"message\",\"role\":\"user\",\"status\":\"completed\",\"content\":[]}]}",
-                "{\"status\":\"completed\",\"output_text\":\"{}\",\"output\":["
-                        + "{\"type\":\"message\",\"role\":\"assistant\",\"status\":\"in_progress\",\"content\":[]}]}",
-                "{\"status\":\"completed\",\"output_text\":\"{}\",\"output\":["
-                        + "{\"type\":\"message\",\"role\":\"assistant\",\"status\":\"completed\","
-                        + "\"content\":[{\"type\":\"refusal\",\"refusal\":\"no\"}]}]}",
-                "{\"status\":\"completed\",\"output_text\":\"{}\",\"output\":["
-                        + "{\"type\":\"tool_call\",\"status\":\"completed\"}]}",
-                "{\"status\":\"completed\",\"output_text\":\"{}\",\"output\":["
-                        + "{\"type\":\"message\",\"role\":\"assistant\",\"status\":\"completed\","
-                        + "\"content\":[{\"type\":\"output_text\"}]}]}");
+                "{/*comment*/\"choices\":[]}",
+                "{\"choices\":[],\"choices\":[]}",
+                "{\"choices\":[]}",
+                "{\"choices\":[3]}",
+                "{\"choices\":[{\"finish_reason\":\"length\",\"message\":{\"role\":\"assistant\","
+                        + "\"content\":\"{}\"}}]}",
+                "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"role\":\"user\","
+                        + "\"content\":\"{}\"}}]}",
+                "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\","
+                        + "\"content\":\"  \"}}]}",
+                "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\","
+                        + "\"content\":\"{}\",\"refusal\":\"refused\"}}]}",
+                "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\","
+                        + "\"content\":\"{}\",\"function_call\":{}}}]}",
+                "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\","
+                        + "\"content\":\"{}\",\"tool_calls\":[{}]}}]}",
+                "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\","
+                        + "\"content\":\"{}\"}},{\"finish_reason\":\"length\","
+                        + "\"message\":{\"role\":\"assistant\",\"content\":\"{}\"}}]}",
+                envelopeWithMetadata(nestedObject(33)));
     }
 
     @Tag("security")
@@ -305,18 +408,23 @@ class SocSearchClientTest {
     }
 
     @Test
-    void propose_outputTextIsAuthoritativeOverNestedMessage() throws Exception {
-        String response = "{\"status\":\"completed\",\"output_text\":\"{\\\"titleText\\\":\\\"authoritative\\\"}\","
-                + "\"output\":[{\"type\":\"message\",\"role\":\"assistant\",\"status\":\"completed\","
-                + "\"content\":[{\"type\":\"output_text\",\"text\":\"{\\\"titleText\\\":\\\"different\\\"}\"}]}]}";
-        assertProposal("query", response, search -> assertEquals("authoritative", search.titleText()));
+    void propose_firstChoiceContent_isAuthoritative() throws Exception {
+        String response = "{\"choices\":["
+                + "{\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\","
+                + "\"content\":\"{\\\"titleText\\\":\\\"first\\\"}\"}},"
+                + "{\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\","
+                + "\"content\":\"{\\\"titleText\\\":\\\"second\\\"}\"}}]}";
+        assertProposal("query", response, search -> assertEquals("first", search.titleText()));
     }
 
     @Test
-    void propose_emptyOutputMessageArray_usesTopLevelOutputText() throws Exception {
-        String response = "{\"status\":\"completed\",\"output_text\":\"{\\\"titleText\\\":\\\"books\\\"}\","
-                + "\"output\":[]}";
-        assertProposal("query", response, search -> assertEquals("books", search.titleText()));
+    void propose_nullRefusalFunctionAndToolFields_acceptsAssistantContent() throws Exception {
+        for (String tools : new String[] {"null", "[]"}) {
+            String response = "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{"
+                    + "\"role\":\"assistant\",\"content\":\"{\\\"titleText\\\":\\\"books\\\"}\","
+                    + "\"refusal\":null,\"function_call\":null,\"tool_calls\":" + tools + "}}]}";
+            assertProposal("query", response, search -> assertEquals("books", search.titleText()));
+        }
     }
 
     @Test
@@ -326,13 +434,13 @@ class SocSearchClientTest {
 
     @Tag("security")
     @ParameterizedTest
-    @MethodSource("invalidOutputText")
-    void propose_invalidOutputTextJson_returnsInvalidResponse(String outputText) throws Exception {
-        assertFailureResponse(envelope(outputText).getBytes(StandardCharsets.UTF_8),
+    @MethodSource("invalidCompletionContent")
+    void propose_invalidCompletionContent_returnsInvalidResponse(String content) throws Exception {
+        assertFailureResponse(envelope(content).getBytes(StandardCharsets.UTF_8),
                 Map.of("Content-Type", "application/json"));
     }
 
-    static Stream<String> invalidOutputText() {
+    static Stream<String> invalidCompletionContent() {
         return Stream.of("[]", "{} trailing", "{\"titleText\":1,\"titleText\":2}", nestedObject(33),
                 "```json\\n{}\\n```");
     }
@@ -433,7 +541,7 @@ class SocSearchClientTest {
                 String title = requestBody.contains("first") ? "first" : "second";
                 byte[] body = envelope("{\"titleText\":" + quote(title) + "}").getBytes(StandardCharsets.UTF_8);
                 return new ControlledHttpsServer.Response(200, Map.of("Content-Type", "application/json"), body,
-                        false, null);
+                        false, null, false);
             });
             var first = client.propose("first");
             var second = client.propose("second");
@@ -444,11 +552,15 @@ class SocSearchClientTest {
             var requestOne = server.takeRequest();
             var requestTwo = server.takeRequest();
             String inputOne = JsonParser.parseString(new String(requestOne.body(), StandardCharsets.UTF_8))
-                    .getAsJsonObject().get("input").getAsString();
+                    .getAsJsonObject().getAsJsonArray("messages").get(1).getAsJsonObject()
+                    .get("content").getAsString();
             String inputTwo = JsonParser.parseString(new String(requestTwo.body(), StandardCharsets.UTF_8))
-                    .getAsJsonObject().get("input").getAsString();
-            assertTrue(inputOne.contains("first") && inputTwo.contains("second")
-                    || inputOne.contains("second") && inputTwo.contains("first"));
+                    .getAsJsonObject().getAsJsonArray("messages").get(1).getAsJsonObject()
+                    .get("content").getAsString();
+            String buyerOne = buyerData(inputOne).get("buyerText").getAsString();
+            String buyerTwo = buyerData(inputTwo).get("buyerText").getAsString();
+            assertTrue("first".equals(buyerOne) && "second".equals(buyerTwo)
+                    || "second".equals(buyerOne) && "first".equals(buyerTwo));
         }
     }
 
@@ -491,7 +603,7 @@ class SocSearchClientTest {
     }
 
     private static SocSearchClient client(ControlledHttpsServer server, java.net.http.HttpClient transport) {
-        return new SocSearchClient(server.uri("/v1/responses"), TOKEN, MODEL, transport, Duration.ofSeconds(5));
+        return new SocSearchClient(server.uri("/v1"), TOKEN, MODEL, transport, Duration.ofSeconds(5));
     }
 
     private static void assertNoAdditionalRequest(ControlledHttpsServer server) throws InterruptedException {
@@ -503,26 +615,148 @@ class SocSearchClientTest {
         return JsonParser.parseString(new String(request.body(), StandardCharsets.UTF_8)).getAsJsonObject();
     }
 
+    private static JsonObject buyerData(String input) {
+        return JsonParser.parseString(input).getAsJsonObject();
+    }
+
     private static <T> T await(CompletableFuture<T> future) throws Exception {
         return future.get(5, TimeUnit.SECONDS);
     }
 
     private static String envelope(String outputText) {
-        return "{\"status\":\"completed\",\"output_text\":" + quote(outputText) + "}";
+        return "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\","
+                + "\"content\":" + quote(outputText) + "}}]}";
     }
 
     private static String quote(String value) {
         return new com.google.gson.Gson().toJson(value);
     }
 
+    private static final class RegistrationGateClient extends HttpClient {
+        private final CountDownLatch entered = new CountDownLatch(1);
+        private final CountDownLatch release = new CountDownLatch(1);
+        private final AtomicBoolean operationCancelled = new AtomicBoolean();
+
+        @Override
+        public Optional<CookieHandler> cookieHandler() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Optional<Duration> connectTimeout() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Redirect followRedirects() {
+            return Redirect.NEVER;
+        }
+
+        @Override
+        public Optional<ProxySelector> proxy() {
+            return Optional.empty();
+        }
+
+        @Override
+        public SSLContext sslContext() {
+            try {
+                return SSLContext.getDefault();
+            } catch (java.security.NoSuchAlgorithmException exception) {
+                throw new IllegalStateException(exception);
+            }
+        }
+
+        @Override
+        public SSLParameters sslParameters() {
+            return new SSLParameters();
+        }
+
+        @Override
+        public Optional<Authenticator> authenticator() {
+            return Optional.empty();
+        }
+
+        @Override
+        public Version version() {
+            return Version.HTTP_1_1;
+        }
+
+        @Override
+        public Optional<Executor> executor() {
+            return Optional.empty();
+        }
+
+        @Override
+        public <T> HttpResponse<T> send(HttpRequest request, BodyHandler<T> responseBodyHandler)
+                throws IOException, InterruptedException {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request,
+                BodyHandler<T> responseBodyHandler) {
+            entered.countDown();
+            try {
+                if (!release.await(5, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("Transport registration gate timed out");
+                }
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException(exception);
+            }
+            return new CompletableFuture<>() {
+                @Override
+                public boolean cancel(boolean mayInterruptIfRunning) {
+                    operationCancelled.set(true);
+                    return super.cancel(mayInterruptIfRunning);
+                }
+            };
+        }
+
+        @Override
+        public <T> CompletableFuture<HttpResponse<T>> sendAsync(HttpRequest request,
+                BodyHandler<T> responseBodyHandler, PushPromiseHandler<T> pushPromiseHandler) {
+            return sendAsync(request, responseBodyHandler);
+        }
+    }
+
+    private static final class GatedScheduler extends ScheduledThreadPoolExecutor {
+        private final CountDownLatch entered = new CountDownLatch(1);
+        private final CountDownLatch release = new CountDownLatch(1);
+
+        private GatedScheduler() {
+            super(1);
+        }
+
+        @Override
+        public ScheduledFuture<?> schedule(Runnable command, long delay, TimeUnit unit) {
+            entered.countDown();
+            try {
+                if (!release.await(5, TimeUnit.SECONDS)) {
+                    throw new AssertionError("Deadline registration gate timed out");
+                }
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError("Deadline registration gate interrupted", exception);
+            }
+            return super.schedule(command, delay, unit);
+        }
+    }
+
     private static String nestedObject(int levels) {
-        return "{\"status\":\"completed\",\"output_text\":\"{}\",\"metadata\":"
+        return "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\","
+                + "\"content\":\"{}\"}}],\"metadata\":"
                 + "[".repeat(levels) + "0" + "]".repeat(levels) + "}";
     }
 
+    private static String envelopeWithMetadata(String nestedMetadata) {
+        return "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\","
+                + "\"content\":\"{}\"}}],\"metadata\":" + nestedMetadata + "}";
+    }
+
     private static byte[] paddedValidEnvelope(int targetLength) {
-        String prefix = "{\"status\":\"completed\",\"output_text\":\"{\\\"titleText\\\":\\\"books\\\"}\","
-                + "\"metadata\":\"";
+        String prefix = "{\"choices\":[{\"finish_reason\":\"stop\",\"message\":{\"role\":\"assistant\","
+                + "\"content\":\"{\\\"titleText\\\":\\\"books\\\"}\"}}],\"metadata\":\"";
         String suffix = "\"}";
         int paddingLength = targetLength - prefix.getBytes(StandardCharsets.UTF_8).length
                 - suffix.getBytes(StandardCharsets.UTF_8).length;
