@@ -38,6 +38,7 @@
   * [Service Worker]({{ baseUrl }}/docs/developerGuide/ServiceWorker.html)
   * [Account Service and Local Persistence]({{ baseUrl }}/docs/developerGuide/AccountServiceAndLocalPersistence.html)
   * [Marketplace Services]({{ baseUrl }}/docs/developerGuide/MarketplaceServices.html)
+  * [LLM Implementation]({{ baseUrl }}/docs/developerGuide/LLMImplementation.html)
   * [Listing Service]({{ baseUrl }}/docs/developerGuide/ListingService.html)
   * [Offer Service]({{ baseUrl }}/docs/developerGuide/OfferService.html)
   * [Chat Service]({{ baseUrl }}/docs/developerGuide/ChatService.html)

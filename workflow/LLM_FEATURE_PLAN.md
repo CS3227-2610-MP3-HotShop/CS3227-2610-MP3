@@ -461,7 +461,7 @@ capture. Both Checkstyle tasks passed. Existing boundaries satisfied new tests;
 initial fixture failures were corrected without production changes or manufactured
 behavioral red. Independent review found no substantial production/test/trace issues.
 Full regression/build checking remains delegated to the user. Evidence:
-[coverage](../docs/developerGuide/LlmSecurityCoverage.md),
+[coverage](../logs/2026-10-20-llm-documentation-reorganisation.md#archived-security-coverage),
 [tests](../logs/2026-10-20-llm-task013-integrated-boundary-tests.md),
 [integration](../logs/2026-10-20-llm-task013-integration.md).
 
@@ -618,7 +618,7 @@ documentation reviewer checks traceability before feature Done.
 **Source:** Technical readiness statement; all FR/NFR and TC IDs; repository Done gates.
 **Dependencies:** TASK-015 — final reviewed candidate; TASK-016 — reviewed docs/packaging evidence.
 **Completed:** Yes — 2026-10-20, for scoped acceptance recording. The
-[acceptance report](../docs/developerGuide/LlmAcceptance.md) traces every FR/NFR,
+[acceptance report](../logs/2026-10-20-llm-documentation-reorganisation.md#archived-acceptance-record) traces every FR/NFR,
 TC-01–12 and UC-001–003 to source, tests, actual recorded outcomes and reviews.
 TASK-015/016 prerequisites are complete; independent documentation review
 confirmed traceability and explicit exclusions. Documentation/dependency/link
@@ -668,7 +668,7 @@ are preserved. TASK-014 has historical unchecked acceptance boxes alongside its
 explicit Completed Yes/user acceptance record; this discrepancy is reported
 rather than reopening or rewriting that completed task.
 
-The [acceptance report](../docs/developerGuide/LlmAcceptance.md) consolidates
+The [acceptance report](../logs/2026-10-20-llm-documentation-reorganisation.md#archived-acceptance-record) consolidates
 requirement coverage, source/test links, actual check history and residual gates.
 TASK-010/011 full verification passed 1,149 tests; TASK-012/013 used focused
 verification under the user's deferral. TASK-014 v2 has 26 user-accepted semantic

@@ -67,3 +67,15 @@
 - [JPro](https://www.jpro.one): run existing Java and JavaFX files on a browser
 - [Docker Desktop](https://www.docker.com): containerization of application to be hosted
 - [Render](https://render.com): application hosting
+
+### LLM design and security references
+
+The LLM specification's distinction between prompt instructions and enforced
+capability boundaries is informed by
+[OWASP prompt injection guidance](https://genai.owasp.org/llmrisk/llm01-prompt-injection/)
+and [system prompt leakage guidance](https://genai.owasp.org/llmrisk/llm072025-system-prompt-leakage/).
+The technical design also consults the official
+[Java HTTP APIs](https://docs.oracle.com/en/java/javase/25/docs/api/java.net.http/java/net/http/HttpClient.html),
+[Gson project](https://github.com/google/gson),
+[Docker secret guidance](https://docs.docker.com/build/building/secrets/) and
+[Render secret-file documentation](https://render.com/docs/configure-environment-variables).

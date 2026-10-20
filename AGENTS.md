@@ -26,9 +26,11 @@ Do not assume that a feature exists merely because it is described as part of th
 
 ## Project Specifications
 
-For implemented LLM description generation, private configuration and safe offline
-commands, see the LLM section in `docs/DeveloperGuide.md`. Current evidence and
-release limits are in `docs/developerGuide/LlmAcceptance.md` and
+For LLM description generation design, private configuration and safe test
+commands, see `docs/developerGuide/LLMImplementation.md`.
+Keep `docs/UserGuide.md` and `docs/DeveloperGuide.md` as brief MarkBind landing pages;
+put feature details in topic pages and add them to the shared sidebar. Task evidence
+belongs under `logs/`; current release gates are also tracked in
 `workflow/LLM_FEATURE_PLAN.md` (TASK-016/017). Keep provider-tool assurance (G-03)
 and independent hosted-session isolation (G-04) open until separately verified.
 Never load real `.env` settings in ordinary tests or infer new live-call permission
