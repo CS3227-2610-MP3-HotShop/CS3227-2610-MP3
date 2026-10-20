@@ -13,13 +13,22 @@
     "*.md",
     "*.njk",
     ".git/*",
-    "node_modules/*"
+    "node_modules/*",
+    "build/",
+    "release/",
+    "logs/",
+    ".env",
+    ".env.*"
   ],
-  "pagesExclude": ["node_modules/*"],
+  "pagesExclude": [
+    "node_modules/*",
+    "build/**",
+    "release/**",
+    "logs/**"
+    ],
   "pages": [
-    {
-      "glob": ["**/index.md", "docs/**/*.md"]
-    }
+    { "src": "index.md"},
+    { "glob": "docs/**/*.md"}
   ],
   "deploy": {
     "message": "Site Update."
