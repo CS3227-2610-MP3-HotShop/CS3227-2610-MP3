@@ -2,13 +2,14 @@
 
 ## Feature and current status
 
-Stable identifier: llm-description; no issue assigned in this task. TASK-001–009
-are implemented and verified: build/test preparation, live corpus definition,
-private configuration, account quota primitive, request encoding, strict response
-validation and asynchronous bounded HTTPS transport. TASK-009 adds verified
-session-bound orchestration and actual-dispatch quota accounting. Application generation,
-runtime/UI integration and parent-feature
-acceptance remain incomplete. No live provider evaluation has run.
+Stable identifier: llm-description; no issue assigned in this task. TASK-001–015
+are recorded complete, including runtime/UI integration, stale-result protection,
+deterministic boundary checks, two live corpus runs and final independent local
+reviews. The user accepted all 26 second-run semantic results; the first run's
+failure is preserved. TASK-016 completes final documentation; TASK-017 scoped acceptance recording
+remains pending: 16/17 plan tasks recorded complete on 2026-10-20. See the [acceptance report](../docs/developerGuide/LlmAcceptance.md)
+for their final status and evidence. **Feature not Done:** provider tool assurance
+(G-03) and independent hosted-client session isolation (G-04) remain open.
 
 ## Specification baseline and evolution
 
@@ -16,7 +17,9 @@ acceptance remain incomplete. No live provider evaluation has run.
 FR-001–006, NFR-001–007 and TC-01–12.
 [Technical specification](../workflow/LLM_FEATURE_TECHNICAL_SPEC.md) drafted on
 2026-10-19. [Implementation plan](../workflow/LLM_FEATURE_PLAN.md) created 2026-10-20:
-17 tasks initially incomplete; TASK-001–009 subsequently completed on 2026-10-20.
+17 tasks initially incomplete; subsequent dated task evidence is in the plan.
+The specifications retain their original design-stage wording; current implemented
+behaviour and verification are recorded in the guides and acceptance report.
 
 ## Decisions and interactions
 
@@ -76,8 +79,10 @@ prepared requests and actual HTTP-start quota marking. See
 [implementation](2026-10-20-llm-task009-service-implementation.md),
 [integration/review](2026-10-20-llm-task009-integration.md) and
 [resume record](2026-10-20-llm-task009-resume.md).
-Current progress: 9/17. Parent feature remains incomplete; provider-tool and JPro
-session release gates remain open. TASK-010 onward requires new selection.
+The preceding paragraphs record the historical TASK-001–009 selections. Later
+selections completed TASK-010–015; the current user selection is TASK-016/017.
+The plan's current summary governs task counts, while parent-feature acceptance
+remains blocked by G-03/G-04.
 
 Only specification/documentation authorised by the original task. Follow-up
 reference to implementing configurable code is recorded as future implementation
@@ -92,6 +97,16 @@ no implementation tasks had been selected. Task-local owners/TDD and coordinator
 status updates are defined in the plan.
 
 ## Verification and review
+
+The TASK-001–009 results below are historical, not the current implementation
+status. Later evidence is consolidated in the acceptance report: TASK-010/011
+full test/check/build passed 1,149 tests; TASK-012/013 used focused checks under
+the user's full-regression deferral; TASK-014 v2 passed 26 automated cases and
+26 user-reviewed semantic decisions after the approved prompt correction.
+TASK-015 reviewed source candidate `81f71ee578e91a62a7e30be74ecd4d4ecd3ddd9e`
+and passed 586 focused offline cases across 15 suites. These overlapping runs
+must not be added into a full-suite total. TASK-016/017 change documentation
+only; new packaging/manual JPro checks were not performed.
 
 Specification-stage documentation was reviewed for sections, requirement references,
 links and whitespace without executing runtime tests. During TASK-001–004,
@@ -161,9 +176,29 @@ as approval. Word-counting mechanics remain a technical-design detail.
 
 ## Documentation and completion
 
-[Developer Guide](../docs/DeveloperGuide.md), [AGENTS.md](../AGENTS.md) and
-[decision record](../docs/InteractionRecord.md) updated. User Guide unchanged
-because no user-facing generation behaviour is implemented. Feature is not Done;
-remaining implementation, live evaluation, runtime/UI integration and final feature
-documentation/reviews remain pending. Selected tasks have evidence in the plan;
-no later task is marked complete or authorised by this batch.
+[User Guide](../docs/UserGuide.md#generating-a-listing-description),
+[listing instructions](../docs/userGuide/SearchAndListings.md),
+[Developer Guide](../docs/DeveloperGuide.md#llm-description-preparation-and-specification),
+[AGENTS.md](../AGENTS.md), this summary and per-task logs now describe actual
+local behaviour and limits. TASK-016/017 records are linked from the acceptance
+report; [independent final documentation review](2026-10-20-task016-017-documentation-review.md)
+found no material issue. Its minor deadline wording clarification was applied.
+The removed general interaction record is not restored; feature decisions and
+approvals remain linked here and in task logs.
+
+Later execution and approval evidence:
+
+- [Runtime/UI integration](2026-10-20-llm-task010-011-integration.md) and
+  [stale UI guards](2026-10-20-llm-task012-integration.md).
+- [Integrated boundaries](2026-10-20-llm-task013-integration.md) and
+  [TC-01–12 trace](../docs/developerGuide/LlmSecurityCoverage.md).
+- [Live correction approval](2026-10-20-task014-prompt-correction-plan.md),
+  [second run](2026-10-20-task014-prompt-rerun.md) and
+  [user semantic acceptance](2026-10-20-task014-completion.md).
+- [Independent final reviews](2026-10-20-task015-independent-reviews.md) and
+  [local scope/G-03 decision](2026-10-20-task015-final-reviews.md).
+
+TASK-014 correction history remains two ordinary cycles and one explicitly
+approved exceptional prompt cycle. Documentation reconciliation authorizes no
+further model correction or live rerun. No runtime settings/private outputs were
+read for TASK-016/017, and no deployment or release artifact was produced.

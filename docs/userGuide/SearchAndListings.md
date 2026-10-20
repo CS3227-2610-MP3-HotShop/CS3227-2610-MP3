@@ -59,6 +59,8 @@ it before **Save Listing**. Nothing is saved by generation itself. Errors preser
 your draft, and manual entry remains available. See
 [Generating a listing description](../UserGuide.html#generating-a-listing-description)
 for limits and current restrictions. This action is available on Create Listing only.
+You can keep editing or save manually while it runs. Changing the title, condition
+or description discards the pending result, even if you change the value back.
 
 ### Editing, archiving, and deleting listings
 

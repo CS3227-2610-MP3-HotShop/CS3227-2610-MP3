@@ -294,14 +294,14 @@ tracker documentation.
 ### LLM description preparation and specification
 
 [LLM Feature Product Specification](../workflow/LLM_FEATURE_PRODUCT_SPEC.md)
-defines proposed optional description generation for Create Listing. A valid result
+defines optional description generation implemented for Create Listing. A valid result
 immediately replaces existing description text. Provider endpoint, bearer token and
-model will be supplied privately through configuration; no real values belong in
+model are supplied privately through configuration; no real values belong in
 source control. The LLM receives title and condition only, alongside fixed task
 instructions, with no tools, secrets or internal application context.
 
-Generation is not yet available in the application. The user selected TASK-001–004
-and confirmed endpoint/key readiness on 2026-10-20, permitting offline tests without
+Generation is available in Create Listing as described below. The user initially
+selected TASK-001–004 and confirmed endpoint/key readiness on 2026-10-20, permitting offline tests without
 reading real settings. Live calls require separate explicit authorisation. Generated
 descriptions have a hard maximum of 100 words and normally target 50–70 words;
 the target is not a minimum, and manual description limits remain unchanged.
@@ -317,9 +317,9 @@ returned calls. Provider-side tools cannot currently be confirmed disabled; a
 prompt cannot establish that guarantee. OQ-04 contains user-approved limits:
 10-second connect / 45-second total timeout, 8 KiB request / 64 KiB response,
 one active request/account, 5/minute and 30/hour per account, no automatic retries.
-Technical design must record the approved settings before implementation;
+The technical specification records the approved settings;
 finite adversarial testing cannot establish immunity to all prompt injections.
-The proposed [LLM technical specification](../workflow/LLM_FEATURE_TECHNICAL_SPEC.md)
+The [LLM technical specification](../workflow/LLM_FEATURE_TECHNICAL_SPEC.md)
 defines the session-bound service, asynchronous Java HTTP transport, strict bounded
 JSON handling, configuration loader and stale-result guards. TASK-002 added Gson
 2.14.0 as the sole JSON dependency and a typed `hotshop.llm.LlmClient` seam;
@@ -334,7 +334,7 @@ planning for its limited scope. TASK-014's second live evaluation has recorded
 human acceptance; provider tool assurance and future container release checks
 remain unverified.
 The [LLM implementation plan](../workflow/LLM_FEATURE_PLAN.md) contains 17 ordered
-tasks, all initially incomplete. Behaviour tasks require runnable tests and verified
+tasks with dated execution evidence. Behaviour tasks require runnable tests and verified
 behavioural failures before production changes, then passing checks and refactoring.
 Testing and implementation owners coordinate shared-file edits; the coordinator
 maintains completion evidence. The configuration-readiness gate is resolved; live
@@ -424,8 +424,10 @@ repeated. These are scoped local findings, not a blanket security guarantee.
 The user confirmed that no independent provider assurance is available: G-03
 remains open and full end-to-end no-tool acceptance remains blocked. G-04 also
 remains open; independent concurrent JPro client identity/session safety was not
-verified. TASK-016 still owns final guide/packaging reconciliation, and TASK-017
-owns feature acceptance. See the [attributed reviews](../logs/2026-10-20-task015-independent-reviews.md)
+verified. TASK-016 completed documentation on 2026-10-20 after independent documentation
+review; TASK-017 records scoped acceptance. The feature
+remains **not Done**. See the [acceptance report](developerGuide/LlmAcceptance.md),
+[attributed reviews](../logs/2026-10-20-task015-independent-reviews.md)
 and [checks/scope record](../logs/2026-10-20-task015-final-reviews.md).
 
 The HTTPS fixture trusts a synthetic CA only in its injected test client, binds
@@ -456,6 +458,36 @@ Settings access is package-private and guarded; `toString` exposes availability
 only. Loading writes no files. Rewriting/deleting `.env` does not change an existing
 snapshot. `Main` loads it once through its lazy server description owner at startup.
 Manual listing creation/persistence still works with missing configuration.
+
+For synthetic setup, use a temporary working directory containing a UTF-8 `.env`
+with the following inert example. It is syntax guidance, not a live provider:
+
+```dotenv
+SOCLAAS_BASE_URL='https://provider.invalid/example/responses'
+SOCLAAS_API_KEY='synthetic-test-token'
+SOCLAAS_MODEL='synthetic-test-model'
+```
+
+Do not replace an operator's existing `.env` with this example. Ordinary tests
+create temporary settings and inject controlled clients; they need no real provider.
+The first `=` separates name/value; quotes preserve contents literally, including
+`#`, `$` and backslashes. Do not use shell `export`, expansion or inline comments.
+In a packaged launch, `.env` is resolved from the process working directory, not
+from inside the JAR or the data directory. Restart the server process to reload
+settings. Server restart also clears quota history; reopening a form, logging out
+or creating another session service does not clear it.
+
+TASK-016/017 changed documentation only. No packaging definition, resource input
+or Java source/test changed, so the conditional `shadowJar jproRelease` check was
+not triggered. Neither packaging task nor `jproRun` was executed for this selection;
+there is no new synthetic-secret artifact inspection or manual browser/keyboard/
+form/save/error observation. Earlier desktop JUnit observations remain linked in
+the acceptance report and are not JPro manual evidence. No tracked `release/`
+artifact was changed. Before a later packaging change, inspect the produced
+JAR/JPro archive with synthetic fixtures for `.env`, credentials and test-only
+assets. Docker/Render work must separately establish runtime secret mounts,
+build-context/image-layer exclusion and hosted session isolation; nothing was
+published or deployed here.
 
 `hotshop.service.DescriptionQuota` now provides the account admission primitive.
 An explicitly owned registry can be shared across session services; it has no
@@ -674,7 +706,7 @@ Local isolation is distinct from description semantics. A structurally valid
 script, command or URL can still be returned as plain text; it gains no execution
 or navigation capability. These tests do not prove grounded descriptions,
 semantic refusal, universal prompt-injection resistance or provider-side tool
-non-use. Live semantics remain TASK-014 and the provider/hosted-identity gates
+non-use. Live semantics were evaluated in TASK-014 and the provider/hosted-identity gates
 remain open. No dependency or production security policy is changed by this
 consolidation.
 

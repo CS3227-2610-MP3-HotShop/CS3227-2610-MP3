@@ -26,8 +26,14 @@ Do not assume that a feature exists merely because it is described as part of th
 
 ## Project Specifications
 
-For LLM session-bound generation and its current limits, see the LLM preparation
-section in `docs/DeveloperGuide.md` and `workflow/LLM_FEATURE_PLAN.md` (TASK-009).
+For implemented LLM description generation, private configuration and safe offline
+commands, see the LLM section in `docs/DeveloperGuide.md`. Current evidence and
+release limits are in `docs/developerGuide/LlmAcceptance.md` and
+`workflow/LLM_FEATURE_PLAN.md` (TASK-016/017). Keep provider-tool assurance (G-03)
+and independent hosted-session isolation (G-04) open until separately verified.
+Never load real `.env` settings in ordinary tests or infer new live-call permission
+from earlier successful evaluations. Packaging changes require synthetic-secret
+artifact inspection; Git ignore alone does not exclude secrets from container images.
 
 The Java/Gradle/JUnit versions, Java source directories, Java coding conventions,
 and Gradle verification commands below apply to the existing JavaFX application.

@@ -6,10 +6,11 @@ NFR-001–007, TC-01–12 and UC-001–003. Created 2026-10-20.
 
 The plan itself authorises no execution or deployment. On 2026-10-20 the user
 explicitly selected TASK-001–004 and confirmed configuration readiness; see their
-execution records below. Subsequent selections completed TASK-005–011; the user
-has now selected TASK-012–013 in this plan, with one commit per task and full
-regression verification deferred to the user. TASK-014 onward remains
-unauthorised. Initial source
+execution records below. Subsequent selections completed TASK-005–015; the user
+has now selected TASK-016–017 using implement-task-short. This selection covers
+documentation and scoped acceptance only, with no new live calls or deployment.
+The TASK-012–015 full-regression deferral remains recorded; no current full-suite
+result is inferred. Initial source
 inspection found the JavaFX editor, single service worker/session and runtime lock,
 but no feature implementation, JSON dependency or `llmLiveTest` task. Inspection
 is not passing runtime evidence. No SQL migration is planned; generation never
@@ -19,7 +20,7 @@ saves a listing.
 
 | Gate | Current state / affected work | Resolution |
 | --- | --- | --- |
-| G-01: implementation scope | Resolved 2026-10-20: TASK-001–011 completed; user selected TASK-012–013. | Design contracts govern the selected scope; TASK-014 onward remains unauthorised. |
+| G-01: implementation scope | Resolved 2026-10-20: TASK-001–015 recorded complete; user selected TASK-016–017. | Documentation/scoped acceptance only; no new live calls, hosting implementation or deployment. |
 | G-02: deferred tests | Resolved 2026-10-20: user explicitly confirmed endpoints and API key are ready. No secrets inspected. | Offline verification authorised; live calls still require separate explicit authorisation. |
 | G-03: provider tools | Provider-side tools cannot be confirmed disabled. Blocks full end-to-end no-tool security acceptance in TASK-015/017, not independent local-boundary implementation after G-01/02. | Obtain provider capability assurance/configuration evidence, or explicit product-spec revision accepting a narrower guarantee. Prompt instructions or passing samples alone do not close this gate. |
 | G-04: hosted identity | Independent concurrent JPro client identity/session isolation is not established in current code. Multi-user hosted acceptance in TASK-017 remains blocked. | Separately approved lifecycle/session integration review/work; do not add an authentication rewrite to this plan. Local/isolated runtime acceptance can be recorded separately. |
@@ -580,7 +581,15 @@ TASK-016/017 or final feature acceptance is claimed. Evidence:
 and supporting records to describe actual verified behaviour, with independent review.
 **Source:** Technical 3.2, 5.2; repository documentation/SDD gates; FR-001–006.
 **Dependencies:** TASK-013 — actual implemented local behaviour and verification.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. Both guides, agent instructions, Gson
+acknowledgement and feature SDD summary match the local implementation and
+recorded evidence. Independent documentation review found no material issue;
+its deadline-wording clarification was applied. Packaging inputs did not change,
+so the conditional shadowJar/jproRelease check was not triggered. Packaging,
+fresh synthetic-secret artifact inspection and manual JPro checks were not run;
+all exclusions and future container/Render gates are explicit. Evidence:
+[task log](../logs/2026-10-20-task016-documentation.md),
+[independent review](../logs/2026-10-20-task016-017-documentation-review.md).
 
 **Steps**
 
@@ -598,9 +607,9 @@ and supporting records to describe actual verified behaviour, with independent r
 
 **Acceptance criteria**
 
-- [ ] Both guides, instructions, SDD summary and per-task logs match actual behaviour/evidence.
-- [ ] Applicable packaging/manual checks have actual results; all unperformed checks explicit.
-- [ ] No container/Render publication claim; future secret mounts/image exclusion tracked separately.
+- [x] Both guides, instructions, SDD summary and per-task logs match actual behaviour/evidence.
+- [x] Applicable packaging/manual checks have actual results; all unperformed checks explicit.
+- [x] No container/Render publication claim; future secret mounts/image exclusion tracked separately.
 
 ### TASK-017: Record scoped acceptance and outstanding release gates
 
@@ -644,18 +653,24 @@ documentation reviewer checks traceability before feature Done.
 | TC-05/06/11 | TASK-003/006/013/014/015 |
 | TC-10 | TASK-005/008–013 |
 
-Current progress: **13/17 tasks complete** (TASK-001–013, dated evidence above).
-Selected TASK-012–013 are complete under the focused-verification override;
-TASK-001–011 records were preserved. TASK-012 is commit `8af40d1`; TASK-013's
-separate commit includes its integrated tests and traceability records.
-Prior TASK-010–011 full verification passed with 1,149 tests across 39 suites, zero
-failures/errors/skips, both Checkstyle checks, check and build. Guides and logs
-describe the implemented runtime/UI behavior. TASK-012 focused verification passed
-115 UI tests and both styles. Full regression/build checks for this selection are
-delegated to the user; no current full-suite result is claimed. TASK-013 passed
-442 related boundary tests and a final 13-case integration rerun with both styles;
-these overlapping runs are not a full-suite total. Live semantics, provider tools,
-hosted identity and release acceptance remain unverified in their later tasks.
-Existing configuration readiness permits offline verification only. G-03/04
-still constrain final acceptance. No live calls, deployment or execution of
-TASK-014 onward is authorised by this selection.
+Current progress: **16/17 tasks recorded complete**, with dated supporting evidence.
+TASK-016 is complete; TASK-017 scoped acceptance recording remains pending. Completed prerequisite entries
+are preserved. TASK-014 has historical unchecked acceptance boxes alongside its
+explicit Completed Yes/user acceptance record; this discrepancy is reported
+rather than reopening or rewriting that completed task.
+
+The [acceptance report](../docs/developerGuide/LlmAcceptance.md) consolidates
+requirement coverage, source/test links, actual check history and residual gates.
+TASK-010/011 full verification passed 1,149 tests; TASK-012/013 used focused
+verification under the user's deferral. TASK-014 v2 has 26 user-accepted semantic
+results; its original v1 failure remains preserved. TASK-015's stable local
+candidate passed 586 focused cases and independent reviews. Overlapping runs
+are not a full-suite total; no current full regression/build result is claimed.
+
+**Feature remains not Done.** G-03 blocks full end-to-end no-tool acceptance;
+G-04 blocks independent multi-user hosted acceptance. Packaging is unchanged:
+the conditional shadowJar/jproRelease step was not triggered; neither these
+commands nor jproRun/manual checks were performed for TASK-016/017. Future
+Docker/Render packaging, secret mounts/image exclusion, session integration and
+deployment require separately authorized work. No new live calls or publication
+are included in this selection.
