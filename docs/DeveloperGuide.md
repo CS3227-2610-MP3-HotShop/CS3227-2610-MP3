@@ -583,6 +583,33 @@ for TASK-012–013; no unfiltered test/check/build was run for these changes.
 Each selected task is committed separately, including its guides, plan and logs.
 See [TASK-012 evidence](../logs/2026-10-20-llm-task012-integration.md).
 
+TASK-013 consolidates the deterministic local boundaries in
+[LLM security coverage](developerGuide/LlmSecurityCoverage.md). Its integrated
+tests use a temporary `ApplicationRuntime`, production `HttpLlmClient` and the
+controlled loopback HTTPS fixture with synthetic credentials. They capture the
+actual permitted request, preserve private account/listing/file canaries, compare
+storage after startup/setup, reject structured tool output and check that redirects
+or output-directed URLs never contact another destination. The active Windows
+lock file is observed by metadata because its contents cannot be read while locked;
+other files are compared by content hashes.
+
+Local isolation is distinct from description semantics. A structurally valid
+script, command or URL can still be returned as plain text; it gains no execution
+or navigation capability. These tests do not prove grounded descriptions,
+semantic refusal, universal prompt-injection resistance or provider-side tool
+non-use. Live semantics remain TASK-014 and the provider/hosted-identity gates
+remain open. No dependency or production security policy is changed by this
+consolidation.
+
+TASK-013 focused verification (2026-10-20) passed
+`.\gradlew.bat test --tests 'hotshop.llm.*' --tests '*DescriptionServiceTest' --tests '*DescriptionQuotaTest' --tests '*DescriptionRuntimeTest' checkstyleMain checkstyleTest`:
+442 tests with zero failures/errors/skips, including 12 integration cases.
+After adding nonempty safe-warning capture, the integration class and both
+styles were rerun: 13 cases passed. These runs overlap and are not a full-suite
+baseline. Review found no substantial issues and no production changes were
+required. Full regression/build verification is delegated to the user.
+See [TASK-013 evidence](../logs/2026-10-20-llm-task013-integration.md).
+
 Final TASK-010–011 verification on 2026-10-20 passed
 `.\gradlew.bat test checkstyleMain checkstyleTest check build`: 1,149 tests across
 39 suites, zero failures/errors/skips, both Checkstyle checks and packaging tasks.

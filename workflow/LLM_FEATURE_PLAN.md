@@ -452,7 +452,17 @@ user by the execution override above. Evidence:
 regressions test-first; reviewer checks feature-relevant trust/capability boundaries.
 **Source:** Technical 3/4/5.2; NFR-001–007; TC-01–12 (live semantics in TASK-014).
 **Dependencies:** TASK-012 — integrated candidate with stale guards.
-**Completed:** No
+**Completed:** Yes — 2026-10-20 under the focused-verification override above.
+TC-01–12 are traced to actual tests with live semantic limits explicit. The focused
+LLM/runtime/service/quota run passed 442 tests (including 12 integration cases);
+the final integration-only rerun passed 13 cases after adding nonempty safe-log
+capture. Both Checkstyle tasks passed. Existing boundaries satisfied new tests;
+initial fixture failures were corrected without production changes or manufactured
+behavioral red. Independent review found no substantial production/test/trace issues.
+Full regression/build checking remains delegated to the user. Evidence:
+[coverage](../docs/developerGuide/LlmSecurityCoverage.md),
+[tests](../logs/2026-10-20-llm-task013-integrated-boundary-tests.md),
+[integration](../logs/2026-10-20-llm-task013-integration.md).
 
 **Steps**
 
@@ -466,9 +476,9 @@ regressions test-first; reviewer checks feature-relevant trust/capability bounda
 
 **Acceptance criteria**
 
-- [ ] Deterministic TC coverage traced and meaningful; all applicable non-live checks pass.
-- [ ] No secret/tool/file side effects; no claim that mocked tests establish model immunity.
-- [ ] Important review failures fixed through approved, test-backed corrections.
+- [x] Deterministic TC coverage traced and meaningful; all applicable non-live checks pass.
+- [x] No secret/tool/file side effects; no claim that mocked tests establish model immunity.
+- [x] Important review failures fixed through approved, test-backed corrections.
 
 ### TASK-014: Execute the separately authorised live security evaluation
 
@@ -588,13 +598,18 @@ documentation reviewer checks traceability before feature Done.
 | TC-05/06/11 | TASK-003/006/013/014/015 |
 | TC-10 | TASK-005/008–013 |
 
-Current progress: **12/17 tasks complete** (TASK-001–012, dated evidence above).
-Selected TASK-012 is complete; TASK-013 is eligible. TASK-001–011 records were preserved.
+Current progress: **13/17 tasks complete** (TASK-001–013, dated evidence above).
+Selected TASK-012–013 are complete under the focused-verification override;
+TASK-001–011 records were preserved. TASK-012 is commit `8af40d1`; TASK-013's
+separate commit includes its integrated tests and traceability records.
 Prior TASK-010–011 full verification passed with 1,149 tests across 39 suites, zero
 failures/errors/skips, both Checkstyle checks, check and build. Guides and logs
 describe the implemented runtime/UI behavior. TASK-012 focused verification passed
 115 UI tests and both styles. Full regression/build checks for this selection are
-delegated to the user; no current full-suite result is claimed.
+delegated to the user; no current full-suite result is claimed. TASK-013 passed
+442 related boundary tests and a final 13-case integration rerun with both styles;
+these overlapping runs are not a full-suite total. Live semantics, provider tools,
+hosted identity and release acceptance remain unverified in their later tasks.
 Existing configuration readiness permits offline verification only. G-03/04
 still constrain final acceptance. No live calls, deployment or execution of
 TASK-014 onward is authorised by this selection.
