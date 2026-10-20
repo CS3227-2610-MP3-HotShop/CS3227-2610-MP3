@@ -46,7 +46,8 @@ LLM. Your existing description and other listing fields are not sent.
 
 A successful result immediately replaces the entire Description field without
 confirmation. Generated text has at most 100 words; review its accuracy and edit
-it as needed. It remains unsaved until you fill in the required listing fields
+it as needed. Check that it describes the item rather than repeating requests
+from the title or asking for more information. It remains unsaved until you fill in the required listing fields
 and choose **Save Listing**. Generation is available only when creating a listing.
 
 While generating, progress appears and Generate is disabled. You can still edit,
