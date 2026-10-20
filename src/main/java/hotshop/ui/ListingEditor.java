@@ -14,10 +14,17 @@ import hotshop.model.Condition;
 import hotshop.model.Listing;
 import hotshop.model.ListingDetails;
 import hotshop.model.OfferStatus;
+import hotshop.service.DescriptionService;
 import hotshop.service.ListingDraft;
 import hotshop.service.ListingPhoto;
 import hotshop.storage.ImageStorage;
+import javafx.application.Platform;
+import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.TextArea;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
 /** One atomic listing form with an ordered photo selection; imported files remain service-owned. */
@@ -30,6 +37,12 @@ final class ListingEditor {
     private final ComboBox<Condition> condition = SearchPage.choices(Condition.values());
     private final List<ListingPhoto> photos = new ArrayList<>();
     private final VBox photoRows = new VBox(10);
+    private final Button generate = UiControls.button("Generate Description", "generate-description",
+            this::generateDescription);
+    private final ProgressIndicator generationProgress = new ProgressIndicator();
+    private final Label generationStatus = UiControls.label("", "muted");
+    private TextField title;
+    private TextArea description;
     private List<String> initialFields;
 
     ListingEditor(MarketplaceUi app, Listing original) {
@@ -47,8 +60,11 @@ final class ListingEditor {
 
     private void build(String pickup) {
         ListingDetails details = original == null ? null : original.getDetails();
-        form.text("title", "Title", details == null ? "" : details.title());
-        form.area("description", "Description", details == null ? "" : details.description());
+        title = form.text("title", "Title", details == null ? "" : details.title());
+        description = form.area("description", "Description", details == null ? "" : details.description());
+        if (original == null) {
+            addGenerationControls();
+        }
         form.text("price", "Asking price (SGD)", details == null ? ""
                 : BigDecimal.valueOf(details.priceCents(), 2).toPlainString());
         category.setId("category");
@@ -67,6 +83,85 @@ final class ListingEditor {
         initialFields = fields();
         page.setDirty(() -> !initialFields.equals(fields()) || !originalPhotos().equals(photos));
         renderPhotos();
+    }
+
+    private void addGenerationControls() {
+        Label notice = UiControls.label("Your title and condition are sent to an external LLM. "
+                + "A successful result replaces your existing description immediately. "
+                + "Review and edit the generated text before saving your listing.", "hint");
+        notice.setId("generation-notice");
+        generate.setAccessibleText("Generate Description");
+        generationProgress.setId("generation-progress");
+        generationProgress.setMaxSize(24, 24);
+        generationProgress.setVisible(false);
+        generationProgress.managedProperty().bind(generationProgress.visibleProperty());
+        generationStatus.setId("generation-status");
+        generationStatus.visibleProperty().bind(generationStatus.textProperty().isNotEmpty());
+        generationStatus.managedProperty().bind(generationStatus.visibleProperty());
+        form.getChildren().addAll(notice, UiControls.actions(generate, generationProgress), generationStatus);
+    }
+
+    private void generateDescription() {
+        if (generate.isDisabled()) {
+            return;
+        }
+        form.clearErrors();
+        form.textLength("title", 120, true);
+        if (condition.getValue() == null) {
+            form.reject("condition", "Choose a condition.");
+        }
+        if (!form.isValid()) {
+            generationMessage("Enter a valid title and choose a condition to generate a description.", "error");
+            return;
+        }
+        generate.setDisable(true);
+        generationProgress.setVisible(true);
+        generationMessage("Generating description… You can keep editing or save your listing.", "muted");
+        try {
+            app.runtime.getDescriptions().generateDescription(title.getText(), condition.getValue())
+                    .whenComplete((result, failure) -> Platform.runLater(() -> {
+                        if (app.isCurrent(page)) {
+                            finishGeneration(failure == null ? result : null);
+                        }
+                    }));
+        } catch (RuntimeException failure) {
+            finishGeneration(null);
+        }
+    }
+
+    private void finishGeneration(DescriptionService.GenerationResult result) {
+        generate.setDisable(false);
+        generationProgress.setVisible(false);
+        if (result instanceof DescriptionService.Generated generated) {
+            description.setText(generated.description());
+            generationMessage("Description generated. Review and edit it before saving your listing.", "success");
+        } else if (result instanceof DescriptionService.Failed failed) {
+            generationMessage(generationFailure(failed), "error");
+        } else {
+            generationMessage("Description generation is unavailable. Try again or write your own description.",
+                    "error");
+        }
+    }
+
+    private void generationMessage(String message, String style) {
+        generationStatus.getStyleClass().setAll(style);
+        generationStatus.setText(message);
+    }
+
+    private static String generationFailure(DescriptionService.Failed failed) {
+        return switch (failed.kind()) {
+            case INVALID_INPUT -> "Enter a valid title and choose a condition to generate a description.";
+            case LOGIN_REQUIRED, SESSION_CHANGED -> "Your session changed. Log in again to generate a description.";
+            case IN_FLIGHT -> "A description is already being generated for your account. Wait before trying again.";
+            case RATE_LIMITED -> "Generation limit reached. Try again in " + failed.retryAfterSeconds() + " seconds.";
+            case TIMEOUT -> "Description generation timed out. Try again or write your own description.";
+            case PROVIDER_AUTH, UNAVAILABLE, CLOSED ->
+                    "Description generation is unavailable. Try again or write your own description.";
+            case PROVIDER_BUSY -> "The description provider is busy. Try again later or write your own description.";
+            case NETWORK -> "Could not connect to the description provider. Try again or write your own description.";
+            case INVALID_RESPONSE ->
+                    "The provider returned an invalid description. Try again or write your own description.";
+        };
     }
 
     private List<ListingPhoto> originalPhotos() {

@@ -6,8 +6,9 @@ NFR-001–007, TC-01–12 and UC-001–003. Created 2026-10-20.
 
 The plan itself authorises no execution or deployment. On 2026-10-20 the user
 explicitly selected TASK-001–004 and confirmed configuration readiness; see their
-execution records below. Subsequent selections completed TASK-005–008 and now
-authorise TASK-009 only; TASK-010 onward remains unauthorised. Initial source
+execution records below. Subsequent selections completed TASK-005–009; the user
+has now selected TASK-010–011 and confirmed this plan. TASK-012 onward remains
+unauthorised. Initial source
 inspection found the JavaFX editor, single service worker/session and runtime lock,
 but no feature implementation, JSON dependency or `llmLiveTest` task. Inspection
 is not passing runtime evidence. No SQL migration is planned; generation never
@@ -17,7 +18,7 @@ saves a listing.
 
 | Gate | Current state / affected work | Resolution |
 | --- | --- | --- |
-| G-01: implementation scope | Resolved 2026-10-20: TASK-001–008 completed; user subsequently selected TASK-009. | Design contracts govern the selected scope; TASK-010 onward remains unauthorised. |
+| G-01: implementation scope | Resolved 2026-10-20: TASK-001–009 completed; user selected TASK-010–011 and confirmed this plan. | Design contracts govern the selected scope; TASK-012 onward remains unauthorised. |
 | G-02: deferred tests | Resolved 2026-10-20: user explicitly confirmed endpoints and API key are ready. No secrets inspected. | Offline verification authorised; live calls still require separate explicit authorisation. |
 | G-03: provider tools | Provider-side tools cannot be confirmed disabled. Blocks full end-to-end no-tool security acceptance in TASK-015/017, not independent local-boundary implementation after G-01/02. | Obtain provider capability assurance/configuration evidence, or explicit product-spec revision accepting a narrower guarantee. Prompt instructions or passing samples alone do not close this gate. |
 | G-04: hosted identity | Independent concurrent JPro client identity/session isolation is not established in current code. Multi-user hosted acceptance in TASK-017 remains blocked. | Separately approved lifecycle/session integration review/work; do not add an authentication rewrite to this plan. Local/isolated runtime acceptance can be recorded separately. |
@@ -345,7 +346,14 @@ zero failures/errors/skips. Runtime wiring remains TASK-010. Evidence:
 server quota ownership and nonblocking shutdown without weakening existing open/lock APIs.
 **Source:** Technical 1.1/1.3, 3.2/3.3, 5.1; FR-001; NFR-002/005/007.
 **Dependencies:** TASK-004 — settings; TASK-009 — service and session contracts.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. Behavioural red preceded implementation;
+12 runtime ownership/shutdown tests and existing runtime/account/listing regressions
+pass. Independent review found no substantial defects. Full test, both Checkstyle
+tasks, check and build passed: 1,118 tests, zero failures/errors/skips. Offline
+overloads, shared quota ownership, cancellation and asynchronous draining with
+retained directory lock are verified. Evidence:
+[runtime red](../logs/2026-10-20-llm-task010-runtime-red.md),
+[runtime implementation](../logs/2026-10-20-llm-task010-runtime-implementation.md).
 
 **Steps**
 
@@ -360,9 +368,9 @@ server quota ownership and nonblocking shutdown without weakening existing open/
 
 **Acceptance criteria**
 
-- [ ] Existing runtime overloads and ordinary offline/manual operation preserved.
-- [ ] Close is idempotent, bounded and never blocks JavaFX; no quota reset on mere form/runtime change.
-- [ ] Shared quota lifecycle has explicit server owner and tested shutdown behaviour.
+- [x] Existing runtime overloads and ordinary offline/manual operation preserved.
+- [x] Close is idempotent, bounded and never blocks JavaFX; no quota reset on mere form/runtime change.
+- [x] Shared quota lifecycle has explicit server owner and tested shutdown behaviour.
 
 ### TASK-011: Add Create Listing generation controls through TDD
 
@@ -370,7 +378,16 @@ server quota ownership and nonblocking shutdown without weakening existing open/
 safe typed completion integration in `ListingEditor`.
 **Source:** Technical 2.1, 5.1; FR-001/002/005/006; TC-01/03; UC-001.
 **Dependencies:** TASK-010 — runtime service access.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. Behavioural red preceded UI implementation;
+31 generation UI cases pass, including input boundaries, all conditions, keyboard,
+safe failures, shared quota feedback, unsaved replacement and manual save while
+pending. Existing UI/listing regressions pass; the minimum-window screenshot was
+inspected. Independent review found no substantial issues. Final full test, both
+Checkstyle checks, check and build passed: 1,149 tests, zero failures/errors/skips.
+TASK-012 revision/disposal safeguards remain outside this completion. Evidence:
+[UI red](../logs/2026-10-20-llm-task011-generation-ui-red.md),
+[UI implementation](../logs/2026-10-20-llm-task011-generation-ui-implementation.md),
+[integration](../logs/2026-10-20-llm-task010-011-integration.md).
 
 **Steps**
 
@@ -384,8 +401,8 @@ safe typed completion integration in `ListingEditor`.
 
 **Acceptance criteria**
 
-- [ ] Success inserts once as editable unsaved text, and only explicit save persists listing.
-- [ ] Failure preserves draft; no generation control on Edit Listing; keyboard/status checks pass.
+- [x] Success inserts once as editable unsaved text, and only explicit save persists listing.
+- [x] Failure preserves draft; no generation control on Edit Listing; keyboard/status checks pass.
 
 ### TASK-012: Guard stale UI completions and disposal through TDD
 
@@ -554,10 +571,11 @@ documentation reviewer checks traceability before feature Done.
 | TC-05/06/11 | TASK-003/006/013/014/015 |
 | TC-10 | TASK-005/008–013 |
 
-Current progress: **9/17 tasks complete** (TASK-001–009, dated evidence above).
-Selected TASK-009 is complete; TASK-001–008 records were preserved.
-Final test/style/check/build: 1,106 passing tests, both Checkstyle checks and
-JAR/distribution packaging passed. Generation is not wired into the application.
+Current progress: **11/17 tasks complete** (TASK-001–011, dated evidence above).
+Selected TASK-010–011 are complete; TASK-001–009 records were preserved.
+Final full verification passed with 1,149 tests across 39 suites, zero
+failures/errors/skips, both Checkstyle checks, check and build. Guides and logs
+describe the implemented runtime/UI behavior and pending TASK-012 safeguards.
 Existing configuration readiness permits offline verification only. G-03/04
-still constrain final acceptance; no live calls, runtime/UI integration,
-deployment or execution of TASK-010 onward is authorised by this selection.
+still constrain final acceptance. No live calls, deployment or execution of
+TASK-012 onward is authorised by this selection.

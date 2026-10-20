@@ -340,8 +340,8 @@ evaluation still requires explicit authorisation. The plan itself authorises
 no execution. Provider-side tool assurance and independent JPro client identity
 remain acceptance gaps; later Docker/Render work is outside the local task scope.
 See the [feature summary](../logs/2026-10-19-feature-llm-description-sdd-summary.md)
-for decisions and verification limits. User Guide changes wait for implemented
-behaviour so proposed controls are not described as existing functionality.
+for decisions and verification limits. The User Guide describes implemented
+generation controls and identifies the remaining UI lifecycle restrictions.
 
 Offline LLM tests and synthetic fixtures live under `src/test/java/hotshop/llm/`
 and `src/test/resources/hotshop/llm/`. Run them with
@@ -380,7 +380,7 @@ fit Java HTTP header characters (through U+00FF). Invalid/missing/unreadable fil
 return a safe unavailable snapshot with no raw exception or settings in diagnostics.
 Settings access is package-private and guarded; `toString` exposes availability
 only. Loading writes no files. Rewriting/deleting `.env` does not change an existing
-snapshot; startup wiring that loads once belongs to TASK-010 and is not implemented.
+snapshot. `Main` loads it once through its lazy server description owner at startup.
 Manual listing creation/persistence still works with missing configuration.
 
 `hotshop.service.DescriptionQuota` now provides the account admission primitive.
@@ -395,13 +395,13 @@ Matching reservation IDs make terminal release idempotent and keep dispatched
 failures counted. A still-active reservation can instead roll back if dispatch
 never started locally; stale rollback cannot erase charged history or release a
 newer request. Registry operations prune expired inactive accounts while retaining
-active ownership until completion. A new server registry starts empty. TASK-010
-must supply one server-owned instance across services; this primitive does not
-establish runtime wiring or independent hosted session identity. Its deterministic
+active ownership until completion. A new server registry starts empty.
+`DescriptionRuntime` supplies one server-owned registry across session services;
+this does not establish independent hosted session identity. Its deterministic
 suite is `.\gradlew.bat test --tests '*DescriptionQuotaTest'`.
 
 `hotshop.llm.HttpLlmClient` builds bounded requests and implements asynchronous
-`LlmClient` transport; it is not wired to the application. Its internal
+`LlmClient` transport, wired through the server description owner. Its internal
 `buildRequest` checks a stripped title of 1–120 Unicode code points, a non-null
 condition and available immutable settings. Gson `JsonWriter` encodes the title
 and canonical enum condition as product facts, then encodes a separate outer JSON
@@ -470,7 +470,7 @@ Only HTTP 200 with JSON media type and valid response structure succeeds.
 or logged. Run `.\gradlew.bat test --tests '*HttpLlmClientTest'` for synthetic
 transport verification. No new dependencies were added in TASK-007–008.
 TASK-009 adds session authorisation and shared quota admission through
-`DescriptionService`; runtime/UI integration remains TASK-010 onward. The transport
+`DescriptionService`; runtime integration uses `DescriptionRuntime`. The transport
 must be reached through the session-bound service when wired for users.
 Live evaluation and provider/hosting assurance
 remain unverified. See the
@@ -509,7 +509,7 @@ or clearing shared quota history. The transport settles its dispatch marker and
 cleanup before publishing cancellation, preventing a late dispatch after refund.
 Unexpected failures log only the fixed `LLM_SERVICE_UNEXPECTED` code. The numeric
 retry delay is nonzero only for local rate-limit feedback. Runtime ownership and
-startup wiring remain TASK-010; no user-facing generation control is available yet.
+startup wiring are described below; UI integration is tracked separately in the plan.
 See [TASK-009 evidence](../logs/2026-10-20-llm-task009-integration.md).
 Final TASK-009 verification on 2026-10-20:
 `.\gradlew.bat test checkstyleMain checkstyleTest check build` passed, with 1,106
@@ -517,10 +517,69 @@ tests across 37 suites and zero failures/errors/skips. Includes 61 service,
 22 preparation and 37 quota cases. Independent review has no outstanding material
 findings; no live provider calls or runtime/UI acceptance are claimed.
 
+`DescriptionRuntime` owns the process-shared quota and transport and registers
+each runtime's session-bound `DescriptionService`. `Main` shares one lazy owner
+across application objects, reads the working-directory `.env` once and closes
+that owner through a JVM shutdown hook. Closing an application runtime cancels
+only its own description requests, preserving shared quota history and other services.
+`ApplicationRuntime.open(Path)` and `open(Path, Clock)` remain offline and never
+read `.env`; tests or alternate hosts inject an explicit owner through
+`open(Path, Clock, DescriptionRuntime)`. Missing settings leave manual operations
+available. The transport is reached through `getDescriptions()`.
+
+`closeAsync()` rejects new generation and cancels its pending preparation or
+transport before draining accepted service work on a non-daemon shutdown thread.
+The data-directory lock remains held until draining finishes. Repeated calls
+observe the same completion. `close()` waits for this completion off JavaFX and
+returns immediately on JavaFX; use `closeAsync()` to observe shutdown failures.
+`Main.stop()` uses this asynchronous path. No HTTP-client termination is awaited
+on JavaFX. This lifecycle does not repair the documented JPro identity/data-lock
+limitations or establish multi-user hosted acceptance.
+
+TASK-010 verification on 2026-10-20 passed
+`.\gradlew.bat test checkstyleMain checkstyleTest check build`: 1,118 tests with
+zero failures/errors/skips, including 12 new runtime ownership/shutdown tests.
+Independent review found no substantial defects. Focused runtime/account/listing
+verification passed 95 tests; see [runtime evidence](../logs/2026-10-20-llm-task010-runtime-implementation.md).
+
+`ListingEditor` adds **Generate Description** only to Create Listing. The title
+and condition are validated before calling the session-bound service. A notice
+beside the action explains external processing, immediate replacement and review
+before saving. Local progress and fixed safe status messages handle typed results
+on JavaFX. Only Generate is disabled during the request; this path does not use
+`UiPage.perform`, so ordinary editing, saving and navigation remain available.
+Success sets the retained Description text area once and leaves `initialFields`
+unchanged, preserving normal dirty tracking. No generation callback saves a listing.
+Failures preserve the draft and local rate-limit feedback displays safe retry seconds.
+
+TASK-011 checks the current page before applying a queued completion. It does not
+yet track field revisions, authentication-route revisions or accepted window
+disposal; these safeguards remain TASK-012. A result can still overwrite edits on
+the active form. Do not infer complete stale-result protection or feature-wide
+acceptance from these controls. The User Guide records this restriction.
+The new `ListingDescriptionGenerationTest` uses real JavaFX controls, temporary
+SQLite data and a controlled transport. Both UI test suites tolerate an already
+started JavaFX toolkit so they can run together in one test JVM.
+
+Final TASK-010–011 verification on 2026-10-20 passed
+`.\gradlew.bat test checkstyleMain checkstyleTest check build`: 1,149 tests across
+39 suites, zero failures/errors/skips, both Checkstyle checks and packaging tasks.
+The 31 generation UI cases include keyboard activation, safe quota feedback,
+unsaved replacement, manual saving during generation and a gated-worker close
+on JavaFX. The minimum-window screenshot was inspected. Independent code and
+documentation reviews found no substantial issues. No live provider calls or
+manual JPro/browser acceptance were performed. See
+[selected-task evidence](../logs/2026-10-20-llm-task010-011-integration.md).
+
 TASK-007–009 changes are grouped into exactly three task commits. The shared
 transport file is split across parser, HTTPS transport and prepared-dispatch
 orchestration revisions. Final shared completion records accompany TASK-009;
 see the [grouping record](../logs/2026-10-20-llm-task007-009-commit-grouping.md).
+
+TASK-010–011 changes are grouped into two task commits: runtime ownership/shutdown,
+then Create Listing generation controls. Each includes its tests and task logs;
+the consolidated guides, plan and integration records accompany TASK-011. See
+the [grouping record](../logs/2026-10-20-llm-task010-011-commit-grouping.md).
 
 TASK-001–006 changes are grouped into one commit per task, followed by a shared
 documentation commit for completion records and integration evidence. Unrelated

@@ -52,6 +52,14 @@ prefill your preferred pickup location, which you can change for that listing.
 Photos are validated before being added and revalidated when saved; the app
 does not automatically crop or resize images.
 
+To get help writing the description, enter a title and choose a condition, then
+select **Generate Description**. Only those two product facts are sent to an
+external LLM. Success immediately replaces any description text; review and edit
+it before **Save Listing**. Nothing is saved by generation itself. Errors preserve
+your draft, and manual entry remains available. See
+[Generating a listing description](../UserGuide.html#generating-a-listing-description)
+for limits and current restrictions. This action is available on Create Listing only.
+
 ### Editing, archiving, and deleting listings
 
 Open one of your listings for **Edit Listing**, **Archive Listing**, **Delete
