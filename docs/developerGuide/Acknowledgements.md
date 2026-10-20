@@ -10,20 +10,19 @@
 
 - [OpenAI Codex](https://openai.com/codex/): AI assistance with project scaffolding,
   implementation, tests, documentation, and review. The task records in
-  [logs](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/tree/main/logs)
+  [logs](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/tree/main/logs)
   describe the scope and verification of individual interactions;
   generated output was adapted to this project's requirements.
-- [`setup-javafx-project`](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/.agents/skills/setup-javafx-project/SKILL.md):
-  repository-local skill used to guide the initial JavaFX/Gradle scaffold, build
-  configuration, CI, and guide structure, as recorded in the
-  [scaffold log](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/logs/2026-09-16-create-hotshop-javafx-scaffold.md). This link is
-  the local source; no external author or upstream source is recorded here.
+- `setup-javafx-project`: the original repository-local skill used to guide the
+  initial JavaFX/Gradle scaffold, build configuration, CI, and guide structure.
+  The skill and its original scaffold log are not present in the MP3 checkout;
+  no external author or upstream source is recorded here.
 - [Claude Code](https://claude.com/claude-code) (Anthropic): AI assistance for
   the listing, offer, sale, meetup, and chat services and screens, including
   design interviews, implementation, tests, reviews, merge-conflict
   resolution, these guides, and the PlantUML diagrams in `docs/diagrams/`.
   Each session is recorded in the repository's
-  [logs](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/tree/main/logs);
+  [logs](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/tree/main/logs);
   all output was reviewed and adapted to the project's requirements.
 
 ### Frameworks and engineering resources

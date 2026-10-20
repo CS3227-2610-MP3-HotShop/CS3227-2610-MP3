@@ -111,7 +111,7 @@ The workflow also supports manual dispatch.
 The guides are a [MarkBind](https://markbind.org/) site. Every push to `main`
 runs `.github/workflows/docs.yml`, which builds the site with MarkBind and
 deploys `_site/` to GitHub Pages, at
-<https://cs3227-2610-mp2-hotshop.github.io/CS3227-2610-MP2/>. The repository's
+<https://cs3227-2610-mp3-hotshop.github.io/CS3227-2610-MP3/>. The repository's
 Pages source is set to **GitHub Actions**.
 
 To preview the site locally, install Node.js and run:
@@ -123,14 +123,14 @@ npm run docs:serve
 
 `npm run docs:build` writes the site to the git-ignored `_site/` folder instead.
 The site is served from the repository's subpath, so `baseUrl` in `site.json`
-must stay `/CS3227-2610-MP2`. Links to files outside `docs/`, such as `logs/`,
+must stay `/CS3227-2610-MP3`. Links to files outside `docs/`, such as `logs/`,
 must be full GitHub links, because only `docs/` pages are published.
 
 ## Engineering skills
 
 ### Agent configuration
 
-Agent skill configuration lives in [docs/agents](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/tree/main/docs/agents). It defines the
+Agent skill configuration lives in [docs/agents](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/tree/main/docs/agents). It defines the
 [team GitHub issue tracker](../agents/issue-tracker.md),
 [triage labels](../agents/triage-labels.md), and
 [domain documentation rules](../agents/domain.md). `AGENTS.md` directs agents
@@ -329,14 +329,14 @@ with owners, dependencies, status, acceptance criteria, and linked PRs. Substant
 integration work may have its own issue; small features can remain one issue.
 Close the parent only when required tasks and feature-level acceptance checks are
 complete. This structure is agreed; feature and task templates are written locally. Task stage conventions are agreed; the PR template is also written locally.
-The [feature issue template](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/.github/ISSUE_TEMPLATE/feature.md) supports incremental
+The [feature issue template](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/.github/ISSUE_TEMPLATE/feature.md) supports incremental
 planning: known outcomes, draft criteria, open questions, and later task discovery.
 Owners/specs/task links may be pending when an issue is created. Before implementation,
 the selected task must have approved detail, ownership, relevant contracts, and resolved
 prerequisites. Newly discovered changes to agreed scope or interfaces retain human
 approval gates. The template is local; no GitHub issues were created by adding it.
 
-The [implementation task template](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/.github/ISSUE_TEMPLATE/task.md) is shared across
+The [implementation task template](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/.github/ISSUE_TEMPLATE/task.md) is shared across
 frontend, backend, and integration issues. It links the parent, specs and plan IDs;
 records ownership, acceptance, dependencies, verification and approval; and collects
 actual completion evidence. Fields can be pending at creation. Readiness is checked
@@ -354,7 +354,7 @@ required acceptance and review evidence. The summary links specifications, decis
 plan tasks, human approvals, corrections, verification and per-task logs. Maintain one
 summary per feature under logs/; keep the running decision record for cross-task handoff.
 
-The [PR template](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/.github/PULL_REQUEST_TEMPLATE.md) asks for those links and separates
+The [PR template](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/.github/PULL_REQUEST_TEMPLATE.md) asks for those links and separates
 intermediate task completion from feature completion. Intermediate PRs identify any
 outstanding documentation owner/task rather than asserting complete feature delivery.
 

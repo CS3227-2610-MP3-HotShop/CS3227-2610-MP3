@@ -7,7 +7,7 @@
     <a slot="brand" href="{{baseUrl}}/index.html" title="Home" class="navbar-brand">HotShop</a>
     <li><a highlight-on="sibling-or-child" href="{{baseUrl}}/docs/UserGuide.html" class="nav-link">User Guide</a></li>
     <li><a highlight-on="sibling-or-child" href="{{baseUrl}}/docs/DeveloperGuide.html" class="nav-link">Developer Guide</a></li>
-    <li><a href="https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2" target="_blank" class="nav-link"><md>:fab-github:</md></a>
+    <li><a href="https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3" target="_blank" class="nav-link"><md>:fab-github:</md></a>
     </li>
     <li slot="right">
       <form class="navbar-form">

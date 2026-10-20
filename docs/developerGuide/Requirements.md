@@ -200,7 +200,7 @@ completion
 ### Glossary
 
 The project's domain terms are defined in
-[CONTEXT.md](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/CONTEXT.md).
+[CONTEXT.md](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/CONTEXT.md).
 The terms used most in this guide:
 
 | Term | Meaning |

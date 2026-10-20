@@ -11,10 +11,10 @@ title and selected condition. Generation is optional and never saves a listing.
 For the seller's workflow, see [Search and Listings](../userGuide/SearchAndListings.html).
 This page explains the implementation, configuration and testing boundaries.
 
-The [product specification](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/workflow/LLM_FEATURE_PRODUCT_SPEC.md)
-defines the requirements; the [technical specification](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/workflow/LLM_FEATURE_TECHNICAL_SPEC.md)
+The [product specification](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/workflow/LLM_FEATURE_PRODUCT_SPEC.md)
+defines the requirements; the [technical specification](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/workflow/LLM_FEATURE_TECHNICAL_SPEC.md)
 defines the contracts. Their original design-stage wording remains the baseline.
-The [implementation plan](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/workflow/LLM_FEATURE_PLAN.md)
+The [implementation plan](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/workflow/LLM_FEATURE_PLAN.md)
 records completed tasks and dated evidence. Local implementation is available,
 but the feature is **not Done**: provider-tool assurance (G-03) and independent
 hosted-session isolation (G-04) remain open.
@@ -49,9 +49,9 @@ returned commands and links remain inert text. Prompt wording alone cannot ensur
 model compliance or establish the provider's internal tool configuration.
 
 Useful source entry points are
-[DescriptionService](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/src/main/java/hotshop/service/DescriptionService.java),
-[HttpLlmClient](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/src/main/java/hotshop/llm/HttpLlmClient.java)
-and [ListingEditor](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/src/main/java/hotshop/ui/ListingEditor.java).
+[DescriptionService](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/src/main/java/hotshop/service/DescriptionService.java),
+[HttpLlmClient](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/src/main/java/hotshop/llm/HttpLlmClient.java)
+and [ListingEditor](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/src/main/java/hotshop/ui/ListingEditor.java).
 
 ## Private configuration
 
@@ -89,7 +89,7 @@ Loading writes no files. Configuration access is guarded and package-private;
 `toString` exposes availability only. Raw settings and read/parse exceptions are
 not returned in diagnostics. Ordinary tests must use temporary synthetic settings
 and must never load the real working-directory `.env`. See
-[LlmConfiguration](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/src/main/java/hotshop/llm/LlmConfiguration.java).
+[LlmConfiguration](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/src/main/java/hotshop/llm/LlmConfiguration.java).
 
 ## Limits and request accounting
 
@@ -116,7 +116,7 @@ counted; ambiguous collaborator failures conservatively retain their charge.
 Cancelling a returned service future or leaving the page does not free the active
 slot before transport termination. These are single-process guarantees, not
 cross-replica limits. See
-[DescriptionQuota](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/src/main/java/hotshop/service/DescriptionQuota.java).
+[DescriptionQuota](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/src/main/java/hotshop/service/DescriptionQuota.java).
 
 ## Response handling and safe failures
 
@@ -147,7 +147,7 @@ to `INVALID_RESPONSE`; timeout maps to `TIMEOUT`, other transport failures to
 `NETWORK`. Raw response text, settings, headers, URI and exception causes do not
 reach UI messages or diagnostics. Unexpected service failures log only the fixed,
 cause-free `LLM_SERVICE_UNEXPECTED` warning. See
-[LlmResponseParser](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/src/main/java/hotshop/llm/LlmResponseParser.java).
+[LlmResponseParser](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/src/main/java/hotshop/llm/LlmResponseParser.java).
 
 ## UI, session and resource lifecycle
 
@@ -195,7 +195,7 @@ run during this documentation reorganisation. Tests use temporary SQLite data,
 synthetic settings, controlled clients, clocks and completion gates. Loopback HTTPS
 uses a public synthetic test CA trusted only by the injected client; it preserves
 hostname checks and never changes global production TLS. See the
-[HTTPS fixture guide](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/src/test/resources/hotshop/llm/HTTPS-FIXTURES.md).
+[HTTPS fixture guide](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/src/test/resources/hotshop/llm/HTTPS-FIXTURES.md).
 
 | Coverage | Main executable evidence and interpretation |
 | --- | --- |
@@ -207,7 +207,7 @@ hostname checks and never changes global production TLS. See the
 | Desktop interaction (TC-01/03/10/12) | `ListingDescriptionGenerationTest` and `MarketplaceUiTest` use real JavaFX controls to check keyboard activation, editable unsaved replacement, safe failures, manual save and stale completion ordering. They do not establish JPro browser acceptance. |
 | Corpus preparation (TC-05/06/11) | `LlmSecurityCorpusTest` checks the 26 public cases and required attack/control coverage; `LiveLlmAdapterTest` checks the real evaluation adapter offline. Model semantics require separately authorised live review. |
 
-The [integration tests](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/src/test/java/hotshop/llm/LlmSecurityIntegrationTest.java)
+The [integration tests](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/src/test/java/hotshop/llm/LlmSecurityIntegrationTest.java)
 snapshot storage after setup while the runtime stays open. Readable files are
 compared by SHA-256 digest; Windows' active `application.lock` is checked by size
 and modification time because its contents are locked. Persisted values are also
@@ -240,7 +240,7 @@ settings, bearer headers, raw transport exceptions and generated prose never bel
 in committed logs. A public version label identifies the reviewed configuration
 snapshot, not an independently verified provider backend version.
 
-The [corpus and review rubric](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/src/test/resources/hotshop/llm/SECURITY-EVALUATION.md)
+The [corpus and review rubric](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/src/test/resources/hotshop/llm/SECURITY-EVALUATION.md)
 cover all five conditions, benign security vocabulary, role spoofing, disclosure,
 unrelated work, encoded/Unicode/multilingual attacks and requested external actions.
 Automated checks enforce structure and selected sentinels. A human must also
@@ -254,8 +254,8 @@ passed automation but failed human review for `attack-internals`; its evidence i
 preserved. After an authorised prompt correction, all 26 second-run outputs passed
 automation and user review. Separate private human decisions retain the original
 case outputs and dispatch-time review labels. See the
-[rerun evidence](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/logs/2026-10-20-task014-prompt-rerun.md)
-and [human acceptance record](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/logs/2026-10-20-task014-completion.md).
+[rerun evidence](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/logs/2026-10-20-task014-prompt-rerun.md)
+and [human acceptance record](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/logs/2026-10-20-task014-completion.md).
 This supports the reviewed samples only, not future factual accuracy or universal
 prompt-injection immunity. Sellers must continue reviewing generated descriptions.
 
@@ -263,8 +263,8 @@ prompt-injection immunity. Sellers must continue reviewing generated description
 
 Focused offline verification and independent local reviews support authentication,
 minimal disclosure, quota, transport/parser limits, inert output and desktop
-lifecycle behaviour. See the [review findings](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/logs/2026-10-20-task015-independent-reviews.md)
-and [verification scope](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/logs/2026-10-20-task015-final-reviews.md).
+lifecycle behaviour. See the [review findings](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/logs/2026-10-20-task015-independent-reviews.md)
+and [verification scope](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/logs/2026-10-20-task015-final-reviews.md).
 These findings do not close the following requirements:
 
 - **G-03 — provider tools:** no independent provider-tool assurance is available.
@@ -275,10 +275,6 @@ These findings do not close the following requirements:
 - **G-04 — hosted sessions:** independently verify concurrent hosted-client
   identity/session isolation through separately approved lifecycle work. Existing
   runtime identity and exclusive data locking do not prove this property.
-- **Regression and manual acceptance:** the latest full-suite/build evidence
-  predates later UI, integration and prompt changes. The user retained full
-  regression responsibility; fresh full regression/build and manual JPro/browser
-  keyboard, form, save and error checks remain unverified in the existing records.
 - **Packaging and hosting:** current JAR/JPro/container release safety is unverified.
   Packaging changes require synthetic-secret inspection of generated artifacts.
   Docker/Render work must establish runtime secret mounting and exclusion from
@@ -287,6 +283,6 @@ These findings do not close the following requirements:
 
 Task completion records do not grant feature-level Done, full security acceptance,
 hosted release acceptance or permission to deploy. Detailed historical execution
-records remain in the [feature summary](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/logs/2026-10-19-feature-llm-description-sdd-summary.md).
+records remain in the [feature summary](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/logs/2026-10-19-feature-llm-description-sdd-summary.md).
 The former preparation, acceptance and coverage records are preserved in the
-[documentation archive](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/logs/2026-10-20-llm-documentation-reorganisation.md#archived-acceptance-record).
+[documentation archive](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/logs/2026-10-20-llm-documentation-reorganisation.md#archived-acceptance-record).

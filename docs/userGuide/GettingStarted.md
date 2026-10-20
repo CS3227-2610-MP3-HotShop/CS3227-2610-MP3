@@ -46,7 +46,7 @@ empty database. If you selected a custom data folder, reset that folder instead.
 ### Download a prebuilt JAR
 
 Prebuilt JARs for 64-bit Windows and Linux are attached to the
-[latest release](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/releases/latest),
+[latest release](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/releases/latest),
 and are also in the repository's `release/` folder:
 
 - `HotShop-windows.jar` for Windows
