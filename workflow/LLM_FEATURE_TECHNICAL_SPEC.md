@@ -92,6 +92,9 @@ Admission uses a monotonic clock (`System.nanoTime` via injectable `LongSupplier
 not wall-clock time. Atomically prune timestamps at or before `now - 1 hour`, count
 those strictly newer than `now - 60 seconds`, check active slot and both windows,
 then reserve and record a timestamp immediately before the single HTTP dispatch.
+TASK-009 implements this with a tentative admission timestamp and a trusted
+before-send callback that records actual HTTP start time once for the matching
+active reservation. Executor queue delay must not shorten the dispatch window.
 Requests at exactly window expiry no longer count. Retain dispatched failures and
 timeouts in both windows. Invalid input/configuration/size never reaches admission.
 If dispatch cannot start locally, roll back its reservation/timestamp atomically;
@@ -116,12 +119,23 @@ CompletableFuture<GenerationResult> generateDescription(String title, Condition 
 `LOGIN_REQUIRED`, `SESSION_CHANGED`, `UNAVAILABLE`, `IN_FLIGHT`, `RATE_LIMITED`,
 `TIMEOUT`, `PROVIDER_AUTH`, `PROVIDER_BUSY`, `NETWORK`, `INVALID_RESPONSE`, `CLOSED`.
 No raw response, URI, header or nested transport exception crosses this boundary.
+TASK-009 keeps these outcome records and enum nested in DescriptionService; its
+Failed record uses zero retryAfterSeconds when no local rate-limit delay applies.
 Unexpected programming failures are also converted to a safe unavailable result
 with only a fixed internal diagnostic code logged, without exception payloads.
 
 Use a typed result rather than raw HTTP exceptions through `UiPage.error`, whose
 unexpected-error branch logs causes. No broad change to `ServiceException.Code`
 is needed. Existing services retain their exception contracts.
+
+TASK-009 implements the transport seam with asynchronous `LlmClient.prepare`
+returning an opaque single-use `PreparedRequest`. Its nonblocking
+`dispatch(beforeSend)` returns an `Attempt` with a terminal result future and
+stable `wasDispatched` flag. The trusted callback captures only quota/reservation
+ownership and marks actual start immediately before HTTP. Pre-dispatch failures
+can roll back; dispatched or unknown attempts retain their charge. Runtime
+injection remains TASK-010. Public service-future cancellation does not release
+an active attempt; transport terminal cleanup settles ownership before callbacks.
 
 Execution sequence (FR-001–006):
 
@@ -267,9 +281,11 @@ claims about internals are quality/security failures, not evidence of real acces
 
 ### 3.2 Configuration and hosting
 
-Use private root `.env` keys `HOTSHOP_LLM_ENDPOINT`, `HOTSHOP_LLM_BEARER_TOKEN`,
-`HOTSHOP_LLM_MODEL`. These names are proposed configuration contracts; no real
-values or example provider model are committed. Resolve `.env` from the configured
+Use private root `.env` keys `SOCLAAS_BASE_URL`, `SOCLAAS_API_KEY`,
+`SOCLAAS_MODEL`. The user confirmed these names on 2026-10-20, superseding
+HOTSHOP_LLM_* names. No real values or example provider model are committed.
+BASE_URL remains the exact full HTTPS request URI, without an appended path.
+Resolve `.env` from the configured
 application working directory, never from user-controlled listing data or resources.
 
 Read UTF-8 `KEY=VALUE` lines with optional matching single/double quotes, blank

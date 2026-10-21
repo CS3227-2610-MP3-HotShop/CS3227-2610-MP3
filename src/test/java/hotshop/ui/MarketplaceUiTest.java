@@ -80,10 +80,15 @@ class MarketplaceUiTest extends PostgresTestSupport {
     @BeforeAll
     static void startToolkit() throws Exception {
         CountDownLatch started = new CountDownLatch(1);
-        Platform.startup(() -> {
+        Runnable initialize = () -> {
             Platform.setImplicitExit(false);
             started.countDown();
-        });
+        };
+        try {
+            Platform.startup(initialize);
+        } catch (IllegalStateException alreadyStarted) {
+            Platform.runLater(initialize);
+        }
         assertTrue(started.await(15, TimeUnit.SECONDS));
     }
 
