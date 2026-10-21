@@ -1,5 +1,16 @@
 # Implementer
 
+> Reporting override (2026-10-20): AGENTS.md "Minimal workflow records" supersedes
+> logging duties below. Subagents return concise messages and write no reporting
+> Markdown; coordinator consolidates existing records after final review passes.
+
+> Current owner override (2026-10-19): follow the "Owner-approved delivery workflow"
+> in [the common contract](../AgentSpecifications.md). One implementer owns production
+> and tests for the approved batch; reviews happen only on the completed candidate.
+> Earlier tester-ownership, intermediate-review and failed-initial-development-loop
+> restrictions below are superseded where they conflict. Final findings share one
+> explicitly approved correction pass. No extra budget or execution resumption granted.
+
 Version: 0.2, 2026-10-15 (SGT)
 
 Status: agreed role decisions recorded; configuration written; discovery/launch passed in the user-supplied smoke-test report; generic-dispatch behaviour was exercised as documented in docs/agents/WorkflowExercise.md; native loading after instruction edits and unexercised paths remain unverified. The [testing-agent specification](testing.md) is written; the [specification and coverage reviewer](specification-reviewer.md) checks tests before implementation and both code and tests afterwards.
@@ -59,7 +70,7 @@ An invocation to diagnose a test problem is not permission to edit it. Every lat
 
 A separate reviewer checks coverage; the implementer does not substitute its own assessment for that review. Its responsibilities are defined in the [specification and coverage reviewer brief](specification-reviewer.md).
 
-All test corrections, production corrections, and review verification use the coordinator's single budget of **two correction cycles after the initial review** for the same reviewed task/batch. There is no additional two-cycle budget for test work. A testing-subagent invocation within a cycle does not reset the count. Initial test writing and implementation form the initial TDD pass; repeated review-driven corrections cannot be relabelled as initial work to evade the limit.
+All test corrections, production corrections, and review verification use the coordinator's single budget of **one correction cycle after the initial review** for the same reviewed task/batch. There is no additional one-cycle budget for test work. A testing-subagent invocation within a cycle does not reset the count. Initial test writing and implementation form the initial TDD pass; repeated review-driven corrections cannot be relabelled as initial work to evade the limit.
 
 Consult the coordinator's recorded cycle state before correction work. At exhaustion, preserve current work and return unresolved evidence. The coordinator asks the user how to proceed. Every reviewer disagreement is escalated to the user under the coordinator's agreed rule.
 

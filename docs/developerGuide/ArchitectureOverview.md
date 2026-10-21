@@ -25,7 +25,7 @@ This is a single-project, non-modular build. Launcher is separate from the
 Application subclass so the bundled JAR can launch JavaFX from the classpath.
 The shared model layer, AccountService, ListingService, OfferService,
 TransactionService, MeetupService, and ChatService are implemented, including
-SQLite persistence, authentication, profile and listing images, buyer listing
+PostgreSQL persistence, authentication, profile and listing images, buyer listing
 search, offers, sale completion and cancellation, sales and purchase history,
 meetup slots and bookings, conversations and messages, the sales dashboard
 summary, and lifecycle initialization. The account, profile, listing/search,
@@ -47,6 +47,9 @@ implementation.
 
 [![HotShop architecture: JavaFX UI, services, repositories, SQLite, and image storage](../diagrams/architecture_uml.png)](../diagrams/architecture_uml.png)
 
+The diagram above is historical: its SQLite node is replaced by PostgreSQL/JDBC;
+images remain local pending separate storage integration.
+
 ### Layers and responsibilities
 
 | Layer | Current components | Responsibility |
@@ -54,16 +57,16 @@ implementation.
 | UI | `MarketplaceUi`, feature pages, `UiPage` | Navigation, forms, presentation validation, and asynchronous feedback. |
 | Service | `AccountService`, `ListingService`, `OfferService`, `TransactionService`, `MeetupService`, `ChatService` | Authentication, permissions, business rules, and atomic operations. |
 | Repository | `UserRepository`, `ListingRepository`, `OfferRepository`, `TransactionRepository`, `MeetupRepository`, `ChatRepository` | Execute SQL using a supplied connection and map records to models. |
-| Database | `Database`, SQLite JDBC, `marketplace.db` | Connections, migrations, commit/rollback, and local persistence. |
+| Database | `Database`, PostgreSQL JDBC, `DatabaseConfig` | Serializable transactions, explicit provisioning and schema validation. |
 
 Services also use Java models to enforce domain invariants. `ImageStorage` manages
-files separately from SQLite; profile and listing image helpers coordinate file
+files separately from PostgreSQL; profile and listing image helpers coordinate file
 imports and cleanup with saved references. UI image-path resolution goes through
 the runtime rather than repositories.
 
 ### Runtime initialization and shutdown
 
-`ApplicationRuntime.open` acquires the data-directory lock, migrates the database,
+`ApplicationRuntime.open` acquires the image-directory lock, validates the provisioned database,
 creates separate profile/listing image stores, and constructs the repositories
 and six services. All services share one `Database`, `ServiceWorker`, and
 `AuthenticatedSession`; time-dependent services share the supplied clock. Startup

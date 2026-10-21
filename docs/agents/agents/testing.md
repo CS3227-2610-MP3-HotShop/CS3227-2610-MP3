@@ -1,5 +1,16 @@
 # Testing agent
 
+> Reporting override (2026-10-20): AGENTS.md "Minimal workflow records" supersedes
+> logging duties below. Subagents return concise messages and write no reporting
+> Markdown; coordinator consolidates existing records after final review passes.
+
+> Current owner override (2026-10-19): follow the "Owner-approved delivery workflow"
+> in [the common contract](../AgentSpecifications.md). One implementer owns production
+> and tests for the approved batch; reviews happen only on the completed candidate.
+> Earlier tester-ownership, intermediate-review and failed-initial-development-loop
+> restrictions below are superseded where they conflict. Final findings share one
+> explicitly approved correction pass. No extra budget or execution resumption granted.
+
 Version: 0.1, 2026-10-15 (SGT)
 
 Status: agreed decisions recorded; configuration written; discovery/launch passed in the user-supplied smoke-test report; generic-dispatch behaviour was exercised as documented in docs/agents/WorkflowExercise.md; native loading after instruction edits and unexercised paths remain unverified. The separate [specification and coverage reviewer](specification-reviewer.md) reviews tests before implementation and both code and tests afterwards.
@@ -43,7 +54,7 @@ Unresolved disagreements about required behaviour go to the user with specificat
 
 ## Shared correction budget
 
-Use the coordinator's single two-cycle correction budget for the same reviewed task/batch. Test revisions, production fixes, and coverage verification do not receive separate budgets. Record the cycle number supplied by the coordinator; reinvoking this agent does not reset it.
+Use the coordinator's single one-cycle correction budget for the same reviewed task/batch. Test revisions, production fixes, and coverage verification do not receive separate budgets. Record the cycle number supplied by the coordinator; reinvoking this agent does not reset it.
 
 User approval of changes does not automatically extend an exhausted cycle limit. The coordinator must explicitly ask how to proceed at exhaustion. Record approval waits and diagnostic work so their time and resource costs are visible in the task report.
 

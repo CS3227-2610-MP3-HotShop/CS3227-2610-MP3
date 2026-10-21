@@ -1,5 +1,20 @@
 # AGENTS.md
 
+## Minimal workflow records — owner approved 2026-10-20
+
+Subagents return concise results in messages; they do not create or maintain task logs,
+interaction summaries, approval records or other reporting Markdown files. Reports
+include changed files, actual check results and unresolved findings, without transcripts.
+The coordinator maintains one short current handoff in docs/InteractionRecord.md.
+Keep approvals in the chat until final review passes, then consolidate decisions,
+approvals and verification into the existing feature summary and decision record once.
+Do not create a separate log per task, agent, discussion or workflow adjustment.
+Required product/setup documentation still changes with behavior. On 2026-10-20
+the owner explicitly requested deletion of old interaction logs and verbose histories;
+retain only the current handoff and consolidated final summary. This rule supersedes older per-agent/per-task logging and
+every-decision documentation requirements in skills, role briefs and templates.
+
+
 This file defines the repository-wide instructions that AI coding agents must follow when working on HotShop.
 
 These instructions apply to all files in this repository unless a more specific instruction file exists for a particular directory.
@@ -7,6 +22,17 @@ These instructions apply to all files in this repository unless a more specific 
 ---
 
 ## Project Overview
+
+Current owner direction: retain JavaFX/JPro, hosted on Render, with Supabase
+PostgreSQL and Supabase Storage. Next.js migration instructions below are
+historical where they conflict with this direction. PostgreSQL replaces SQLite
+in every environment, including local development and tests (approved 2026-10-19).
+See workflow/PRODUCT-SPEC.md for the current database scope and unresolved gates.
+Use the workflow shipped on jpro-docker: .agents/skills, docs/agents role contracts,
+and .github/workflows/gradle.yml. Missing old migration artifacts do not mean the
+retained agent workflow is absent; create task-specific specifications and plans
+through the existing skills rather than restoring abandoned migration scope.
+Never run automated tests against hosted/demo data or read credentials into logs.
 
 HotShop is a Java-based e-commerce application.
 
@@ -449,6 +475,11 @@ Do not include passwords, tokens, credentials, personal data, or other secrets i
 
 ---
 
+Follow the owner-approved "Minimal workflow records" rule above. Subagents return
+concise results in messages and do not write reporting Markdown. Coordinator keeps
+one current handoff and consolidates approvals/results into existing records after
+final review passes. Do not create per-task or per-agent logs. Old log deletion was explicitly authorised; do not include credentials, secrets, private reasoning or unrelated personal
+material. Product/setup documentation still reflects delivered behavior.
 ## Handling Ambiguity
 When requirements are ambiguous:
 - inspect existing behaviour and documentation for evidence;

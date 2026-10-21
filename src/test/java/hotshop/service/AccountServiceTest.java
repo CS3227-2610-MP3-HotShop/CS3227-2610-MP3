@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
-import java.sql.DriverManager;
 import java.util.UUID;
 import java.util.concurrent.CompletionException;
 
@@ -16,8 +15,9 @@ import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import hotshop.ApplicationRuntime;
+import hotshop.support.PostgresTestSupport;
 
-class AccountServiceTest {
+class AccountServiceTest extends PostgresTestSupport {
     private static final String PASSWORD = "Sample1!";
 
     @TempDir
@@ -27,7 +27,7 @@ class AccountServiceTest {
     @NullSource
     @ValueSource(strings = {"", "ab", "a b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"})
     void register_invalidUsername_reportsValidation(String username) throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             assertFailure(ServiceException.Code.VALIDATION,
                     () -> runtime.getAccounts().register(username, PASSWORD, "Alice").join());
         }
@@ -37,7 +37,7 @@ class AccountServiceTest {
     @NullSource
     @ValueSource(strings = {"", " ", "\t"})
     void updateProfile_invalidDisplayName_preservesProfile(String displayName) throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             accounts.register("alice", PASSWORD, "Alice").join();
             accounts.login("alice", PASSWORD).join();
@@ -49,7 +49,7 @@ class AccountServiceTest {
     @Test
     void updateProfile_boundaryLengths_preservesMaximumValuesAcrossRestart() throws Exception {
         UUID id;
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             id = accounts.register("a".repeat(30), PASSWORD, "a").join().getId();
             accounts.login("a".repeat(30), PASSWORD).join();
@@ -57,7 +57,7 @@ class AccountServiceTest {
             assertFailure(ServiceException.Code.VALIDATION,
                     () -> accounts.updateProfile("x".repeat(81), null).join());
         }
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var user = runtime.getAccounts().login("a".repeat(30), PASSWORD).join();
             assertEquals(id, user.getId());
             assertEquals("\ud83d\ude00".repeat(80), user.getDisplayName());
@@ -67,7 +67,7 @@ class AccountServiceTest {
 
     @Test
     void login_differentlyNormalizedUnicode_rejectsDifferentPassword() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             accounts.register("alice", "Sample1!\u00e9", "Alice").join();
             assertFailure(ServiceException.Code.AUTHENTICATION,
@@ -80,15 +80,11 @@ class AccountServiceTest {
 
     @Test
     void changePassword_storageFailure_preservesOldPasswordAndSession() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             var alice = accounts.register("alice", PASSWORD, "Alice").join();
             accounts.login("alice", PASSWORD).join();
-            try (var connection = DriverManager.getConnection("jdbc:sqlite:" + directory.resolve("marketplace.db"));
-                    var statement = connection.createStatement()) {
-                statement.execute("CREATE TRIGGER fail_password BEFORE UPDATE ON credentials "
-                        + "BEGIN SELECT RAISE(ABORT, 'simulated failure'); END");
-            }
+            failWrites("credentials", "UPDATE");
             assertFailure(ServiceException.Code.STORAGE,
                     () -> accounts.changePassword(PASSWORD, "Changed1!").join());
             assertEquals(alice.getId(), accounts.getCurrentUserId().join().orElseThrow());
@@ -100,14 +96,13 @@ class AccountServiceTest {
 
     @Test
     void register_credentialWriteFailure_rollsBackProfile() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
-            try (var connection = DriverManager.getConnection("jdbc:sqlite:" + directory.resolve("marketplace.db"));
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
+            try (var connection = openDatabaseConnection();
                     var statement = connection.createStatement()) {
-                statement.execute("CREATE TRIGGER fail_credentials BEFORE INSERT ON credentials "
-                        + "BEGIN SELECT RAISE(ABORT, 'simulated failure'); END");
+                failWrites("credentials", "INSERT");
                 assertFailure(ServiceException.Code.STORAGE,
                         () -> runtime.getAccounts().register("alice", PASSWORD, "Alice").join());
-                statement.execute("DROP TRIGGER fail_credentials");
+                statement.execute("DROP TRIGGER fail_write ON credentials");
             }
             assertTrue(runtime.getAccounts().getCurrentUserId().join().isEmpty());
             var user = runtime.getAccounts().register("alice", PASSWORD, "Alice").join();
@@ -117,7 +112,7 @@ class AccountServiceTest {
 
     @Test
     void updateProfile_queuedBeforeLogout_usesIdentityInQueueOrder() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             accounts.register("alice", PASSWORD, "Alice").join();
             accounts.register("bobby", PASSWORD, "Bob").join();
@@ -137,7 +132,7 @@ class AccountServiceTest {
     @ValueSource(strings = {"", "Ab1!abc", "abcdefgh1!", "ABCDEFGH1!", "Abcdefgh!", "Abcdefg1 ",
         "Abcdefg1\u00a3"})
     void register_invalidPassword_rejectsWithoutCreatingAccount(String password) throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             assertFailure(ServiceException.Code.VALIDATION,
                     () -> accounts.register("alice", password, "Alice").join());
@@ -149,7 +144,7 @@ class AccountServiceTest {
     @ParameterizedTest
     @ValueSource(ints = {8, 128})
     void register_boundaryPasswordLength_acceptsPassword(int length) throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             String password = "Ab1!" + "x".repeat(length - 4);
             var user = runtime.getAccounts().register("alice", password, "Alice").join();
             assertEquals(user.getId(), runtime.getAccounts().login("alice", password).join().getId());
@@ -158,7 +153,7 @@ class AccountServiceTest {
 
     @Test
     void register_overlongPassword_rejectsValue() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             assertFailure(ServiceException.Code.VALIDATION,
                     () -> runtime.getAccounts().register("alice", "Ab1!" + "x".repeat(125), "Alice").join());
         }
@@ -166,7 +161,7 @@ class AccountServiceTest {
 
     @Test
     void login_exactUnicodeAndWhitespace_preservesPassword() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             String password = " Ab1!" + "\ud83d\ude00".repeat(122) + " ";
             var user = accounts.register("alice", password, "Alice").join();
@@ -178,7 +173,7 @@ class AccountServiceTest {
 
     @Test
     void register_duplicateNormalizedUsername_preservesOriginalAccount() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             var original = accounts.register("Alice", PASSWORD, "Alice").join();
             assertFailure(ServiceException.Code.USERNAME_UNAVAILABLE,
@@ -189,7 +184,7 @@ class AccountServiceTest {
 
     @Test
     void login_unknownUserAndWrongPassword_returnSameError() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             accounts.register("alice", PASSWORD, "Alice").join();
             var unknown = assertThrows(CompletionException.class, () -> accounts.login("nobody", PASSWORD).join());
@@ -202,7 +197,7 @@ class AccountServiceTest {
 
     @Test
     void register_loggedIn_rejectsWithoutSwitchingIdentity() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             var alice = accounts.register("alice", PASSWORD, "Alice").join();
             accounts.login("alice", PASSWORD).join();
@@ -214,7 +209,7 @@ class AccountServiceTest {
 
     @Test
     void login_loggedIn_rejectsSwitchUntilLogout() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             accounts.register("alice", PASSWORD, "Alice").join();
             var bob = accounts.register("bobby", PASSWORD, "Bob").join();
@@ -229,7 +224,7 @@ class AccountServiceTest {
 
     @Test
     void profileOperations_loggedOut_rejectAccess() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             assertFailure(ServiceException.Code.SESSION, () -> accounts.getOwnProfile().join());
             assertFailure(ServiceException.Code.SESSION, () -> accounts.getPublicProfile(UUID.randomUUID()).join());
@@ -240,7 +235,7 @@ class AccountServiceTest {
 
     @Test
     void updateProfile_invalidLocation_leavesBothFieldsUnchanged() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             accounts.register("alice", PASSWORD, "Alice").join();
             accounts.login("alice", PASSWORD).join();
@@ -255,7 +250,7 @@ class AccountServiceTest {
 
     @Test
     void getPublicProfile_unknownId_reportsNotFound() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             accounts.register("alice", PASSWORD, "Alice").join();
             accounts.login("alice", PASSWORD).join();
@@ -265,7 +260,7 @@ class AccountServiceTest {
 
     @Test
     void changePassword_wrongCurrentPassword_preservesCredentialAndSession() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             var alice = accounts.register("alice", PASSWORD, "Alice").join();
             accounts.login("alice", PASSWORD).join();
@@ -279,7 +274,7 @@ class AccountServiceTest {
 
     @Test
     void changePassword_invalidNewPassword_preservesCredential() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var accounts = runtime.getAccounts();
             accounts.register("alice", PASSWORD, "Alice").join();
             accounts.login("alice", PASSWORD).join();
@@ -291,7 +286,7 @@ class AccountServiceTest {
 
     @Test
     void changePassword_correctCurrentPassword_keepsSessionAndReplacesCredential() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             AccountService accounts = runtime.getAccounts();
             var alice = accounts.register("alice", PASSWORD, "Alice").join();
             accounts.login("alice", PASSWORD).join();
@@ -310,7 +305,7 @@ class AccountServiceTest {
 
     @Test
     void updateProfile_loggedIn_preservesIdentityAndKeepsLocationPrivate() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             AccountService accounts = runtime.getAccounts();
             var alice = accounts.register("alice", PASSWORD, "Alice").join();
             accounts.register("bobby", PASSWORD, "Bob").join();
@@ -330,14 +325,14 @@ class AccountServiceTest {
     @Test
     void register_reopenedDatabase_preservesAccountAndStartsLoggedOut() throws Exception {
         UUID id;
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             AccountService accounts = runtime.getAccounts();
             id = accounts.register(" Alice ", PASSWORD, " Alice ").join().getId();
             assertTrue(accounts.getCurrentUserId().join().isEmpty());
             assertEquals(id, accounts.login("ALICE", PASSWORD).join().getId());
             assertEquals(id, accounts.getCurrentUserId().join().orElseThrow());
         }
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             AccountService accounts = runtime.getAccounts();
             assertTrue(accounts.getCurrentUserId().join().isEmpty());
             var user = accounts.login("alice", PASSWORD).join();

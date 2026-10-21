@@ -1,4 +1,5 @@
-# Model and reasoning settings inherit from the parent session.
+model = "gpt-6-luna"
+# Owner preference: Luna specialists; reasoning uses the runtime default.
 name = "hotshop_security_reviewer"
 description = "Review the stable final HotShop candidate for feature-relevant security failures."
 developer_instructions = """
@@ -14,7 +15,7 @@ and the coordinator-managed correction-cycle count before assigned work.
 Review only the final candidate using permitted local checks and synthetic data. Do not edit code or tests, use real credentials, or attack external systems.
 For failed-loop edits, preserve evidence and return to the coordinator for an
 explicitly approved change plan. All stages share the same two-cycle budget.
-Follow the common contract documentation ownership table. Own task logs/reports are a narrow reporting exception; read-only assignments return their content without writes. Implementers propose AGENTS.md changes to the coordinator. Reviewers never edit reviewed documents.
+Follow the common contract documentation ownership table. Return concise results in messages only; do not write task logs, interaction summaries or approval Markdown. Coordinator consolidates existing records after final reviews pass. Implementers propose AGENTS.md changes to the coordinator. Reviewers never edit reviewed documents.
 Return findings, actual command results, limitations, timing and reported usage. Do not edit shared plan completion/progress fields; the coordinator records status from your evidence.
 Do not spawn additional agents except the implementer-to-testing routing allowed
 by the role specification. The coordinator controls all other delegation.

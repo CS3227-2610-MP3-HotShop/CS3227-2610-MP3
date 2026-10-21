@@ -2,31 +2,30 @@ package hotshop.database;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
+
+import hotshop.support.PostgresTestSupport;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
 
-class DatabaseTest {
+class DatabaseTest extends PostgresTestSupport {
     private static final String FIRST = "/db/test-migration/001_first.sql";
     private static final String SECOND = "/db/test-migration/002_second.sql";
-    private static final String ACCOUNTS = "/db/migration/001_accounts.sql";
 
-    @TempDir
-    Path directory;
+    @Override
+    protected boolean provisionSchema() {
+        return false;
+    }
 
     @Test
     void migrate_newDatabase_appliesEveryMigrationInOrder() throws Exception {
-        Database database = new Database(directory.resolve("test.db"), List.of(FIRST, SECOND));
+        Database database = new Database(databaseConfig, List.of(FIRST, SECOND));
         database.migrate();
         assertEquals(List.of(1, 2), appliedVersions(database));
         assertTrue(tableExists(database, "first"));
@@ -35,16 +34,16 @@ class DatabaseTest {
 
     @Test
     void migrate_releasedSchema_createsListingTables() throws Exception {
-        Database database = new Database(directory.resolve("test.db"));
+        Database database = new Database(databaseConfig);
         database.migrate();
-        assertEquals(List.of(1, 2, 3, 4, 5, 6), appliedVersions(database));
+        assertEquals(List.of(1), appliedVersions(database));
         assertTrue(tableExists(database, "listings"));
         assertTrue(tableExists(database, "listing_images"));
     }
 
     @Test
     void migrate_releasedSchema_createsOfferAndTransactionTables() throws Exception {
-        Database database = new Database(directory.resolve("test.db"));
+        Database database = new Database(databaseConfig);
         database.migrate();
         assertTrue(tableExists(database, "offers"));
         assertTrue(tableExists(database, "transactions"));
@@ -120,25 +119,6 @@ class DatabaseTest {
     }
 
     @Test
-    void migrate_saleCompletionDatabaseWithSale_keepsSaleWhenAddingMeetups() throws Exception {
-        Path file = directory.resolve("test.db");
-        Database salesOnly = new Database(file, List.of(ACCOUNTS, "/db/migration/002_listings.sql",
-                "/db/migration/003_offers.sql", "/db/migration/004_sale_completion.sql"));
-        salesOnly.migrate();
-        execute(salesOnly, "INSERT INTO users(id, username, normalized_username, display_name) "
-                + "VALUES ('u', 'alice', 'alice', 'Alice'), ('b', 'bobby', 'bobby', 'Bob')");
-        insertListing(salesOnly, "l1", 100);
-        execute(salesOnly, "INSERT INTO offers VALUES ('o1', 'l1', 'b', 100, 'ACCEPTED', 0, 1)");
-        execute(salesOnly, transaction("t1", "o1", "ACTIVE"));
-        Database upgraded = new Database(file);
-        upgraded.migrate();
-        assertEquals(1, countRows(upgraded, "transactions"));
-        assertTrue(tableExists(upgraded, "meetups"));
-        assertTrue(tableExists(upgraded, "meetup_slots"));
-        assertTrue(tableExists(upgraded, "meetup_reschedule_proposals"));
-    }
-
-    @Test
     void migrate_releasedSchema_allowsOneConversationPerBuyerAndListing() throws Exception {
         Database database = seededMarketplace();
         execute(database, conversation("c1"));
@@ -162,100 +142,8 @@ class DatabaseTest {
     }
 
     @Test
-    void migrate_saleCompletionDatabaseWithOffers_startsOneReadConversationPerBuyerAndOfferedListing()
-            throws Exception {
-        Path file = directory.resolve("test.db");
-        Database beforeChat = new Database(file, List.of(ACCOUNTS, "/db/migration/002_listings.sql",
-                "/db/migration/003_offers.sql", "/db/migration/004_sale_completion.sql"));
-        beforeChat.migrate();
-        execute(beforeChat, "INSERT INTO users(id, username, normalized_username, display_name) VALUES "
-                + "('u', 'alice', 'alice', 'Alice'), ('b', 'bobby', 'bobby', 'Bob'), ('c', 'carol', 'carol', 'Carol')");
-        insertListing(beforeChat, "l1", 100);
-        insertListing(beforeChat, "l2", 100);
-        execute(beforeChat, "INSERT INTO offers VALUES ('o1', 'l1', 'b', 100, 'WITHDRAWN', 5, 6), "
-                + "('o2', 'l1', 'b', 100, 'PENDING', 7, NULL), ('o3', 'l1', 'c', 100, 'PENDING', 9, NULL)");
-        Database upgraded = new Database(file);
-        upgraded.migrate();
-        List<String> rows = upgraded.executeTransaction(connection -> {
-            List<String> result = new ArrayList<>();
-            try (var statement = connection.createStatement();
-                    var found = statement.executeQuery("SELECT id, buyer_id, seller_id, created_at, "
-                            + "buyer_opened_at, seller_opened_at FROM conversations ORDER BY buyer_id")) {
-                while (found.next()) {
-                    UUID.fromString(found.getString(1));
-                    result.add(found.getString(2) + " " + found.getString(3) + " " + found.getLong(4) + " "
-                            + found.getLong(5) + " " + found.getString(6));
-                }
-            }
-            return result;
-        });
-        assertEquals(List.of("b u 5 7 7", "c u 9 9 9"), rows);
-    }
-
-    @Test
-    void migrate_offersDatabaseWithSale_keepsSaleWithoutCancellationDetails() throws Exception {
-        Path file = directory.resolve("test.db");
-        Database offersOnly = new Database(file, List.of(ACCOUNTS, "/db/migration/002_listings.sql",
-                "/db/migration/003_offers.sql"));
-        offersOnly.migrate();
-        execute(offersOnly, "INSERT INTO users(id, username, normalized_username, display_name) "
-                + "VALUES ('u', 'alice', 'alice', 'Alice'), ('b', 'bobby', 'bobby', 'Bob')");
-        insertListing(offersOnly, "l1", 100);
-        execute(offersOnly, "INSERT INTO offers VALUES ('o1', 'l1', 'b', 100, 'ACCEPTED', 0, 1)");
-        execute(offersOnly, transaction("t1", "o1", "ACTIVE"));
-        Database upgraded = new Database(file);
-        upgraded.migrate();
-        String cancelledBy = upgraded.executeTransaction(connection -> {
-            try (var statement = connection.createStatement();
-                    var rows = statement.executeQuery("SELECT cancelled_by FROM transactions WHERE id = 't1'")) {
-                rows.next();
-                return rows.getString(1);
-            }
-        });
-        assertNull(cancelledBy);
-        assertTrue(tableExists(upgraded, "cancellation_requests"));
-    }
-
-    @Test
-    void migrate_listingsDatabase_keepsListingsWhenAddingOffers() throws Exception {
-        Path file = directory.resolve("test.db");
-        Database listingsOnly = new Database(file, List.of(ACCOUNTS, "/db/migration/002_listings.sql"));
-        listingsOnly.migrate();
-        execute(listingsOnly, "INSERT INTO users(id, username, normalized_username, display_name) "
-                + "VALUES ('u', 'alice', 'alice', 'Alice')");
-        insertListing(listingsOnly, "l1", 100);
-        Database upgraded = new Database(file);
-        upgraded.migrate();
-        assertEquals(List.of(1, 2, 3, 4, 5, 6), appliedVersions(upgraded));
-        assertEquals(1, countRows(upgraded, "listings"));
-    }
-
-    @Test
-    void migrate_accountsDatabaseWithPendingCleanup_tagsExistingRowsAsProfiles() throws Exception {
-        Path file = directory.resolve("test.db");
-        Database accountsOnly = new Database(file, List.of(ACCOUNTS));
-        accountsOnly.migrate();
-        accountsOnly.executeTransaction(connection -> {
-            try (var statement = connection.createStatement()) {
-                statement.execute("INSERT INTO image_cleanup(filename) VALUES ('old.png')");
-            }
-            return null;
-        });
-        Database upgraded = new Database(file);
-        upgraded.migrate();
-        String namespace = upgraded.executeTransaction(connection -> {
-            try (var statement = connection.createStatement();
-                    var rows = statement.executeQuery(
-                            "SELECT namespace FROM image_cleanup WHERE filename = 'old.png'")) {
-                return rows.next() ? rows.getString(1) : null;
-            }
-        });
-        assertEquals("profiles", namespace);
-    }
-
-    @Test
     void migrate_releasedSchema_rejectsPriceAboveMaximum() throws Exception {
-        Database database = new Database(directory.resolve("test.db"));
+        Database database = new Database(databaseConfig);
         database.migrate();
         database.executeTransaction(connection -> {
             try (var statement = connection.createStatement()) {
@@ -271,9 +159,8 @@ class DatabaseTest {
 
     @Test
     void migrate_olderDatabaseWithData_appliesOnlyPendingAndKeepsData() throws Exception {
-        Path file = directory.resolve("test.db");
-        new Database(file, List.of(FIRST)).migrate();
-        Database upgraded = new Database(file, List.of(FIRST, SECOND));
+        new Database(databaseConfig, List.of(FIRST)).migrate();
+        Database upgraded = new Database(databaseConfig, List.of(FIRST, SECOND));
         upgraded.executeTransaction(connection -> {
             try (var statement = connection.createStatement()) {
                 statement.execute("INSERT INTO first VALUES (42)");
@@ -288,25 +175,25 @@ class DatabaseTest {
 
     @Test
     void migrate_currentDatabase_changesNothing() throws Exception {
-        Database database = new Database(directory.resolve("test.db"), List.of(FIRST, SECOND));
+        Database database = new Database(databaseConfig, List.of(FIRST, SECOND));
         database.migrate();
         database.migrate();
         assertEquals(List.of(1, 2), appliedVersions(database));
     }
 
     @Test
-    void migrate_failingMigration_keepsEarlierVersionsAndRollsBackFailedOne() throws Exception {
-        Database database = new Database(directory.resolve("test.db"),
+    void migrate_failingMigration_rollsBackWholePendingBatch() throws Exception {
+        Database database = new Database(databaseConfig,
                 List.of(FIRST, "/db/test-migration/002_broken.sql"));
         assertThrows(SQLException.class, database::migrate);
-        assertEquals(List.of(1), appliedVersions(database));
-        assertTrue(tableExists(database, "first"));
+        assertFalse(tableExists(database, "schema_migrations"));
+        assertFalse(tableExists(database, "first"));
         assertFalse(tableExists(database, "partial"));
     }
 
     @Test
     void migrate_missingMigrationFile_throwsWithoutApplyingAny() throws Exception {
-        Database database = new Database(directory.resolve("test.db"),
+        Database database = new Database(databaseConfig,
                 List.of(FIRST, "/db/test-migration/missing.sql"));
         assertThrows(IOException.class, database::migrate);
         assertFalse(tableExists(database, "first"));
@@ -314,7 +201,7 @@ class DatabaseTest {
 
     @Test
     void executeTransaction_failedWork_rollsBackAllChanges() throws Exception {
-        Database database = new Database(directory.resolve("test.db"));
+        Database database = new Database(databaseConfig);
         database.executeTransaction(connection -> {
             try (var statement = connection.createStatement()) {
                 statement.execute("CREATE TABLE example (value INTEGER)");
@@ -338,24 +225,18 @@ class DatabaseTest {
     }
 
     @Test
-    void executeTransaction_newConnection_enforcesForeignKeysAndBoundsLockWait() throws Exception {
-        Database database = new Database(directory.resolve("test.db"));
+    void executeTransaction_newConnection_enforcesForeignKeysAndSerializableIsolation() throws Exception {
+        Database database = new Database(databaseConfig);
         database.migrate();
         assertThrows(SQLException.class, () -> database.executeTransaction(connection -> {
             try (var statement = connection.createStatement()) {
                 statement.execute("INSERT INTO credentials "
-                        + "VALUES ('missing', 'test', 1, X'01', X'01')");
+                        + "VALUES ('missing', 'test', 1, decode('01', 'hex'), decode('01', 'hex'))");
             }
             return null;
         }));
-        int timeout = database.executeTransaction(connection -> {
-            try (var statement = connection.createStatement();
-                    var rows = statement.executeQuery("PRAGMA busy_timeout")) {
-                rows.next();
-                return rows.getInt(1);
-            }
-        });
-        assertEquals(5000, timeout);
+        int isolation = database.executeTransaction(connection -> connection.getTransactionIsolation());
+        assertEquals(java.sql.Connection.TRANSACTION_SERIALIZABLE, isolation);
     }
 
     private static List<Integer> appliedVersions(Database database) throws SQLException {
@@ -373,7 +254,7 @@ class DatabaseTest {
 
     /** A released-schema database with seller 'u', buyer 'b', and listing 'l1'. */
     private Database seededMarketplace() throws Exception {
-        Database database = new Database(directory.resolve("test.db"));
+        Database database = new Database(databaseConfig);
         database.migrate();
         execute(database, "INSERT INTO users(id, username, normalized_username, display_name) "
                 + "VALUES ('u', 'alice', 'alice', 'Alice'), ('b', 'bobby', 'bobby', 'Bob')");
@@ -459,7 +340,7 @@ class DatabaseTest {
     private static boolean tableExists(Database database, String table) throws SQLException {
         return database.executeTransaction(connection -> {
             try (var statement = connection.prepareStatement(
-                    "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = ?")) {
+                    "SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = ?")) {
                 statement.setString(1, table);
                 try (var rows = statement.executeQuery()) {
                     return rows.next();

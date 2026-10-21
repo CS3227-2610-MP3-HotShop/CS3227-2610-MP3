@@ -217,7 +217,7 @@ public final class TransactionRepository {
     private List<CancellationRequest> readRequests(Connection connection, UUID transactionId) throws SQLException {
         List<CancellationRequest> requests = new ArrayList<>();
         try (var statement = connection.prepareStatement(
-                "SELECT * FROM cancellation_requests WHERE transaction_id = ? ORDER BY created_at, rowid")) {
+                "SELECT * FROM cancellation_requests WHERE transaction_id = ? ORDER BY created_at, history_order")) {
             statement.setString(1, transactionId.toString());
             try (var rows = statement.executeQuery()) {
                 while (rows.next()) {

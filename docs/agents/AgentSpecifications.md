@@ -1,8 +1,44 @@
 # HotShop agent workflow specifications
 
+> Owner override (2026-10-20): follow AGENTS.md "Minimal workflow records".
+> Subagents report in messages only; no task logs, interaction summaries or approval
+> Markdown. Coordinator keeps one short current handoff and consolidates final
+> records after reviews pass. Older logging duties below are superseded.
+
 Version: 0.9, 2026-10-17 (SGT)
 
 Status: role decisions agreed and worker configurations written; discovery/launch passed in the user-supplied smoke-test report; generic-dispatch behaviour was exercised as documented in docs/agents/WorkflowExercise.md; native loading after instruction edits and unexercised paths remain unverified. Reading this document does not authorise implementation or agent spawning.
+
+## Owner-approved delivery workflow (2026-10-19)
+
+This instruction supersedes earlier role, skill, client-configuration and plan wording
+that requires tester handoffs or independent reviews before implementation.
+
+Assign one implementer the entire approved implementation batch, including production
+code, tests, fixtures, build configuration, associated guides and its task evidence.
+The implementer may write and update tests against the approved requirements; it must
+preserve valid assertions and never weaken checks to obtain a pass. Use test-first
+evidence where practical and run relevant tests/styles during implementation.
+Normal initial implementation includes bringing the approved behavior to green;
+do not route every expected development failure through another agent.
+
+Keep that implementer through the batch. No separate tester or intermediate review
+handoffs by default. Prerequisites are working contracts and evidence, rather than
+acceptance by an intermediate reviewer. Pause for unresolved requirements, scope
+changes or a genuine blocker. Do not invent scope or relabel review corrections
+as initial work.
+
+After implementation, tests, documentation and required checks are complete, submit
+one stable candidate for the final specification/coverage and security reviews.
+Group findings from both into one report and, if needed, one explicitly approved
+correction pass followed by focused re-review. There is one shared correction budget,
+not one per reviewer. Stop and report unresolved findings after that pass.
+The coordinator retains shared records, plan status and final acceptance ownership.
+
+Existing completed entries, historical evidence and exhausted correction budgets
+remain unchanged. This workflow change grants no extra PG-CONVERSION correction cycle.
+The owner resumed PostgreSQL implementation on 2026-10-19; current execution status
+is recorded in workflow/PLAN.md and docs/InteractionRecord.md.
 
 ## Assignment inputs
 
@@ -18,7 +54,7 @@ Supply each worker this contract, its role brief, and relevant feature artifacts
 - [Specification and coverage reviewer](agents/specification-reviewer.md): assesses test readiness, then implementation and coverage.
 - [Security reviewer](agents/security-reviewer.md): assesses the stable final candidate.
 
-All failed-loop code/test edits require an explicitly approved correction plan. All stages share two correction cycles for the same task/batch; new tasks, stages, or agent invocations do not reset the count. At exhaustion, ask the human how to proceed. Every reviewer disagreement goes to the human with both positions and evidence. Initial expected TDD red is part of approved initial work.
+All failed-loop code/test edits require an explicitly approved correction plan. All stages share one correction cycle for the same task/batch; new tasks, stages, or agent invocations do not reset the count. At exhaustion, ask the human how to proceed. Every reviewer disagreement goes to the human with both positions and evidence. Initial expected TDD red is part of approved initial work.
 
 See [configuration and startup](AgentConfiguration.md) and the [consistency check](WorkflowConsistencyCheck.md).
 
@@ -116,7 +152,7 @@ The [synthetic exercise report](WorkflowExercise.md) records the executed prereq
 | AGENTS.md | Coordinator consolidates durable instruction changes | Specification/coverage reviewer checks consistency |
 | Feature SDD interaction summary | Coordinator, using worker evidence and human decisions | Specification/coverage reviewer checks traceability and missing evidence |
 | docs/InteractionRecord.md | Coordinator records decisions and current handoff | Specification/coverage reviewer checks relevant feature decisions |
-| Individual task logs | Each agent records its own actions and actual checks | Coordinator checks completeness |
+| Final consolidated records | Coordinator updates existing records after final reviews pass; workers report in messages only | Coordinator verifies results and provenance |
 | workflow/PLAN.md completion/progress fields | Coordinator only, based on worker evidence and required gates | Coordinator checks task acceptance and reviewer evidence before releasing dependents |
 
 The coordinator assigns exactly one writer per shared file at a time, including
@@ -178,4 +214,31 @@ production edits solely to obtain a red-green sequence.
 
 Expected initial behavioural red is normal approved TDD work, not a correction
 cycle. Unexpected review/verification defects requiring code/test edits retain
-the existing explicit correction-plan approval and shared two-cycle limit.
+the existing explicit correction-plan approval and shared one-cycle limit.
+
+## Owner-approved correction limit (2026-10-19)
+
+Use one initial implementation pass and required initial reviews, then at most one
+shared correction pass and re-review per task/batch. Group findings into that pass.
+Corrections still require an explicitly approved plan. If findings remain, stop
+and report them; no further loop without explicit owner direction. Required initial
+readiness, coverage and security checkpoints remain. Avoid repeating unchanged checks.
+This owner instruction supersedes older two-cycle wording in saved skills and client
+configurations. Preserve historical counts: PG-CONVERSION remains exhausted at 3/3.
+Execution was resumed by the owner; no new correction budget is granted.
+
+## Targeted context and handoff rule — owner approved 2026-10-19
+
+Coordinators and workers must read only context needed for the current assignment.
+Search headings/symbols first; read bounded relevant sections or line ranges. Use the
+current handoff plus selected task/acceptance criteria and relevant source/tests.
+Do not reread whole chats, long decision records, historical logs or unrelated specs.
+For new subagents use fork_turns=none and a compact self-contained brief containing
+scope, ownership, current decisions, exact document sections, checks and blockers.
+Reuse an active implementer instead of restarting it merely to remove old context.
+Mandatory instructions still apply: read applicable instructions once, then consult
+only changed/relevant sections. Expand reads only when needed to resolve a concrete
+ambiguity or dependency. Keep current handoffs short and link supporting evidence.
+Already injected app conversation context cannot be selectively removed by agents;
+this rule controls requested history, file/tool reads and future agent handoffs.
+The ongoing approved PostgreSQL batch continues; this is not a pause request.
