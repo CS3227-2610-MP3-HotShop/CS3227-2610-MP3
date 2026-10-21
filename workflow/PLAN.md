@@ -1417,9 +1417,13 @@ is complete on441a6ae:48 focused tests, styles and aggregate build checks pass.
 Original findings are resolved, but security re-review reports uncapped recovery
 work under the shared guard (S-2). Owner explicitly authorised narrow cycle2 on
 2026-10-22 for capped queries, bounded work and fair repeat recovery; shared budget
-is extended to2/2 for this finding only. Same implementer is executing it, followed
-by focused checks and re-review. Full Linux CI39633201840
-is running. Tasks stay incomplete. See logs/ExecutionRecord.md. Initial full Windows
+is extended to2/2 for this finding only. Same implementer completed it, followed
+by focused checks and re-review. Stable4099056 passes eight focused lifecycle tests,
+both styles and aggregate build checks; both re-reviews accept the fix with no
+remaining blocking finding. Full Linux CI39634278877 passed on4099056; superseded
+run39633201840 was cancelled. ST-001..ST-007 code acceptance is complete2026-10-22;
+ST-008 hosted/photo cutover remains separately gated. Shared correction2/2 exhausted.
+See logs/ExecutionRecord.md. Initial full Windows
 verification passed946 tests and required wrapper checks. No live Storage writes
 or deployment were performed.
 Branch codex/supabase-image-storage; source baseline27cdc2b. Preserve pending
@@ -1446,7 +1450,8 @@ approval; historical PG/SoC/UI correction budgets are unchanged and not reused.
   malformed/truncated/oversized responses, HTTP/TLS failures and resource cleanup.
 - Check: focused storage/config/HTTP tests and both styles; meaningful red for new
   behavior. Existing valid image-validation assertions remain unchanged.
-- Completed: No.
+- Completed: Yes,2026-10-22. Private client/config and corrected HTTP regressions
+  pass; full CI39634278877 on4099056 and final reviews pass.
 
 ### ST-002 — Provisioned image manifest, binding and lifecycle guard
 
@@ -1461,7 +1466,8 @@ approval; historical PG/SoC/UI correction budgets are unchanged and not reused.
 - Check: migration atomicity/idempotence/version rejection, session-lock contention,
   connection-loss fencing, durable PENDING/ACTIVE/RETIRED transitions and incomplete
   binding rejection. No hosted migration performed by automated tests.
-- Completed: No.
+- Completed: Yes,2026-10-22. Disposable-PostgreSQL migration/guard/binding tests,
+  full CI39634278877 and final reviews pass. No hosted provisioning performed.
 
 ### ST-003 — Service/reference transactions and coordinated recovery
 
@@ -1477,7 +1483,8 @@ approval; historical PG/SoC/UI correction budgets are unchanged and not reused.
 - Check: profile/listing regressions; gated two-runtime upload-vs-cleanup, DB rollback,
   failed/late remote writes, retired-object deletion retries, namespace isolation and
   unknown-object preservation. Controlled HTTP fixture + disposable local PostgreSQL.
-- Completed: No.
+- Completed: Yes,2026-10-22. Lifecycle, restart/late-object and21-row batch/guard
+  regressions pass; full CI39634278877 and both final re-reviews pass.
 
 ### ST-004 — Browser/desktop file selection and private display
 
@@ -1493,7 +1500,9 @@ approval; historical PG/SoC/UI correction budgets are unchanged and not reused.
 - Check: control/provider calls, selection/transfer failure, limits/order, stale page/
   logout, temp cleanup, no FX-blocking network and authenticated image reads. Run the
   combined UI classes to exercise shared JavaFxTestSupport initialization.
-- Completed: No.
+- Completed: Yes,2026-10-22 for implementation/local fixtures. Bounded copy and UI
+  regression checks, full CI39634278877 and final reviews pass. Real browser and
+  hosted persistence checks remain ST-008; no general JPro readiness claim.
 
 ### ST-005 — Repeatable importer and cutover verification
 
@@ -1510,7 +1519,8 @@ approval; historical PG/SoC/UI correction budgets are unchanged and not reused.
 - Check: two source roots, matching/conflicting duplicates, missing source, provider
   conflicts/outages, crash/resume, repeat import, activation atomicity, originals
   intact, no key leakage. Automated command tests use local fixtures only.
-- Completed: No.
+- Completed: Yes,2026-10-22. Isolated importer/conflict/verification tests and
+  final reviews pass; full CI39634278877 passes. Live cutover stays ST-008.
 
 ### ST-006 — Integration, guides and stable-candidate verification
 
@@ -1527,7 +1537,9 @@ approval; historical PG/SoC/UI correction budgets are unchanged and not reused.
   Review diff for weakened assertions, unrelated changes and sensitive data.
 - Return exact source snapshot, actual check results/counts and unresolved findings
   in a concise message, with no new reporting Markdown/per-agent logs.
-- Completed: No.
+- Completed: Yes,2026-10-22. User/Developer guides updated; focused48-case cycle1
+  and eight-case cycle2 checks pass (overlap not summed). Full CI39634278877 on
+  4099056 passes test, both styles, check, build and shadowJar. Packaging unchanged.
 
 ### ST-007 — Final acceptance reviews and consolidation
 
@@ -1540,7 +1552,11 @@ approval; historical PG/SoC/UI correction budgets are unchanged and not reused.
   loop or unapproved weakening. Record evidence in existing logs/ExecutionRecord.md
   or the existing feature summary, never AGENTS.md. No benchmark score rewrites.
 - Code acceptance does not establish hosted/provider or general JPro readiness.
-- Completed: No.
+- Completed: Yes,2026-10-22. Both final focused re-reviews accept4099056 with no
+  blocking finding; full CI passes. Owner-approved corrections1 and narrow2 are
+  consolidated in logs/ExecutionRecord.md; shared budget2/2 exhausted. Provider
+  operations are capped at32 per recovery pass; metadata iteration remains uncapped
+  as disclosed.
 
 ### ST-008 — Operator setup and live photo cutover (separately gated)
 

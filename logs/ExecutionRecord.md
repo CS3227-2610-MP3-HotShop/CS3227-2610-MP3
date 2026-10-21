@@ -2,42 +2,49 @@
 
 ## Current status — Supabase image storage
 
-Owner authorised ST-T1/ST-PLAN1 tasks ST-001..ST-007 on2026-10-21: start work on a
-new branch and implement. Branch codex/supabase-image-storage, prior source27cdc2b.
-One Luna implementer owns the complete code/test/fixture/guide batch; final reviews
-only. Shared correction0/1, initial implementation. ST-008 live bucket writes/photo
-cutover remain gated on reviewed inventory and operator approval. Automated tests
-use local Storage fixtures/disposable PostgreSQL, never hosted buckets/data.
-Candidate3b431ab is published in draft PR12, based on codex/ai-search-consolidated.
-Full Linux CI39595457297 passed test, both styles, check, build and shadowJar.
-Full Windows verification also passed in21m30s:47 suites,946 tests, zero failures,
-errors or skips; test, both styles, check, build and shadowJar succeeded.
-Initial specification/coverage and security reviews found blockers: HTTP body
-deadlines and response cleanup; remote PENDING recovery after restart; bounded
-browser temp copying; documented origin rejection; PUT update versus immutable
-POST creation; and obsolete local-image-folder wording.
-Owner approved the grouped correction pass in chat on2026-10-21. Shared cycle1/1
-is now in progress with the same implementer; affected checks and focused final
-re-review remain required. Approval covers these findings, not live photo cutover.
-The corrected candidate passes48 focused tests across six matching classes, both
-styles and check/build/shadowJar with tests explicitly excluded from that aggregate.
-One new recovery fixture initially failed because it omitted the persisted profile
-reference; setup was corrected without weakening the protection assertion.
-Corrected source441a6ae is published in draft PR12; full Linux CI39633201840 is
-running. Specification re-review resolves all six original findings. Security
-re-review also resolves original findings but reports remaining medium availability
-finding S-2: pending-object and cleanup queries are uncapped, and recovery performs
-all remote operations under the global image-write guard (ST-T1 bounded-batch rule).
-Owner explicitly authorised narrow cycle2 on2026-10-22 for capped queries,
-bounded work and fair repeat recovery. Shared budget is extended to2/2 for S-2
-only; same implementer owns this fix and regressions. Focused checks and re-review
-remain required; no hosted cutover or unrelated scope is authorised.
-Cycle2 candidate caps pending manifests and cleanup queries at16 rows each and
-at32 provider operations per recovery pass, with ordered per-instance cursors for
-later progress. Eight lifecycle/cleanup tests pass, including21-row backlog tests,
-reference protection and guard release; both styles and aggregate check/build/
-shadowJar with -x test pass. Source is frozen for full Linux CI and focused re-review.
-No live photo writes, activation or deployment. AGENTS contains durable guidance only.
+ST-001..ST-007 code acceptance completed2026-10-22 on source4099056, branch
+codex/supabase-image-storage, draft PR12 based on codex/ai-search-consolidated.
+Jonat approved ST-P1/ST-T1/ST-PLAN1 and execution2026-10-21. One Luna implementer
+owned production, tests and guides; independent Luna specification/coverage and
+security reviewers performed final reviews. No per-agent logs or AGENTS activity edits.
+
+Delivered private listingImages/profileImages REST storage, authorized async reads,
+bounded browser staging, schema002 manifest and same-connection lifecycle guard,
+durable restart reconciliation, and two-source importer preserving DB filenames.
+UserGuide/DeveloperGuide contain configuration, import, verification and rollback.
+.env.local contains all four settings without duplicates; only presence was checked,
+not credential validity or hosted configuration. Keys were not printed or committed.
+
+Owner approved correction1 for POST create-only semantics, documented origin parsing,
+full-response deadlines/cleanup, restart recovery, bounded temp copy and guide wording.
+It passes48 focused tests and styles; one new fixture needed an explicit persisted
+profile reference, with the protection assertion unchanged. Re-review resolved the
+original findings but identified unbounded recovery work (S-2). Owner explicitly
+extended the budget to narrow cycle2 on2026-10-22. Recovery now queries16 pending
+and16 cleanup entries per pass, caps provider operations at32 and rotates per-instance
+cursors. Eight lifecycle/cleanup tests cover21-entry backlogs, reference protection,
+later progress and guard release. Counts overlap and are not summed. Both correction
+aggregates passed check/build/shadowJar with -x test; these aggregates excluded tests.
+
+Final full Linux CI39634278877 passed test, checkstyleMain, checkstyleTest, check,
+build and shadowJar on4099056. Both focused re-reviews accept the final source with
+no blocking findings. Their source inspection relied on supplied executed tests;
+reviewers did not repeat those suites. The provider-operation bound does not cap
+all confirmedUploads metadata iteration; local-fixture enumeration is also uncapped,
+while remote storage does not enumerate the bucket. Shared correction2/2 exhausted.
+
+Initial source3b431ab separately passed Linux CI39595457297 and full Windows wrapper
+verification (21m30s,47 suites,946 tests, zero failures/errors/skips). Those initial
+results do not validate corrections. Superseded441a6ae CI39633201840 was cancelled;
+interrupted initial Windows attempts were not counted as passes. Packaging unchanged,
+so Docker was not rebuilt; earlier Docker evidence is separate.
+
+ST-008 remains incomplete: actual Windows/Docker source inventory, private-bucket
+verification, live uploads/joint activation and real browser persistence checks need
+separate operator scope/approval before writes. No hosted writes, activation, import,
+app deployment or general JPro multi-user readiness claim. Existing local directory
+lock remains. Next step: prepare the read-only inventory and concrete cutover plan.
+
 ## Previous UI delivery status
 
 UI-CI-FIX-1 correction1/1 is complete. Test fix5f0c3ea and record27cdc2b are
