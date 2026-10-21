@@ -1,3 +1,13 @@
+FROM eclipse-temurin:25-jdk AS build
+
+WORKDIR /workspace
+COPY gradlew build.gradle settings.gradle ./
+COPY gradle ./gradle
+COPY config ./config
+COPY src ./src
+RUN sed -i 's/\r$//' gradlew && chmod +x ./gradlew \
+    && ./gradlew --no-daemon jproRelease -PjavafxPlatform=linux
+
 FROM eclipse-temurin:25-jre
 
 # JavaFX on Linux needs system libraries. Take the exact package list
@@ -7,9 +17,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY build/distributions/HotShop-jpro.zip app.zip
+COPY --from=build /workspace/build/distributions/HotShop-jpro.zip app.zip
 RUN unzip app.zip && rm app.zip
 
-# The zip unpacks into a folder; adjust this path to match yours
 WORKDIR /app/HotShop-jpro
 CMD ["./bin/start.sh"]

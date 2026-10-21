@@ -52,41 +52,44 @@ The jpro-docker workflow uses local specifications/planning, Gradle CI, one impl
 for the approved batch and final specification/security review. The database tests use
 local Docker PostgreSQL; missing Docker is a setup failure with no SQLite fallback.
 
-#### Existing JPro packaging
+#### JPro and Docker packaging
 
-This application uses [JPro](https://www.jpro.one) to run existing Java and JavaFX files in a browser.
+The current entry point, `hotshop.Main`, extends JavaFX Application. No main-class
+change is needed to run locally with `./gradlew run` or in a browser with
+`./gradlew jproRun` (port 8080). Both require the configured PostgreSQL database.
 
-For local manual testing purposes, run the following command to start JPro on your local machine:
-```
-./gradlew jproRun
-```
-The app should start at `localhost:8080`
+For a manual Linux distribution, use `./gradlew jproRelease -PjavafxPlatform=linux`.
+The ZIP is generated at `build/distributions/HotShop-jpro.zip` and is not committed.
 
-Once everything is verified to be working properly, create the JPro distribution `.zip` file with the following command:
-```
-./gradlew jproRelease
-```
-The resultant `.zip` file will be located at `/build/distributions/HotShop-jpro.zip`
+Build the Docker image from the repository root:
 
-**NOTE:** Deployment onto JPro requires that the application's entry point extend `javafx.application.Application`, if you wish to run the app without JPro locally, change the mainClass of your `build.gradle` to `hotshop.Launcher` as such:
-```build.gradle
-application {
-    mainClass = 'hotshop.Launcher'
-    applicationDefaultJvmArgs = ['--enable-native-access=ALL-UNNAMED']
-}
+```powershell
+docker build -f dockerfile -t hotshop:local .
 ```
 
-For deployment onto [Render](https://render.com), a Docker Image is required. Follow the steps to create the image:
+The Dockerfile uses two stages. A Java 25 JDK stage builds the Linux JPro ZIP using
+the Gradle Wrapper. `COPY --from=build` transfers that ZIP into a Java 25 JRE stage,
+which unpacks it and starts JPro. A fresh source checkout needs no prebuilt local
+ZIP. Packaging does not execute automated tests or provision the database.
 
-1. Install [Docker Desktop](https://docs.docker.com/desktop/) for your operating system.
-2. Run the following command in the project root directory:
-```
-docker build -t <image-name> .
-```
-3. Once the build has completed, test that it works by using the following command:
-```
-docker run -p 8080:8080 <image-name>
-```
+The `.dockerignore` excludes local environment files, build output and presentation
+scratch/workspaces. Only build inputs are copied into the builder; runtime database
+credentials and the Supabase CA certificate must not be copied into image layers.
+Do not supply secrets as Docker build arguments. Keep checked-in test TLS fixtures
+available for tests; they are not hosted credentials.
+
+For local Docker, pass settings using `--env-file .env.local` with plain NAME=value
+entries, publish port 8080, mount the CA file read-only at
+`/etc/secrets/prod-supabase.cer`, and use that path in `HOTSHOP_DB_URL`.
+Preserve local images with a named volume mounted at `/var/lib/hotshop` and set
+`JAVA_TOOL_OPTIONS=-Dhotshop.dataDir=/var/lib/hotshop`. Do not paste example database
+host placeholders into a real launch command. See local AI Search setup below.
+
+For Render source builds, select Docker, repository-root build context and the
+`dockerfile` file. Runtime settings and the CA file are supplied through Render
+Environment/Secret Files. Provision the schema separately before startup. Image
+build verification is separate from deployment, UI acceptance and JPro browser
+session/directory-lock readiness; Supabase Storage integration is still pending.
 
 ### Development verification
 
@@ -646,3 +649,5 @@ Presentation exports and build drafts were removed from docs/presentations and
 tools/benchmark/presentation-build at the owner's request. Benchmark source/results
 remain. Publication preparation does not waive the three known frozen UI fixture
 conflicts or constitute final feature acceptance.
+
+DOCKER-PACKAGE-1 packaging verification (2026-10-21): docker build -f dockerfile -t hotshop:render-check . succeeded from source with host build output excluded. The wrapper is normalized to Linux line endings inside the builder. A no-network runtime filesystem check confirmed the executable start script, libraries and Linux JavaFX directory. Independent final specification/security source reviews passed using supplied build evidence; no app launch, database access or hosted deployment was performed in this check. Existing UI fixture acceptance blockers remain.
