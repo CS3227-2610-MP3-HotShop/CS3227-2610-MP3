@@ -39,6 +39,7 @@ application {
 }
 
 dependencies {
+    implementation 'com.google.code.gson:gson:2.14.0'
     implementation 'org.postgresql:postgresql:42.7.14'
     implementation 'one.jpro:jpro-webapi:2026.3.1'
     testImplementation platform('org.junit:junit-bom:5.13.4')
@@ -54,7 +55,26 @@ jpro {
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'llm-live'
+    }
+    jvmArgs '--enable-native-access=ALL-UNNAMED'
+}
+
+tasks.register('llmLiveTest', Test) {
+    description = 'Runs explicitly authorised live LLM evaluations; never part of check or build.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'llm-live'
+    }
+    ['runId', 'evidenceDir'].each { key ->
+        def value = providers.gradleProperty("llmLive${key.capitalize()}").orNull
+        if (value != null) {
+            systemProperty "hotshop.llm.live.${key}", value
+        }
+    }
     jvmArgs '--enable-native-access=ALL-UNNAMED'
 }
 
