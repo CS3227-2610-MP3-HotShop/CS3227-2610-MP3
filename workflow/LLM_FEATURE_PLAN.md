@@ -4,18 +4,21 @@ Source: [technical specification](LLM_FEATURE_TECHNICAL_SPEC.md), sections 1–5
 requirements: [product specification](LLM_FEATURE_PRODUCT_SPEC.md), FR-001–006,
 NFR-001–007, TC-01–12 and UC-001–003. Created 2026-10-20.
 
-Planning only: no implementation, test execution or deployment is authorised by
-this document. All tasks start incomplete. Source inspection found the existing
-JavaFX editor, single service worker/session and runtime lock, but no feature
-implementation, JSON dependency or `llmLiveTest` task. Inspection is not passing
-runtime evidence. No SQL migration is planned; generation never saves a listing.
+The plan itself authorises no execution or deployment. On 2026-10-20 the user
+explicitly selected TASK-001–004 and confirmed configuration readiness; see their
+execution records below. The next user request selects TASK-005–006 only;
+TASK-007 onward remains unauthorised. Initial source
+inspection found the JavaFX editor, single service worker/session and runtime lock,
+but no feature implementation, JSON dependency or `llmLiveTest` task. Inspection
+is not passing runtime evidence. No SQL migration is planned; generation never
+saves a listing.
 
 ## Execution rules and current blockers
 
 | Gate | Current state / affected work | Resolution |
 | --- | --- | --- |
-| G-01: implementation scope | No task selected for execution; technical design is proposed. All implementation tasks await selection/design acceptance. | User selects tasks or approves a bounded implementation scope; coordinator records acceptance and owners in TASK-001. |
-| G-02: deferred tests | User has not indicated endpoint/token configuration is ready. All test runs, including offline tests, and red/green completion are blocked. Test definitions may be drafted after authorised selection, but red tasks cannot be completed on unexecuted tests. | User indicates configuration readiness; never infer readiness from `.env` existence or print/read secrets for planning. |
+| G-01: implementation scope | Resolved 2026-10-20: TASK-001–004 completed; user subsequently selected TASK-005–006. | Design contracts govern the selected scope; TASK-007 onward remains unauthorised. |
+| G-02: deferred tests | Resolved 2026-10-20: user explicitly confirmed endpoints and API key are ready. No secrets inspected. | Offline verification authorised; live calls still require separate explicit authorisation. |
 | G-03: provider tools | Provider-side tools cannot be confirmed disabled. Blocks full end-to-end no-tool security acceptance in TASK-015/017, not independent local-boundary implementation after G-01/02. | Obtain provider capability assurance/configuration evidence, or explicit product-spec revision accepting a narrower guarantee. Prompt instructions or passing samples alone do not close this gate. |
 | G-04: hosted identity | Independent concurrent JPro client identity/session isolation is not established in current code. Multi-user hosted acceptance in TASK-017 remains blocked. | Separately approved lifecycle/session integration review/work; do not add an authentication rewrite to this plan. Local/isolated runtime acceptance can be recorded separately. |
 
@@ -57,11 +60,25 @@ separately; do not weaken tests or Checkstyle.
 
 ### TASK-001: Establish authorised scope and execution readiness
 
+Execution record (2026-10-20): user selected TASK-001–004 and confirmed this exact
+plan and configuration readiness. Selection accepts the specified Gson 2.14.0
+(subject to availability/advisory verification), typed outcomes, literal UTF-8
+configuration syntax, Unicode word-count rule and shared server quota ownership.
+No permission for live calls is inferred. All selected prerequisites are within
+TASK-001–004, with no cycles or missing references; all four were initially No.
+Coordinator owns plan/build integration and records; testing specialist owns
+infrastructure/corpus/configuration tests; application specialist owns configuration
+implementation after verified red; independent reviewer owns final code review.
+Build edits have a single assigned writer. No runtime/UI/quota implementation is
+authorised in this batch. Provider-tool and hosted-identity gates remain open.
+
 **Description:** Coordinator records selected task scope, approved design contracts,
 owners, configuration readiness and verification prerequisites; no secret values.
 **Source:** Technical sections 1.1, 3.3, 5.2; NFR-006/007; G-01/02.
 **Dependencies:** None.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. Scope/contracts/owners and readiness recorded;
+Java 25.0.2 / Wrapper 9.1.0 baseline: 688 tests, both Checkstyle tasks passed.
+Evidence: [TASK-001 log](../logs/2026-10-20-llm-task-001-readiness.md).
 
 **Steps**
 
@@ -74,8 +91,8 @@ owners, configuration readiness and verification prerequisites; no secret values
 
 **Acceptance criteria**
 
-- [ ] Approved scope, owners, contracts and G-02 resolution recorded without secrets.
-- [ ] Baseline has actual results or diagnosed blockers; no feature completion claimed.
+- [x] Approved scope, owners, contracts and G-02 resolution recorded without secrets.
+- [x] Baseline has actual results or diagnosed blockers; no feature completion claimed.
 
 ### TASK-002: Prepare minimal build and deterministic test infrastructure
 
@@ -83,7 +100,10 @@ owners, configuration readiness and verification prerequisites; no secret values
 implementing generation behaviour; affect `build.gradle` and test resources/helpers.
 **Source:** Technical 1.1, 2.2, 5.2; NFR-006/007.
 **Dependencies:** TASK-001 — execution scope and test readiness.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. Eight infrastructure tests and Checkstyle passed;
+Gson 2.14.0 resolved and strict streaming verified on Java 25. Live task/tag
+isolation inspected without provider calls. Evidence:
+[TASK-002 log](../logs/2026-10-20-task-002-llm-test-infrastructure.md).
 
 **Steps**
 
@@ -100,9 +120,9 @@ implementing generation behaviour; affect `build.gradle` and test resources/help
 
 **Acceptance criteria**
 
-- [ ] Infrastructure tests run successfully; transport fixtures use synthetic tokens.
-- [ ] Live task/tag separation verified; no real network generation occurs.
-- [ ] Baseline dependencies preserved; compatibility evidence and seams recorded.
+- [x] Infrastructure tests run successfully; transport fixtures use synthetic tokens.
+- [x] Live task/tag separation verified; no real network generation occurs.
+- [x] Baseline dependencies preserved; compatibility evidence and seams recorded.
 
 ### TASK-003: Write the live security corpus before generation implementation
 
@@ -110,7 +130,10 @@ implementing generation behaviour; affect `build.gradle` and test resources/help
 evaluation rubric without running them or enabling provider credentials in ordinary tests.
 **Source:** Technical 3.1, 5.2; FR-004; TC-05/06/11; UC-002.
 **Dependencies:** TASK-002 — test seams and isolated live task.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. Tagged 26-case corpus compiles, judging rubric
+reviewed, ten offline infrastructure/corpus tests and Checkstyle pass. Live
+exclusion verified; no live evaluation run. Evidence:
+[TASK-003 log](../logs/2026-10-20-task-003-llm-security-corpus.md).
 
 **Steps**
 
@@ -126,8 +149,8 @@ evaluation rubric without running them or enabling provider credentials in ordin
 
 **Acceptance criteria**
 
-- [ ] Runnable tagged corpus and explicit judging rules cover TC-05/06/11; compile succeeds.
-- [ ] No live calls; evaluation remains unverified and cannot authorise implementation alone.
+- [x] Runnable tagged corpus and explicit judging rules cover TC-05/06/11; compile succeeds.
+- [x] No live calls; evaluation remains unverified and cannot authorise implementation alone.
 
 ### TASK-004: Implement private configuration loading through TDD
 
@@ -135,7 +158,13 @@ evaluation rubric without running them or enabling provider credentials in ordin
 state and root working-directory `.env` syntax; no actual credentials changed.
 **Source:** Technical 1.2, 3.2; FR-003; NFR-002/004; TC-04/07/09.
 **Dependencies:** TASK-003 — prewritten evaluation corpus and infrastructure.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. Configuration red/green evidence includes 69
+passing configuration tests and 38 account regressions; private immutable settings
+and manual persistence verified. Independent review has no unresolved material
+findings. Final check/build/shadowJar pass with 767 tests. Evidence:
+[red log](../logs/2026-10-20-llm-task-004-configuration-red.md),
+[implementation log](../logs/2026-10-20-llm-task004-configuration-implementation.md),
+[integration/review log](../logs/2026-10-20-llm-task-001-004-integration.md).
 
 **Steps**
 
@@ -148,8 +177,8 @@ state and root working-directory `.env` syntax; no actual credentials changed.
 
 **Acceptance criteria**
 
-- [ ] Red then green evidence for parser/validation partitions; no token in toString/errors/logs.
-- [ ] Missing configuration leaves manual application paths available; no secret file writes.
+- [x] Red then green evidence for parser/validation partitions; no token in toString/errors/logs.
+- [x] Missing configuration leaves manual application paths available; no secret file writes.
 
 ### TASK-005: Implement account quota admission through TDD
 
@@ -157,7 +186,12 @@ state and root working-directory `.env` syntax; no actual credentials changed.
 and atomic reservation ownership; no persistent migration.
 **Source:** Technical 1.3; NFR-005; TC-10.
 **Dependencies:** TASK-003 — infrastructure; independent of configuration implementation.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. Verified behavioural red then 28 passing quota
+tests and both Checkstyle tasks; deterministic boundary/race/ownership/cleanup
+evidence includes staggered retry-delay regression. Independent review has no
+unresolved material findings. Shared server lifecycle wiring remains TASK-010.
+Evidence: [red log](../logs/2026-10-20-llm-task005-quota-red.md),
+[implementation log](../logs/2026-10-20-llm-task005-quota-implementation.md).
 
 **Steps**
 
@@ -171,8 +205,8 @@ and atomic reservation ownership; no persistent migration.
 
 **Acceptance criteria**
 
-- [ ] All quota/race boundaries pass deterministically without sleeps.
-- [ ] Active slot released exactly once by matching request ID; no account bypass via new form.
+- [x] All quota/race boundaries pass deterministically without sleeps.
+- [x] Active slot released exactly once by matching request ID; no account bypass via new form.
 
 ### TASK-006: Implement fixed prompt and JSON request encoding through TDD
 
@@ -180,7 +214,14 @@ and atomic reservation ownership; no persistent migration.
 only title/condition plus fixed instruction and configured model are transmitted.
 **Source:** Technical 2.1/2.2, 3.1; FR-002/003/004; TC-01/02/04–09.
 **Dependencies:** TASK-004 — approved configuration; TASK-005 — admission contract.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. Verified 23 behavioural red cases followed by
+130 passing related offline tests and both Checkstyle checks. Fixed prompt,
+two-stage streaming encoding, code-point validation and exact UTF-8 byte limits
+verified; independent review has no unresolved material findings. Final
+check/build pass: 818 tests, zero failures/errors/skips. No HTTP dispatch added.
+Evidence: [red log](../logs/2026-10-20-llm-task006-request-red.md),
+[implementation log](../logs/2026-10-20-llm-task006-request-implementation.md),
+[integration/review log](../logs/2026-10-20-llm-task005-006-integration.md).
 
 **Steps**
 
@@ -194,8 +235,8 @@ only title/condition plus fixed instruction and configured model are transmitted
 
 **Acceptance criteria**
 
-- [ ] Red/green request evidence covers encoding/size and minimum-input boundaries.
-- [ ] No banned-word defence, previous description, identity, history or tool definition sent.
+- [x] Red/green request evidence covers encoding/size and minimum-input boundaries.
+- [x] No banned-word defence, previous description, identity, history or tool definition sent.
 
 ### TASK-007: Implement strict response and description validation through TDD
 
@@ -488,8 +529,9 @@ documentation reviewer checks traceability before feature Done.
 | TC-05/06/11 | TASK-003/006/013/014/015 |
 | TC-10 | TASK-005/008–013 |
 
-Current progress: **0/17 tasks complete**. No execution, test, implementation or
-deployment evidence is created by this plan. G-01/02 currently prevent task
-execution/completion; G-03/04 additionally constrain final acceptance. Next step
-is user-selected authorised implementation scope with readiness recorded, not an
-automatic start of TASK-001 or a request to disclose secrets in conversation.
+Current progress: **6/17 tasks complete** (TASK-001–006, dated evidence above).
+Selected TASK-005–006 are complete; TASK-001–004 records were preserved. Final
+check/build: 818 passing tests, both Checkstyle checks and JAR packaging passed.
+Existing configuration readiness permits offline verification only. G-03/04
+still constrain final acceptance; no live calls, runtime/UI integration,
+deployment or execution of TASK-007 onward is authorised by this selection.
