@@ -55,4 +55,4 @@ Some listing tests set a listing's status in SQL to reach reserved or sold state
 directly; offer, sale, meetup, and chat tests use the real services.
 
 The targeted test commands for each service are listed in the
-[Developer Guide](../DeveloperGuide.html#development-verification).
+[Developer Guide](DevelopmentWorkflow.html#development-verification).
