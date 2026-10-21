@@ -2,15 +2,17 @@
 
 ## UI-CI-FIX-1 — 2026-10-21
 
-Jonat explicitly approved one grouped correction pass for six PR11 CI failures.
-Baseline fb61099; CI39564388245 has869 tests/six failures, same set before Docker.
-Three known blank-query preview fixtures; reproduce feedback and navigation lookup
-failures; fix JavaFX shared-toolkit initialization. Preserve assertions, specs and
-original measured snapshots/results. Single Luna implementer owns fix/tests and
-required checks; final spec/security reviews only. Shared correction1/1 in progress.
-See workflow/PLAN.md task for scope/checks. No hosted data/live SoC/deployment.
+Jonat approved grouped six-failure correction. Source candidate5f0c3ea on PR11:
+valid-query/provider-call preconditions, bounded async feedback/navigation checks,
+shared JavaFX toolkit startup. Test-only; assertions preserved/strengthened. Local
+baseline reproduced three preview failures and repeated toolkit init; feedback/nav
+were LinuxCI failures, not locally reproduced. CombinedUI84 + finalAI21/styles pass.
+FULL LinuxCI39568040457 test/styles/check/build/shadowJar PASS8m33s. Final independent
+Luna spec/security source reviews PASS using supplied test evidence. Correction1/1
+consumed. Supplementary Windows full run still progressing at review; report result
+separately. Documentation-only acceptance consolidation follows source candidate;
+no Java tests manually rerun for records. Original benchmarks/CSV unchanged.
 
-PR10 postgres-migration -> master; PR11 codex/ai-search-consolidated ->
-postgres-migration draft. Docker packaging fb61099 built and final-reviewed locally.
-Prior163 focused tests passed; full Linux CI exposed additional UI setup failures.
-Supabase Storage and JPro browser-session/directory-lock readiness remain separate.
+PR10 postgres-migration -> master has passing CI. PR11 codex/ai-search-consolidated
+-> postgres-migration remains draft; no merge/deployment. Supabase Storage/JPro
+multi-user and image-directory lifecycle readiness remain separate.
