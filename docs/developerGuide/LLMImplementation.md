@@ -55,14 +55,41 @@ and [ListingEditor](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/b
 
 ## Private configuration
 
-`LlmConfiguration.load(Path workingDirectory)` reads an immutable UTF-8 snapshot
-of `.env` from the trusted Java process's working directory. `Main` loads that
-snapshot once through its lazy description owner. In a packaged launch this is
-the process working directory, not a directory inside the JAR or the data directory.
-Restart the server process to reload settings. Missing, unreadable or invalid
-configuration disables generation while manual listing creation remains available.
+`Main` calls `LlmConfiguration.loadFromEnvironment(Path workingDirectory)` once
+through its lazy server description owner. This freezes an immutable snapshot
+from either runtime environment variables or a local `.env` file.
 
-The following is a synthetic syntax example, not a live provider configuration.
+Set these exact names in the Java service's runtime environment, for example in
+the hosting dashboard's private environment settings:
+
+| Name | Value |
+| --- | --- |
+| `SOCLAAS_BASE_URL` | The complete HTTPS endpoint, including its required path/query. |
+| `SOCLAAS_API_KEY` | The private bearer token. |
+| `SOCLAAS_MODEL` | The provider's model identifier. |
+
+If **any** required environment key is present, all three must be valid. Partial,
+empty or invalid settings disable generation; the loader never fills missing
+values from `.env` or falls back after an environment error. A complete valid
+environment bypasses the file even if it is missing, malformed or unreadable.
+Denied environment access also disables generation safely. Unrelated environment
+keys do not affect source selection.
+
+Enter dashboard values literally, without the quotes used for dotenv syntax.
+Environment strings are not unquoted, expanded or trimmed; credential whitespace
+is invalid, and embedded CR/LF/NUL is rejected. Keep values server-side; do not
+put them in browser configuration or bake them into container images.
+
+Only when all three environment keys are absent does the loader read a UTF-8
+`.env` in the process working directory. In a packaged launch, this is neither
+inside the JAR nor the data directory. It does not discover `/etc/secrets` files
+automatically. No source writes or exports configuration. Restart the server
+process to reload settings; changes do not mutate an existing snapshot. Missing,
+unreadable or invalid selected configuration disables generation while manual
+listing creation remains available. This is configuration support, not evidence
+of a verified Render/Vercel deployment or hosted-session isolation.
+
+The following is a synthetic local `.env` example, not a live provider configuration.
 Use a temporary directory for experiments; do not overwrite an operator's `.env`.
 
 ```dotenv
@@ -85,7 +112,13 @@ There is no shell `export`, variable expansion, escape processing or inline-comm
 removal. Duplicate required keys, malformed standalone lines, unquoted quotes,
 unmatched outer quotes or embedded CR/LF/NUL invalidate the snapshot.
 
-Loading writes no files. Configuration access is guarded and package-private;
+`LlmConfiguration.load(Path)` remains explicitly file-only for fixtures and alternate
+hosts. A package-local environment-supplier overload allows deterministic tests
+without consulting the developer's real process settings. Ordinary runtime opens
+remain offline; isolated startup tests supply only synthetic provider settings to
+a child JVM without changing the parent environment.
+
+Configuration access is guarded and package-private;
 `toString` exposes availability only. Raw settings and read/parse exceptions are
 not returned in diagnostics. Ordinary tests must use temporary synthetic settings
 and must never load the real working-directory `.env`. See
@@ -180,6 +213,19 @@ same completion. `close()` waits off JavaFX and returns immediately on JavaFX;
 observe `closeAsync()` for shutdown failures. No HTTP termination is awaited on
 JavaFX. These guards do not establish independent JPro client identity.
 
+JUnit runtime tests use `PostgresTestSupport.openTestRuntime` so they share the
+test's disposable PostgreSQL database while preserving each runtime's directory,
+clock and optional description owner. Tests that need the same account across
+runtime sessions seed it once, then log in from each session; separate directories
+do not imply separate databases. The shared-account session helper closes a newly
+opened runtime if login fails. The server-shutdown test uses distinct accounts so
+both generation requests can remain pending. Tests that simulate connection failures pass an
+explicit `DatabaseConfig`. The live adapter is outside the JUnit lifecycle, so it
+starts and provisions its own disposable PostgreSQL fixture, creates a synthetic
+account and runtime, then closes the runtime and fixture. Storage-preservation
+checks include public PostgreSQL table rows and sequence state alongside local
+file snapshots. Docker is required for these database-backed runtime tests.
+
 ## Offline verification
 
 Ordinary `test`, `check` and `build` exclude the `llm-live` tag. Run targeted
@@ -191,15 +237,17 @@ checks from the repository root with the Gradle Wrapper:
 ```
 
 These commands describe how to verify the feature; they are not a claim of a new
-run during this documentation reorganisation. Tests use disposable local PostgreSQL data,
-synthetic settings, controlled clients, clocks and completion gates. Loopback HTTPS
+run during this documentation reorganisation. Runtime tests use disposable local
+PostgreSQL data through PostgresTestSupport.openTestRuntime and require Docker.
+They use synthetic settings, controlled clients, clocks and completion gates. Loopback HTTPS
 uses a public synthetic test CA trusted only by the injected client; it preserves
 hostname checks and never changes global production TLS. See the
 [HTTPS fixture guide](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/src/test/resources/hotshop/llm/HTTPS-FIXTURES.md).
 
 | Coverage | Main executable evidence and interpretation |
 | --- | --- |
-| Inputs and request boundaries (TC-01/02/05/06) | `LlmConfigurationTest`, `LlmRequestTest`, `LlmPreparationTest` and `DescriptionServiceTest` cover authentication priority, Unicode/title and byte boundaries, quoting, all conditions, immutable configuration and literal hostile/benign titles. |
+| Configuration sources (TC-04/07/09) | `LlmConfigurationTest` checks complete/absent/partial environment settings, file fallback, literal values, validation boundaries, denied access, immutable snapshots and safe diagnostics. `LlmConfigurationStartupTest` verifies the public factory in isolated JVMs with synthetic environment settings, including file-only factory independence. No provider request is dispatched. |
+| Inputs and request boundaries (TC-01/02/05/06) | `LlmRequestTest`, `LlmPreparationTest` and `DescriptionServiceTest` cover authentication priority, Unicode/title and byte boundaries, quoting, all conditions and literal hostile/benign titles. |
 | Responses (TC-03/12) | `LlmResponseTest` covers word/code-point limits, strict envelopes, duplicate/deep JSON, authoritative top-level text and inert metadata. These are structural checks. |
 | Transport and failures (TC-04/09/10) | `HttpLlmClientTest` verifies exact requests, TLS, redirects, encoding/byte limits, deadline cleanup and safe status mappings using controlled HTTPS. The connect policy and timeout mapping are checked without waiting for a slow real-network timeout. |
 | Private data and no execution (TC-07/08/09) | `LlmSecurityIntegrationTest` captures the production request, checks synthetic secret/account/listing/file canaries, rejects structured tool calls and observes zero output-directed callbacks or storage writes. Plain command/link text remains inert, not semantically filtered. |

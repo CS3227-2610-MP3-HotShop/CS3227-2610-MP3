@@ -141,70 +141,6 @@ If an unrelated problem is discovered, report it separately rather than fixing i
 
 ---
 
-## Migration collaboration
-
-For configured worker names and coordinator startup, read
-[AgentConfiguration.md](docs/agents/AgentConfiguration.md). Files alone
-do not prove instruction loading or behavioural validation; use the recorded smoke-test evidence and remaining readiness gates. Record external test reports with their provenance and distinguish them from checks executed in this chat.
-
-For authorised task execution, use the aligned
-[implement-task skill](.agents/skills/implement-task/SKILL.md). It supports
-coordinator selection within approved scope and per-task blocker handling;
-completed entries remain immutable and corrective edits require explicit approval.
-For task decomposition, use the aligned
-[planning skill](.agents/skills/plan-implementation/SKILL.md) to record ownership,
-contract dependencies, review/integration gates, and separate readiness from approval.
-Use the aligned product/technical specification skills for inventory-first discovery
-and feature-level approval. Shared contracts require both area owners; unresolved
-shared foundations block dependent designs and implementation, not unrelated work.
-
-Before assigning frontend/backend migration work or approving corrections, read
-[the migration workflow](workflow/MIGRATION-WORKFLOW.md).
-Review and obtain approval of the complete feature inventory before detailing
-features individually; inventory approval alone does not authorise implementation.
-Inventory coverage was approved on 2026-10-17 for the 17 groups, feature list only.
-The migration source baseline is frozen at commit 1d812ef. Specify behaviour as it
-exists at that commit. If the JavaFX source changes later, propose a re-baseline with a
-diff and obtain explicit approval; do not specify or implement against newer source
-without it.
-Use .github/ISSUE_TEMPLATE/feature.md for feature issues and .github/ISSUE_TEMPLATE/task.md for linked frontend/backend/integration tasks. Task creation and assignment do not authorise implementation. Record unknowns and add tasks incrementally; require approved detail and prerequisites for the task about to start, without demanding exhaustive upfront decomposition.
-Use Backlog, Ready, In progress, Review, and Done for task stages. Keep Paused and Blocked as separate flags with reasons and resumption conditions; follow the migration workflow for transition gates.
-Track split frontend/backend tasks as separate GitHub issues linked to a parent feature; follow the migration workflow for ownership and parent completion gates.
-Use [the feature inventory](workflow/FEATURE-INVENTORY.md) to track guide-derived
-features and their evidence status. Consult workflow/FEATURE-EVIDENCE.md for the
-pinned source paths, representative assertions and unresolved source ambiguities.
-Static assertion inspection is not a passing-test result or inventory approval.
-Verify documented claims against code/tests
-before calling them implementation-verified; distinguish future work from parity.
-Assign human owners before implementation. Each owner approves correction plans
-within their area; shared-interface changes require both owners' explicit
-agreement before implementation. Record approvals against the affected contract
-and tasks. Existing correction limits and test ownership remain in force.
-Superseded on 2026-10-17: the web application has no reset feature and uses a hosted
-PostgreSQL database from the start. PostgreSQL is used in every environment including
-automated tests; each environment has its own database, and tests never run against the
-demo database. Dropping and recreating a development or test database is ordinary
-practice, not the reset the application excludes. Domain timestamps come from an
-injectable application clock, never from the database clock or a column default, or the
-meetup and dashboard time boundaries cannot be tested. Seeding is an idempotent
-provisioning step, not an application route. Reset was a local-disk concern of the JavaFX app and
-has no web equivalent. Data persists; seeding runs once at provisioning rather than on a
-schedule or on demand. Fresh demo data is still approved, so existing accounts, records
-and images are not imported. Preserve functional state and access rules; specify the
-seed content and the provisioning path before implementing storage-dependent tasks. Do
-not plan interim in-memory or ephemeral server state: on a serverless host it disappears
-between deployments and cold starts, which users experience as an uncontrolled reset.
-The web target supports concurrent multi-user access; the desktop single-logged-in-user
-constraint and its single-worker serialisation are not carried over, so database
-integrity constraints protect the marketplace invariants instead. The desktop minimum
-window size and fixed layout units are not target criteria. Platform and data
-foundations are tracked as INV-17 in the feature inventory. Do not reintroduce a
-superseded desktop constraint because a guide chapter still describes it; the affected
-User Guide wording changes with its feature.
-For migration features, follow the workflow's agreed unit/integration/Playwright
-testing policy and completion gates. These target-stack rules supplement the
-Java-source checks; executable Next.js commands remain to be established.
-
 ## Architecture and Design
 
 Follow the architecture already established in the repository.
@@ -275,6 +211,8 @@ Any significant new dependency should be mentioned in the final task summary.
 
 ## Documentation
 
+When writing human-readable documentation, prefer to explain relevant concepts and details using simple and easy to understand english. Avoid using jargon or ambiguous terms unless absolutely necessary. If something is unable to be explained simply, help by providing examples to aid with understanding.
+
 ### User Documentation
 All user-facing features added to this application must be documented in:
 ```
@@ -298,18 +236,11 @@ Do not:
 
 When an existing user-facing feature changes, update its existing User Guide documentation as part of the same task.
 
-### Feature completion record
-
-Before declaring a feature Done, update docs/UserGuide.md, docs/DeveloperGuide.md, AGENTS.md, and its feature-level SDD interaction summary. Follow docs/agents/SDDInteractionSummary.md and link supporting task logs. Intermediate task completion does not waive parent-feature documentation gates.
-
 ### Developer Documentation
 
-For every completed feature or change, update both `AGENTS.md` and
-`docs/DeveloperGuide.md` as part of the same task, before reporting completion.
+For every completed feature or change, update `docs/DeveloperGuide.md`, before reporting completion.
 This includes changes to agent configuration, workflow, and documentation.
 
-- In `AGENTS.md`, maintain the relevant durable instructions, constraints, or a
-  concise pointer to the updated developer documentation for future agents.
 - In the Developer Guide, describe the resulting behaviour, design, setup, or
   workflow and relevant verification or limitations. For a small change, use a
   brief note in the relevant section.
@@ -378,6 +309,71 @@ Determine whether the implementation or the test is incorrect before making chan
 
 ---
 
+## Autonomous Multi-Agent Orchestration
+
+The main Codex agent is the project orchestrator.
+
+When receiving a development request:
+
+1. Analyze the request and inspect relevant project files.
+2. Break the task into logical subtasks.
+3. Determine which specialized agents are appropriate.
+4. Delegate independent subtasks automatically.
+5. Coordinate dependencies between agents.
+6. Integrate the completed work.
+7. Run appropriate tests and request reviews.
+8. Resolve important issues before finishing.
+
+### Available Specialists
+
+- javafx_developer:
+  JavaFX layouts, controls, events, navigation, bindings, service integration,
+  styling, accessibility, threading, and lifecycle. Use the existing programmatic
+  UI; introduce FXML only when requested. This replaces javafx_view_designer and
+  controller_developer. Coordinate specialized CSS work with css_specialist and
+  tests with testing_agent; assign one writer per shared UI file.
+
+- app_architect:
+  Business logic, services, models, repositories.
+
+- testing_agent:
+  Unit tests, integration tests, regression checks.
+
+- css_specialist:
+  JavaFX CSS, styling, themes, accessibility.
+
+- code_reviewer:
+  Code quality, threading, architecture, correctness.
+
+### Delegation Policy
+
+- Choose agents based on the task requirements.
+- Do not require the user to name agents.
+- Delegate complex, independent work automatically.
+- Run independent tasks in parallel when beneficial.
+- Establish shared contracts before parallel implementation.
+- Never assign overlapping file edits concurrently.
+- Keep small, straightforward tasks with the main agent.
+- Avoid unnecessary delegation overhead.
+- Use the testing agent when behavior changes.
+- Use the reviewer for substantial or risky changes.
+
+### Main Agent Responsibilities
+
+The main agent remains responsible for:
+- Overall implementation quality.
+- Cross-agent coordination.
+- Integration of changes.
+- Resolving conflicting implementations.
+- Final build and test verification.
+- Reporting results to the user.
+
+Do not ask the user to choose agents unless the
+delegation decision requires a significant
+architectural or product decision.
+
+---
+
 ## Build and Verification
 
 The Gradle requirements in this section apply to Java implementation tasks.
@@ -415,6 +411,59 @@ Do not disable tests, Checkstyle, or other verification mechanisms merely to mak
 
 ## Logging Agent Interactions
 
+At the end of every workflow task performed by the LLM, create a new Markdown file under:
+```
+logs/
+```
+Do not overwrite previous task logs.
+
+Use a descriptive filename that allows logs to be distinguished from one
+another. Prefer:
+```
+YYYY-MM-DD-<short-task-description>.md
+```
+If multiple tasks with the same description occur on the same date, add a numeric suffix.
+
+Each log must contain:
+```
+# Agent Interaction Log
+
+## User Prompt
+
+Record the user's original task prompt.
+
+## Steps Taken
+
+Summarize the significant steps performed by the LLM.
+
+## Reasoning Summary
+
+Explain the engineering rationale behind significant decisions.
+
+Do not include hidden chain-of-thought or private internal reasoning.
+Record concise, user-facing engineering justifications instead.
+
+## Changes Made
+
+List the important files created, modified, or deleted and explain why.
+
+## Verification
+
+Record the commands or checks actually performed and their outcomes.
+
+## Final Output and Conclusion
+
+Summarize the final result, including any unresolved issues.
+
+```
+Logs must accurately reflect what occured.
+
+Do not claim that commands, tests, or manual checks were performed when they were not.
+
+Do not include passwords, tokens, credentials, personal data, or other secrets in logs
+
+---
+
 Follow the owner-approved "Minimal workflow records" rule above. Subagents return
 concise results in messages and do not write reporting Markdown. Coordinator keeps
 one current handoff and consolidates approvals/results into existing records after
@@ -444,166 +493,14 @@ A task is complete only when all applicable conditions below are satisfied:
 - [ ] Checkstyle passes for modified Java code.
 - [ ] The project builds successfully.
 - [ ] User-facing changes are reflected in docs/UserGuide.md.
-- [ ] AGENTS.md and docs/DeveloperGuide.md are updated for the completed feature or change.
+- [ ] docs/DeveloperGuide.md is updated for the completed feature or change.
 - [ ] No credentials or sensitive information were introduced.
 - [ ] No temporary/debugging code remains.
-- [ ]The final diff has been inspected for unrelated changes.
-- [ ] Final approvals and evidence are consolidated in existing records after reviews pass.
-- [ ]Any verification that could not be performed is clearly reported.
+- [ ] The final diff has been inspected for unrelated changes.
+- [ ] The agent interaction has been recorded under logs/.
+- [ ] Any verification that could not be performed is clearly reported.
 
 ---
 
 ## Git Conventions
 All Git conventions when creating commits should follow from the [SE-EDU Git Conventions](https://se-education.org/guides/conventions/git.html)While it is not always necessary to have a body for the commit message, it must always have a subject.
-
----
-
-## Final Response
-When completing a task, provide a concise summary containing:
-- what was changed;
-- important implementation or design decisions;
-- tests added or modified;
-- verification performed and its results;
-- documentation updated;
-- any limitations or unresolved issues.
-
-Never report a test, build, Checkstyle check, application run, or other verification as successful unless it was actually executed successfully.
-
-## Documentation assignment
-
-For role-based work, follow the documentation ownership table in
-docs/agents/AgentSpecifications.md. Assign one writer per shared file at a time.
-The coordinator owns AGENTS.md, workflow documentation, decision records and feature
-SDD summaries; implementers own assigned user/design/setup guide updates.
-The specification reviewer independently checks final feature documentation.
-Each agent returns a concise result message; coordinator consolidates existing records for
-authorised consolidation. Feature Done requires the documented checks and evidence.
-
-Only the coordinator updates workflow/PLAN.md completion/progress fields from worker
-evidence and required gates. Workers report results without changing plan status.
-Keep completed entries immutable and create authorised follow-up work through planning.
-
-For role-based TDD, follow the common contract's per-criterion baseline evidence
-policy: meaningful red for missing/incorrect behaviour; independently reviewed
-implementation-path and passing-test evidence for already-satisfied behaviour.
-Never manufacture failure, count setup errors as red, or treat legacy Java tests
-as proof of target web behaviour. Preserve readiness and final acceptance gates.
-
-For workflow-validation evidence and its limits, read docs/agents/WorkflowExercise.md.
-When advancing a correction cycle, reconcile the current plan, handoff and SDD-summary
-counters in the same transition; preserve prior stage counts as historical evidence.
-A successful synthetic exercise does not establish migration-feature correctness.
-
-Keep current readiness/status summaries aligned with recorded exercise evidence.
-Distinguish native configuration loading, generic-dispatch observations and unexercised
-controls; preserve historical reports rather than rewriting prior outcomes.
-
-For the current assistant transition, read docs/CLAUDE-HANDOFF.md after these
-instructions; recheck repository state and preserve uncommitted inventory evidence.
-
-Before reading or writing GitHub issues/PRs, read docs/agents/issue-tracker.md
-for the MP3 target and execution gates. Before triaging, read
-docs/agents/triage-labels.md. Preserve concurrent feature-specification work.
-
-Tracking choice agreed 2026-10-17: use GitHub issues and labels; Projects is
-explicitly deferred. Follow docs/agents/issue-tracker.md for stage/flag updates.
-
-## Owner-approved delivery workflow (2026-10-19)
-
-This instruction supersedes earlier role, skill, client-configuration and plan wording
-that requires tester handoffs or independent reviews before implementation.
-
-Assign one implementer the entire approved implementation batch, including production
-code, tests, fixtures, build configuration, associated guides and its task evidence.
-The implementer may write and update tests against the approved requirements; it must
-preserve valid assertions and never weaken checks to obtain a pass. Use test-first
-evidence where practical and run relevant tests/styles during implementation.
-Normal initial implementation includes bringing the approved behavior to green;
-do not route every expected development failure through another agent.
-
-Keep that implementer through the batch. No separate tester or intermediate review
-handoffs by default. Prerequisites are working contracts and evidence, rather than
-acceptance by an intermediate reviewer. Pause for unresolved requirements, scope
-changes or a genuine blocker. Do not invent scope or relabel review corrections
-as initial work.
-
-After implementation, tests, documentation and required checks are complete, submit
-one stable candidate for the final specification/coverage and security reviews.
-Group findings from both into one report and, if needed, one explicitly approved
-correction pass followed by focused re-review. There is one shared correction budget,
-not one per reviewer. Stop and report unresolved findings after that pass.
-The coordinator retains shared records, plan status and final acceptance ownership.
-
-Existing completed entries, historical evidence and exhausted correction budgets
-remain unchanged. This workflow change grants no extra PG-CONVERSION correction cycle.
-The owner resumed PostgreSQL implementation on 2026-10-19; current execution status
-is recorded in workflow/PLAN.md and docs/InteractionRecord.md.
-
-## Retained Java PostgreSQL conversion
-
-The owner approved PG-T1, PG-P1 execution and recorded staged follow-ups; use
-workflow/PLAN.md for eligibility and logs/2026-10-19-feature-pg-conversion-sdd-summary.md
-for the current handoff. Fresh data, no SQLite import; separate schema provisioning,
-no startup migration; disposable local Docker PostgreSQL tests, never hosted test data.
-Use BIGINT for Java long epoch-millisecond timestamps/counters and BYTEA for credentials.
-
-Docker fixtures and narrow configuration/credential-aware connections are verified.
-The TLS query-key fix rejects noncanonical raw sslmode keys; canonical hosted URLs
-require verify-full before connection. Initial PostgreSQL storage engine passes49
-tests and both styles (PG018); PG019/PG020 engine readiness and standalone command
-focused checks are recorded. Consolidated runtime/service/test conversion is accepted locally2026-10-20.
-Final746-case suite, required wrapper checks and specification/security reviews pass; see current
-workflow/PLAN.md and the feature SDD summary rather than historical stage notes.
-Current batch PG-CONVERSION has an explicit owner exception for TLS correction cycle3;
-cycle3/3 is complete and independently verified; PG014 baseline is recorded. The default is now one correction cycle; historical PG-CONVERSION exhaustion is preserved.
-Further unexpected corrective edits require explicit owner direction.
-
-PostgreSQL does not establish JPro multi-user readiness. Preserve directory-lock/image
-recovery protection until separately approved integration supplies per-browser sessions
-and server-owned shared storage with coordinated cleanup. No hosted readiness claim.
-
-## Owner-approved correction limit (2026-10-19)
-
-Use one initial implementation pass and required initial reviews, then at most one
-shared correction pass and re-review per task/batch. Group findings into that pass.
-Corrections still require an explicitly approved plan. If findings remain, stop
-and report them; no further loop without explicit owner direction. Required initial
-readiness, coverage and security checkpoints remain. Avoid repeating unchanged checks.
-This owner instruction supersedes older two-cycle wording in saved skills and client
-configurations. Preserve historical counts: PG-CONVERSION remains exhausted at 3/3.
-Execution was resumed by the owner; no new correction budget is granted.
-
-Owner resumed the approved PostgreSQL batch on 2026-10-19 after adopting consolidated implementation ownership. Current execution status is in workflow/PLAN.md and docs/InteractionRecord.md; earlier pause entries are historical.
-
-
-## Targeted context and handoff rule — owner approved 2026-10-19
-
-Coordinators and workers must read only context needed for the current assignment.
-Search headings/symbols first; read bounded relevant sections or line ranges. Use the
-current handoff plus selected task/acceptance criteria and relevant source/tests.
-Do not reread whole chats, long decision records, historical logs or unrelated specs.
-For new subagents use fork_turns=none and a compact self-contained brief containing
-scope, ownership, current decisions, exact document sections, checks and blockers.
-Reuse an active implementer instead of restarting it merely to remove old context.
-Mandatory instructions still apply: read applicable instructions once, then consult
-only changed/relevant sections. Expand reads only when needed to resolve a concrete
-ambiguity or dependency. Keep current handoffs short and link supporting evidence.
-Already injected app conversation context cannot be selectively removed by agents;
-this rule controls requested history, file/tool reads and future agent handoffs.
-The ongoing approved PostgreSQL batch continues; this is not a pause request.
-
-## Owner model preference — 2026-10-19
-
-Use gpt-6.1-sol for the coordinator and gpt-6-luna for specialist subagents.
-Repository .codex/config.toml sets the main/default specialist preferences; the four
-.codex/agents/hotshop_*.toml roles explicitly select Luna. New specialist launches
-use no full-history inheritance. Do not claim an existing session changed model
-merely because configuration changed; the coordinator model is selected in the app.
-Let an already-running verification finish rather than restart it solely for model
-selection. Final specialist reviews use Luna. Settings persistence is verified by
-file inspection; a new live session's actual model requires runtime confirmation.
-
-Old standalone interaction logs, full handoff histories and archive were deleted at
-the owner's explicit request2026-10-20. Historical filenames in completed plan entries
-are provenance references, not files to restore/read. Use the current short handoff
-and consolidated feature summary. Public CA certificate stays outside the repo.

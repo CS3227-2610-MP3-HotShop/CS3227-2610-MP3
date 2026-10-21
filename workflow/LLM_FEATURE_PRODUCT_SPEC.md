@@ -46,7 +46,7 @@ explained in NFR-003. Model behaviour still requires adversarial evaluation.
 | --- | --- | --- |
 | OQ-01 (resolved) | User decision: generated descriptions must not exceed 100 words; normally aim for 50–70 words. Shorter valid descriptions remain acceptable. The existing 5,000-code-point field limit also applies. No specific output language has been selected. | FR-004, NFR-005, TC-03 |
 | OQ-02 (response resolved; security limitation open) | User confirms top-level `output_text` is always present; use it as the authoritative description without nested fallback. User cannot confirm provider tools are disabled and proposes a no-tool prompt. Require that prompt plus enforced absence of application-side tools; provider-side non-use remains unverified, not guaranteed by the prompt. See NFR-003. | FR-003–005, NFR-002–003, TC-04, TC-08, TC-12 |
-| OQ-03 (resolved) | Current JavaFX/JPro application, later Docker on Render. Credentials reside in an untracked project-root `.env`, loaded on the trusted Java/JPro side; never exposed to the browser or baked into a container image. Endpoint/model are configurable. | NFR-002, NFR-007, TC-07 |
+| OQ-03 (resolved; TASK-018 extension approved 2026-10-20) | Current JavaFX/JPro application, later Docker on Render. Credentials use private runtime environment settings or an untracked working-directory `.env` fallback, loaded on the trusted Java/JPro side; never exposed to the browser or baked into an image. Any required environment key selects a complete environment set; fallback occurs only when all three are absent. | FR-003, NFR-002, NFR-007, TC-04/07 |
 | OQ-04 (resolved; approved) | User approved: 10-second connection timeout, 45-second total request deadline; 8 KiB request JSON and 64 KiB decoded response body; one in-flight request per account; at most 5 dispatched requests per rolling minute and 30 per rolling hour per account; no automatic retries. See NFR-005. | NFR-005, TC-10 |
 
 OQ-04 limits are approved. The provider-side security limitation remains explicit;
@@ -92,6 +92,16 @@ partition produces field feedback and zero provider requests. Ordinary save stil
 requires the remaining listing fields under existing rules.
 
 ### FR-003 — HTTPS request and private configuration
+
+TASK-018 extends startup configuration with the approved environment-first policy.
+Use SOCLAAS_BASE_URL, SOCLAAS_API_KEY and SOCLAAS_MODEL as one complete source:
+if any required environment key is present, all three must be valid, with no
+per-key mixing or file fallback on error. If none is present, use the existing
+working-directory `.env` parser. A valid environment does not read the file.
+Environment values are literal; do not trim credentials, unquote or expand them.
+Denied environment access or invalid settings safely disables generation while
+manual listing creation remains available. Load once; apply changes on restart.
+Tests use explicit synthetic maps/files, never actual deployment secrets.
 
 Send the request to the configured HTTPS endpoint with certificate and hostname
 verification, `Authorization: Bearer <configured-token>`, and JSON content type.
@@ -231,7 +241,9 @@ is not managed by Git. Load credentials only on the trusted Java/JPro side. For
 the later Docker/Render deployment, provision secrets at runtime; do not copy
 `.env` into images, image layers or published build artifacts. Git ignore alone
 does not establish container exclusion. Never read `.env` into model context.
-Actual loading and packaging remain implementation work, not verified behaviour.
+TASK-018 specifies environment-first startup loading with the file-only test
+seam retained. Host-specific secret provisioning and artifact exclusion still
+require separate verification; configuration support alone establishes no deployment.
 
 ### NFR-003 — No tools or execution authority
 
@@ -320,7 +332,8 @@ Reuse the current listing form, authentication and validation conventions. Keep
 network calls and security checks outside presentation-only logic. Do not weaken
 manual save permissions or validation. The execution target is the current
 JavaFX/JPro application, with later Docker hosting on Render; this feature does
-not target the Next.js migration. Record Java/JUnit test commands, `.env` loading,
+not target the Next.js migration. Record Java/JUnit test commands, runtime
+environment selection and `.env` fallback,
 runtime secret provisioning and the confirmed response mapping in technical
 design before implementation.
 

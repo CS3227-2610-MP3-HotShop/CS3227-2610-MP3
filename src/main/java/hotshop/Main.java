@@ -26,7 +26,7 @@ public class Main extends Application {
         private static final DescriptionRuntime OWNER = create();
 
         private static DescriptionRuntime create() {
-            DescriptionRuntime owner = new DescriptionRuntime(LlmConfiguration.load(Path.of(".")));
+            DescriptionRuntime owner = new DescriptionRuntime(LlmConfiguration.loadFromEnvironment(Path.of(".")));
             Runtime.getRuntime().addShutdownHook(Thread.ofPlatform().name("hotshop-description-shutdown")
                     .unstarted(owner::close));
             return owner;
