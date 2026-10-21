@@ -12,7 +12,7 @@
 
 Welcome to the HotShop Developer Guide. This guide introduces the architecture,
 codebase, and development workflow of HotShop, a JavaFX desktop marketplace with
-PostgreSQL persistence and local managed image storage.
+PostgreSQL persistence and private Supabase image storage.
 
 Start with [Development Workflow](developerGuide/DevelopmentWorkflow.html) to set
 up your environment, run checks, and build the application, including selecting
@@ -39,14 +39,17 @@ Proposed features and enhancements are documented separately in
 
 ### Project Deployment Process
 
-#### PostgreSQL conversion status — 2026-10-19
+#### PostgreSQL and image storage status — 2026-10-21
 
 The owner selected Render hosting, Supabase PostgreSQL and Supabase Storage,
 and approved PostgreSQL in all environments, including development and tests.
 The retained application uses PostgreSQL in development, production and tests. Fresh
-installation starts empty; existing SQLite records are not imported. Supabase Storage
-and deployment remain separate integration work. No hosted database has been used
-for automated tests. Follow the operator setup below before starting the application.
+installation starts empty; existing SQLite records are not imported. Runtime image
+objects use the private `profileImages` and `listingImages` buckets through server-side
+Storage REST requests. Existing local photos are preserved and require the explicit
+two-source importer before storage bindings activate. Automated tests use disposable
+local PostgreSQL and local HTTP fixtures; they never access hosted data or buckets.
+Follow the operator setup below before starting the application.
 
 The jpro-docker workflow uses local specifications/planning, Gradle CI, one implementer
 for the approved batch and final specification/security review. The database tests use
@@ -81,15 +84,17 @@ available for tests; they are not hosted credentials.
 For local Docker, pass settings using `--env-file .env.local` with plain NAME=value
 entries, publish port 8080, mount the CA file read-only at
 `/etc/secrets/prod-supabase.cer`, and use that path in `HOTSHOP_DB_URL`.
-Preserve local images with a named volume mounted at `/var/lib/hotshop` and set
-`JAVA_TOOL_OPTIONS=-Dhotshop.dataDir=/var/lib/hotshop`. Do not paste example database
-host placeholders into a real launch command. See local AI Search setup below.
+Mount a writable data volume at `/var/lib/hotshop` for the application lock and set
+`JAVA_TOOL_OPTIONS=-Dhotshop.dataDir=/var/lib/hotshop`. Image bytes are stored in the
+configured private buckets. Do not paste example database host placeholders into a
+real launch command. See local AI Search setup below.
 
 For Render source builds, select Docker, repository-root build context and the
 `dockerfile` file. Runtime settings and the CA file are supplied through Render
-Environment/Secret Files. Provision the schema separately before startup. Image
-build verification is separate from deployment, UI acceptance and JPro browser
-session/directory-lock readiness; Supabase Storage integration is still pending.
+Environment/Secret Files. Provision the schema separately before startup. Image build
+verification is separate from deployment, UI acceptance and JPro multi-session
+readiness. Real provider and browser upload/display verification remains an operator
+acceptance step.
 
 ### Development verification
 
@@ -617,8 +622,9 @@ Use the database password rather than a Supabase API key. The SoC base URL is `/
 the client appends `/chat/completions`. A local PostgreSQL server can instead use
 `jdbc:postgresql://127.0.0.1:5432/hotshop` with matching local credentials.
 Docker Desktop is needed for a Docker database and container tests, not for running
-against an existing hosted database. Supabase Storage buckets are not used: images
-remain in the local application data directory.
+against an existing hosted database. Configure the four private image-storage values
+shown in the setup section above for ordinary startup; missing settings do not fall
+back to local image directories.
 
 In PowerShell, from the repository root, load the file into the current process:
 
@@ -632,6 +638,47 @@ Get-Content .env.local | ForEach-Object {
 }
 .\gradlew.bat migrateDatabase
 ```
+
+#### Private image storage setup and import
+
+Set these server-only settings in the local process environment or Render environment.
+Use one Supabase project for both private buckets and the coordinating PostgreSQL
+database. The secret key is sent only in the Storage `apikey` header; never add it to
+browser code, database image references, source control, Docker build arguments or
+diagnostics. Create the two buckets as private and configure their limits to match
+HotShop: 5 MiB for profile images and 10 MiB for listing images.
+
+```dotenv
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_SECRET_KEY=YOUR_SERVER_ONLY_SB_SECRET
+HOTSHOP_LISTING_IMAGE_BUCKET=listingImages
+HOTSHOP_PROFILE_IMAGE_BUCKET=profileImages
+```
+
+After `migrateDatabase`, stop all older HotShop processes. Keep both source trees
+available read-only: the Windows app's `.hotshop/images` directory and the mounted
+Docker `hotshop-images/images` directory. Point the importer at those image roots;
+it reads only filenames referenced by PostgreSQL, validates image bytes, coalesces
+identical duplicate copies, and stops on missing or conflicting content. It never
+rewrites local sources or existing remote objects.
+
+```powershell
+.\gradlew.bat migrateImages `
+  -PwindowsImageRoot="C:/path/to/.hotshop/images" `
+  -PdockerImageRoot="D:/path/to/hotshop-images/images"
+.\gradlew.bat migrateImages `
+  -PwindowsImageRoot="C:/path/to/.hotshop/images" `
+  -PdockerImageRoot="D:/path/to/hotshop-images/images" `
+  -PimageImportVerifyOnly=true
+```
+
+The first command uploads only missing referenced objects; the second verifies both
+source copies and stored bytes without writing. Both namespace bindings activate
+together only after successful import. The runtime refuses missing or mismatched
+bindings and has no local image fallback. Keep local originals and backups. Before
+remote-only image writes, restore the previous app and source snapshot for rollback;
+afterward, export every currently referenced remote photo before restoring old code.
+Automated tests do not run either command against hosted credentials or buckets.
 
 When provisioning succeeds, launch with `.\gradlew.bat run`. Provision once before
 first launch and when applying schema upgrades; normal startup validates the schema

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -13,6 +14,7 @@ import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import hotshop.repository.ImageObjectRepository;
 
 import hotshop.support.PostgresFixture;
 
@@ -116,6 +118,78 @@ class PostgresDatabaseTest {
             }));
             assertTrue(observed[0].isClosed());
             assertEquals(0, scalar(fixture, "SELECT COUNT(*) FROM first"));
+        }
+    }
+
+    @Test
+    void imageLifecycleGuard_phasesUseSameConnectionAndPersistStates() throws Exception {
+        try (PostgresFixture fixture = new PostgresFixture()) {
+            Database database = new Database(config(fixture));
+            database.migrate();
+            ImageObjectRepository objects = new ImageObjectRepository();
+            String filename = "123e4567-e89b-12d3-a456-426614174000.png";
+            try (Database.ImageLifecycleGuard guard = database.acquireImageLifecycleGuard()) {
+                var owner = guard.connection();
+                guard.transaction(connection -> {
+                    assertSame(owner, connection);
+                    objects.reserve(connection, "profiles", filename, "a".repeat(64), 3, 100);
+                    return null;
+                });
+                guard.transaction(connection -> {
+                    assertSame(owner, connection);
+                    objects.activate(connection, "profiles", filename, 200);
+                    return null;
+                });
+                assertEquals("a".repeat(64), guard.transaction(connection ->
+                        objects.sha256(connection, "profiles", filename)));
+                guard.transaction(connection -> {
+                    objects.retire(connection, "profiles", filename, 300);
+                    return null;
+                });
+                boolean retired = guard.transaction(connection ->
+                        objects.isRetired(connection, "profiles", filename));
+                assertTrue(retired);
+            }
+        }
+    }
+
+    @Test
+    void imageLifecycleGuard_heldByAnotherConnection_serializesSecondRuntime() throws Exception {
+        try (PostgresFixture fixture = new PostgresFixture();
+                var executor = Executors.newSingleThreadExecutor()) {
+            Database database = new Database(config(fixture));
+            database.migrate();
+            try (Database.ImageLifecycleGuard first = database.acquireImageLifecycleGuard()) {
+                CountDownLatch attempting = new CountDownLatch(1);
+                var second = executor.submit(() -> {
+                    attempting.countDown();
+                    try (Database.ImageLifecycleGuard ignored = database.acquireImageLifecycleGuard()) {
+                        return true;
+                    }
+                });
+                assertTrue(attempting.await(2, TimeUnit.SECONDS));
+                Thread.sleep(250);
+                assertFalse(second.isDone());
+                first.close();
+                assertTrue(second.get(3, TimeUnit.SECONDS));
+            }
+        }
+    }
+
+    @Test
+    void imageLifecycleGuard_connectionLoss_fencesReferenceTransaction() throws Exception {
+        try (PostgresFixture fixture = new PostgresFixture()) {
+            Database database = new Database(config(fixture));
+            database.migrate();
+            Database.ImageLifecycleGuard guard = database.acquireImageLifecycleGuard();
+            guard.connection().close();
+            assertThrows(SQLException.class, () -> guard.transaction(connection -> {
+                try (var statement = connection.createStatement()) {
+                    statement.executeUpdate("INSERT INTO users(id, username, normalized_username, display_name) "
+                            + "VALUES ('u', 'u', 'u', 'User')");
+                }
+                return null;
+            }));
         }
     }
 

@@ -76,6 +76,7 @@ class DatabaseProvisioningCommandTest {
                 }
             }
         }
+        copy(repository, Path.of("src/main/java/hotshop/storage/SupabaseStorageConfig.java"));
     }
 
     private void copy(Path repository, Path relative) throws IOException {

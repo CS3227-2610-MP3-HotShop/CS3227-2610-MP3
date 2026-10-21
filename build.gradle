@@ -67,6 +67,25 @@ tasks.register('migrateDatabase', JavaExec) {
     mainClass = 'hotshop.database.DatabaseProvisioning'
 }
 
+tasks.register('migrateImages', JavaExec) {
+    group = 'application'
+    description = 'Imports or verifies referenced images from two existing local image roots.'
+    dependsOn tasks.named('classes')
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'hotshop.storage.ImageImportCommand'
+    doFirst {
+        def windowsRoot = providers.gradleProperty('windowsImageRoot')
+        def dockerRoot = providers.gradleProperty('dockerImageRoot')
+        if (!windowsRoot.isPresent() || !dockerRoot.isPresent()) {
+            throw new GradleException('Set windowsImageRoot and dockerImageRoot to read-only image roots')
+        }
+        args '--windows-root', windowsRoot.get(), '--docker-root', dockerRoot.get()
+        if (providers.gradleProperty('imageImportVerifyOnly').getOrElse('false').toBoolean()) {
+            args '--verify-only'
+        }
+    }
+}
+
 checkstyle {
     toolVersion = '12.3.1'
     maxWarnings = 0

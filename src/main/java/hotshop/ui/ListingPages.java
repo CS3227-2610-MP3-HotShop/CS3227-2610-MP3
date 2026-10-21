@@ -53,8 +53,8 @@ final class ListingPages {
         if (listing.getImages().isEmpty()) {
             gallery.getChildren().add(UiImages.display(null, 280, 200));
         } else {
-            listing.getImages().forEach(image -> gallery.getChildren().add(UiImages.display(
-                    () -> app.runtime.getListingImagePath(image.filename()), 280, 200)));
+            listing.getImages().forEach(image -> gallery.getChildren().add(UiImages.displayRemote(
+                    () -> app.runtime.getListings().getListingImage(listing.getId(), image.filename()), 280, 200)));
         }
         page.body.getChildren().addAll(gallery, UiControls.label(details.description(), "description"),
                 UiControls.label("Category: " + UiControls.title(details.category()), "muted"),

@@ -35,7 +35,7 @@ class ApplicationRuntimeTest extends PostgresTestSupport {
         org.junit.jupiter.api.Assertions.assertFalse(failure.toString().contains(databaseConfig.username()));
         try (var connection = openDatabaseConnection(); var statement = connection.createStatement()) {
             statement.execute("CREATE TABLE schema_migrations(version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)");
-            statement.execute("INSERT INTO schema_migrations VALUES (1, 'provisioned')");
+            statement.execute("INSERT INTO schema_migrations VALUES (1, 'provisioned'), (2, 'provisioned')");
         }
         try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             assertNotNull(runtime.getAccounts());

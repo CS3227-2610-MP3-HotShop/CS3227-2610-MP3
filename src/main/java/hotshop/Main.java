@@ -51,8 +51,8 @@ public class Main extends Application {
             alert.setTitle("HotShop startup failed");
             alert.setHeaderText("Unable to open HotShop data");
             if (startupFailure instanceof SQLException || startupFailure instanceof IllegalArgumentException) {
-                alert.setContentText("Check PostgreSQL connection settings and connectivity. "
-                        + "Ask the operator to run migrateDatabase with a compatible application version.");
+                alert.setContentText("Check PostgreSQL and private image storage operator settings and connectivity. "
+                        + "Ask the operator to verify provisioning and image storage bindings.");
             } else {
                 alert.setContentText("Check that the image data folder is writable and no other HotShop instance "
                         + "is using it. Existing data has not been reset.");

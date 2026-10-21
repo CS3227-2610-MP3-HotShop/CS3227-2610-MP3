@@ -181,8 +181,8 @@ public final class MarketplaceUi {
     Button profileLink(PublicProfile profile, String id) {
         Button button = UiControls.button(profile.displayName(), id,
                 () -> navigate(() -> accounts.profile(profile.id())));
-        button.setGraphic(UiImages.display(profile.profileImage().isEmpty() ? null
-                : () -> runtime.getProfileImagePath(profile.profileImage().orElseThrow()), 36, 36));
+        button.setGraphic(UiImages.displayRemote(profile.profileImage().isEmpty() ? null
+                : () -> runtime.getAccounts().getProfileImage(profile.id()), 36, 36));
         return button;
     }
 

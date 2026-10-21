@@ -161,6 +161,9 @@ final class UiPage extends VBox {
         future.whenComplete((value, failure) -> Platform.runLater(() -> {
             setBusy(false);
             if (!app.isCurrent(this)) {
+                if (value instanceof java.nio.file.Path selected) {
+                    UiImages.release(selected);
+                }
                 return;
             }
             if (failure == null) {
