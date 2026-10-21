@@ -4,12 +4,10 @@ import static hotshop.service.ListingServiceTest.assertFailure;
 import static hotshop.service.ListingServiceTest.draft;
 import static hotshop.service.ListingServiceTest.loginAs;
 import static hotshop.service.ListingServiceTest.registerAndLogin;
-import static hotshop.service.ListingServiceTest.setStatus;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
-import java.sql.DriverManager;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -21,12 +19,13 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import hotshop.ApplicationRuntime;
+import hotshop.support.PostgresTestSupport;
 import hotshop.model.ListingDetails;
 import hotshop.model.ListingStatus;
 import hotshop.model.OfferStatus;
 import hotshop.model.TransactionStatus;
 
-class OfferServiceTest {
+class OfferServiceTest extends PostgresTestSupport {
     private static final String PASSWORD = "Sample1!";
     private static final Instant START = Instant.parse("2026-09-24T00:00:00Z");
 
@@ -310,8 +309,7 @@ class OfferServiceTest {
             UUID bobOffer = offerAs(runtime, "bobby", listing, 4000);
             offerAs(runtime, "carol", listing, 4500);
             loginAs(runtime, "alice");
-            sql("CREATE TRIGGER fail_sale BEFORE INSERT ON transactions "
-                    + "BEGIN SELECT RAISE(ABORT, 'simulated failure'); END");
+            failWrites("transactions", "INSERT");
             assertFailure(ServiceException.Code.STORAGE, () -> runtime.getOffers().acceptOffer(bobOffer).join());
             assertEquals(ListingStatus.AVAILABLE, listingStatus(runtime, listing));
             assertEquals(List.of(OfferStatus.PENDING, OfferStatus.PENDING),
@@ -420,7 +418,7 @@ class OfferServiceTest {
     }
 
     private void sql(String statement) throws Exception {
-        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + directory.resolve("marketplace.db"));
+        try (var connection = openDatabaseConnection();
                 var sql = connection.createStatement()) {
             sql.execute(statement);
         }
@@ -449,6 +447,6 @@ class OfferServiceTest {
     }
 
     private ApplicationRuntime open() throws Exception {
-        return ApplicationRuntime.open(directory, clock);
+        return openTestRuntime(directory, clock);
     }
 }

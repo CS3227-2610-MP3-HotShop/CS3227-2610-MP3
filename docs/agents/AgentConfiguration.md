@@ -12,7 +12,7 @@ Tracking: [issue #5](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/
 | hotshop_specification_reviewer | [.codex/agents/hotshop_specification_reviewer.toml](../../.codex/agents/hotshop_specification_reviewer.toml) | [Specification/coverage](agents/specification-reviewer.md) |
 | hotshop_security_reviewer | [.codex/agents/hotshop_security_reviewer.toml](../../.codex/agents/hotshop_security_reviewer.toml) | [Security](agents/security-reviewer.md) |
 
-The configurations reference the role briefs and common contract. Model and reasoning settings inherit from the parent; no global settings were changed.
+The configurations reference the role briefs and common contract. Owner preference (2026-10-19): all four specialist roles explicitly select gpt-6-luna; repository .codex/config.toml selects gpt-6.1-sol for the coordinator and Luna as the default subagent model. Reasoning uses the resolved runtime default. Existing sessions are not claimed to switch model automatically; no user-global settings were changed.
 
 The main chat acts as coordinator. Required assignment inputs must be supplied before work starts.
 

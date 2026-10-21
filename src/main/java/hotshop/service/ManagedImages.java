@@ -102,8 +102,7 @@ final class ManagedImages {
         try {
             recover();
         } catch (SQLException | IOException exception) {
-            LOGGER.log(System.Logger.Level.WARNING, "Image cleanup in " + namespace + " will retry at startup",
-                    exception);
+            LOGGER.log(System.Logger.Level.WARNING, "Image cleanup in " + namespace + " will retry at startup");
         }
     }
 }

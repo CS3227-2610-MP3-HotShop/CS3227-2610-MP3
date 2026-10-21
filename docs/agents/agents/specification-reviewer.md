@@ -1,5 +1,16 @@
 # Specification and coverage reviewer
 
+> Reporting override (2026-10-20): AGENTS.md "Minimal workflow records" supersedes
+> logging duties below. Subagents return concise messages and write no reporting
+> Markdown; coordinator consolidates existing records after final review passes.
+
+> Current owner override (2026-10-19): follow the "Owner-approved delivery workflow"
+> in [the common contract](../AgentSpecifications.md). One implementer owns production
+> and tests for the approved batch; reviews happen only on the completed candidate.
+> Earlier tester-ownership, intermediate-review and failed-initial-development-loop
+> restrictions below are superseded where they conflict. Final findings share one
+> explicitly approved correction pass. No extra budget or execution resumption granted.
+
 Version: 0.1, 2026-10-15 (SGT)
 
 Status: agreed decisions recorded; configuration written; discovery/launch passed in the user-supplied smoke-test report; generic-dispatch behaviour was exercised as documented in docs/agents/WorkflowExercise.md; native loading after instruction edits and unexercised paths remain unverified. The [security reviewer](security-reviewer.md) is separately specified.
@@ -47,7 +58,7 @@ For each finding, give the affected criterion, exact file/line and snapshot, exp
 
 After a failed checkpoint or verification loop requiring code/test edits, send findings to the coordinator. The coordinator drafts a change plan and obtains explicit user approval before delegating edits to the testing agent or implementer. The reviewer may provide evidence and verification suggestions but cannot authorise changes or make them.
 
-Re-review the resulting snapshot after approved corrections. Both checkpoints use the same coordinator-managed **two-cycle correction budget** for the same task/batch. A correction cycle used before implementation remains consumed after implementation; switching checkpoints or agents does not reset it. The initial assessment at each checkpoint is a scheduled review, not itself an extra correction cycle. Once two correction cycles are used, further unresolved corrections require user direction through the coordinator.
+Re-review the resulting snapshot after approved corrections. Both checkpoints use the same coordinator-managed **one-cycle correction budget** for the same task/batch. A correction cycle used before implementation remains consumed after implementation; switching checkpoints or agents does not reset it. The initial assessment at each checkpoint is a scheduled review, not itself an extra correction cycle. Once one correction cycle is used, further unresolved corrections require user direction through the coordinator.
 
 Every reviewer disagreement goes to the user through the coordinator with the specification and test evidence. Preserve the competing positions; do not settle disagreements by majority vote or silently discard a finding.
 

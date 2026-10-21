@@ -4,7 +4,6 @@ import static hotshop.service.ListingServiceTest.assertFailure;
 import static hotshop.service.ListingServiceTest.draft;
 import static hotshop.service.ListingServiceTest.loginAs;
 import static hotshop.service.ListingServiceTest.registerAndLogin;
-import static hotshop.service.ListingServiceTest.setStatus;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -23,11 +22,12 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import hotshop.ApplicationRuntime;
+import hotshop.support.PostgresTestSupport;
 import hotshop.model.ListingStatus;
 import hotshop.model.Message;
 import hotshop.model.OfferStatus;
 
-class ChatServiceTest {
+class ChatServiceTest extends PostgresTestSupport {
     private static final Instant START = Instant.parse("2026-09-25T00:00:00Z");
 
     @TempDir
@@ -807,6 +807,6 @@ class ChatServiceTest {
     }
 
     private ApplicationRuntime open() throws Exception {
-        return ApplicationRuntime.open(directory, clock);
+        return openTestRuntime(directory, clock);
     }
 }

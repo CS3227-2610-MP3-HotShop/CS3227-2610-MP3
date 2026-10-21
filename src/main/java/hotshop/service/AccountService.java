@@ -55,7 +55,9 @@ public final class AccountService {
         return worker.submit(() -> {
             try {
                 images.recover();
-            } catch (SQLException | IOException exception) {
+            } catch (SQLException exception) {
+                throw ServiceSupport.storageFailure(exception, "Image storage is unavailable");
+            } catch (IOException exception) {
                 throw new ServiceException(ServiceException.Code.STORAGE, "Image storage is unavailable", exception);
             }
             return null;
@@ -73,7 +75,9 @@ public final class AccountService {
             UUID id = session.requireUserId();
             try {
                 return images.replace(id, source);
-            } catch (SQLException | IOException exception) {
+            } catch (SQLException exception) {
+                throw ServiceSupport.storageFailure(exception, "Unable to save profile image");
+            } catch (IOException exception) {
                 throw new ServiceException(ServiceException.Code.STORAGE, "Unable to save profile image", exception);
             }
         });
@@ -90,7 +94,7 @@ public final class AccountService {
             try {
                 return images.remove(id);
             } catch (SQLException exception) {
-                throw new ServiceException(ServiceException.Code.STORAGE, "Unable to remove profile image", exception);
+                throw ServiceSupport.storageFailure(exception, "Unable to remove profile image");
             }
         });
     }
@@ -256,7 +260,13 @@ public final class AccountService {
         try {
             return database.executeTransaction(work);
         } catch (SQLException exception) {
-            throw new ServiceException(ServiceException.Code.STORAGE, "Account storage is unavailable", exception);
+            if ("23505".equals(exception.getSQLState())
+                    && exception instanceof org.postgresql.util.PSQLException postgres
+                    && postgres.getServerErrorMessage() != null
+                    && "users_normalized_username_key".equals(postgres.getServerErrorMessage().getConstraint())) {
+                throw new ServiceException(ServiceException.Code.USERNAME_UNAVAILABLE, "Username is unavailable");
+            }
+            throw ServiceSupport.storageFailure(exception, "Account storage is unavailable");
         }
     }
 }

@@ -12,7 +12,7 @@
 
 Welcome to the HotShop Developer Guide. This guide introduces the architecture,
 codebase, and development workflow of HotShop, a JavaFX desktop marketplace with
-local SQLite storage.
+PostgreSQL persistence and local managed image storage.
 
 Start with [Development Workflow](developerGuide/DevelopmentWorkflow.html) to set
 up your environment, run checks, and build the application, including selecting
@@ -36,6 +36,57 @@ The main objectives of this guide are to:
 
 Proposed features and enhancements are documented separately in
 [Future Work](developerGuide/FutureWork.html).
+
+### Project Deployment Process
+
+#### PostgreSQL conversion status — 2026-10-19
+
+The owner selected Render hosting, Supabase PostgreSQL and Supabase Storage,
+and approved PostgreSQL in all environments, including development and tests.
+The retained application uses PostgreSQL in development, production and tests. Fresh
+installation starts empty; existing SQLite records are not imported. Supabase Storage
+and deployment remain separate integration work. No hosted database has been used
+for automated tests. Follow the operator setup below before starting the application.
+
+The jpro-docker workflow uses local specifications/planning, Gradle CI, one implementer
+for the approved batch and final specification/security review. The database tests use
+local Docker PostgreSQL; missing Docker is a setup failure with no SQLite fallback.
+
+#### Existing JPro packaging
+
+This application uses [JPro](https://www.jpro.one) to run existing Java and JavaFX files in a browser.
+
+For local manual testing purposes, run the following command to start JPro on your local machine:
+```
+./gradlew jproRun
+```
+The app should start at `localhost:8080`
+
+Once everything is verified to be working properly, create the JPro distribution `.zip` file with the following command:
+```
+./gradlew jproRelease
+```
+The resultant `.zip` file will be located at `/build/distributions/HotShop-jpro.zip`
+
+**NOTE:** Deployment onto JPro requires that the application's entry point extend `javafx.application.Application`, if you wish to run the app without JPro locally, change the mainClass of your `build.gradle` to `hotshop.Launcher` as such:
+```build.gradle
+application {
+    mainClass = 'hotshop.Launcher'
+    applicationDefaultJvmArgs = ['--enable-native-access=ALL-UNNAMED']
+}
+```
+
+For deployment onto [Render](https://render.com), a Docker Image is required. Follow the steps to create the image:
+
+1. Install [Docker Desktop](https://docs.docker.com/desktop/) for your operating system.
+2. Run the following command in the project root directory:
+```
+docker build -t <image-name> .
+```
+3. Once the build has completed, test that it works by using the following command:
+```
+docker run -p 8080:8080 <image-name>
+```
 
 ### Development verification
 
@@ -146,9 +197,9 @@ the coordinator. The user-supplied smoke-test report confirms all four custom ty
 validation is recorded in the exercise report. Models and permissions inherit from the
 parent; review instructions do not create a separate sandbox.
 
-Maintain the [project decision record](InteractionRecord.md) alongside task logs. Repository records contain project-relevant decisions and outcomes; personal conversation records stay outside the repository.
+Maintain one short [current handoff](InteractionRecord.md). Personal conversation records stay outside the repository; do not create per-task logs.
 
-Update the project decision record whenever a decision is agreed, including discussion-only turns. Maintain its current handoff with the workspace/branch, completed and unverified work, blockers, and next authorised step. Preserve earlier decisions and explicitly mark replacements.
+Keep the current handoff limited to workspace/branch, completed and unverified work, blockers and next authorised step. Consolidate final approvals and outcomes once after reviews pass.
 
 ### Documentation upkeep
 
@@ -157,8 +208,8 @@ Every completed feature or change includes updates to both
 AGENTS.md retains the instructions and documentation pointers future agents need;
 this guide explains the resulting behaviour, design, setup, and workflow, with
 relevant verification and limitations. Update the existing sections so they
-reflect the current implementation. Record detailed interaction history in a
-separate task log under `logs/`.
+reflect the current implementation. Subagents return concise messages; no separate
+interaction history or task log is required.
 
 This applies to application changes, agent configuration, documentation changes,
 and newly agreed workflow rules. Explanatory conversations without a completed
@@ -248,8 +299,8 @@ Stage, flag and triage labels are now configured. GitHub Projects is explicitly 
 A feature is Done only after the User Guide, this Developer Guide, AGENTS.md, and
 its [SDD interaction summary](agents/SDDInteractionSummary.md) are updated, alongside
 required acceptance and review evidence. The summary links specifications, decisions,
-plan tasks, human approvals, corrections, verification and per-task logs. Maintain one
-summary per feature under logs/; keep the running decision record for cross-task handoff.
+plan tasks, human approvals, corrections and verification. Consolidate the existing
+feature summary after reviews pass; keep only one short current handoff during work.
 
 The [PR template](../.github/PULL_REQUEST_TEMPLATE.md) asks for those links and separates
 intermediate task completion from feature completion. Intermediate PRs identify any
@@ -260,16 +311,15 @@ outstanding documentation owner/task rather than asserting complete feature deli
 The [common role contract](agents/AgentSpecifications.md#documentation-ownership)
 assigns document writers and reviewers. Implementers update usage/design/setup
 guidance; the coordinator consolidates instructions, workflow and SDD/decision records.
-The coordinator serialises shared-file writes and checks task-log completeness.
+The coordinator serialises shared-file writes and checks result-message completeness.
 The specification reviewer independently assesses final guides, instructions and
 SDD traceability, including coordinator-authored content, before feature completion.
-Workers may write only their assigned logs/reports beyond normal role scope;
-explicitly read-only work returns report content without writing files.
+Workers return result messages without writing logs, interaction summaries or reports.
 
 The coordinator alone maintains shared plan completion/progress fields from worker
 reports and required acceptance/review evidence. Workers return evidence without
 editing plan status. Feature issues explicitly collect both guide updates, AGENTS.md,
-the SDD summary, task logs and independent documentation-review evidence before closure.
+the final consolidated summary and independent documentation-review evidence before closure.
 
 ### Test-first evidence and existing behaviour
 
@@ -309,7 +359,188 @@ Workflow approvals and smoke-test evidence are already recorded. The user select
 No additional Projects permission is needed. Issue #6 records publication evidence for the
 tracker documentation.
 
+## Owner-approved delivery workflow (2026-10-19)
+
+This instruction supersedes earlier role, skill, client-configuration and plan wording
+that requires tester handoffs or independent reviews before implementation.
+
+Assign one implementer the entire approved implementation batch, including production
+code, tests, fixtures, build configuration, associated guides and its task evidence.
+The implementer may write and update tests against the approved requirements; it must
+preserve valid assertions and never weaken checks to obtain a pass. Use test-first
+evidence where practical and run relevant tests/styles during implementation.
+Normal initial implementation includes bringing the approved behavior to green;
+do not route every expected development failure through another agent.
+
+Keep that implementer through the batch. No separate tester or intermediate review
+handoffs by default. Prerequisites are working contracts and evidence, rather than
+acceptance by an intermediate reviewer. Pause for unresolved requirements, scope
+changes or a genuine blocker. Do not invent scope or relabel review corrections
+as initial work.
+
+After implementation, tests, documentation and required checks are complete, submit
+one stable candidate for the final specification/coverage and security reviews.
+Group findings from both into one report and, if needed, one explicitly approved
+correction pass followed by focused re-review. There is one shared correction budget,
+not one per reviewer. Stop and report unresolved findings after that pass.
+The coordinator retains shared records, plan status and final acceptance ownership.
+
+Existing completed entries, historical evidence and exhausted correction budgets
+remain unchanged. This workflow change grants no extra PG-CONVERSION correction cycle.
+The owner resumed PostgreSQL implementation on 2026-10-19; current execution status
+is recorded in workflow/PLAN.md and docs/InteractionRecord.md.
+
+## Retained Java PostgreSQL conversion
+
+The owner approved the bounded JavaFX/JPro PostgreSQL scope, PG-T1 and PG-P1 with
+staged follow-ups. See [technical design](../workflow/TECHNICAL-SPEC.md),
+[execution plan](../workflow/PLAN.md) and [feature summary](../logs/2026-10-19-feature-pg-conversion-sdd-summary.md).
+Fresh PostgreSQL data needs no SQLite import. Schema provisioning uses a separate
+command; normal startup only validates the installed version. Provisioning takes a
+transaction advisory lock and applies the pending migration batch atomically.
+
+Current implementation provides DatabaseConfig environment parsing, redacted diagnostics
+and separate credential properties for PostgreSQL connections, with 10-second connect
+and 30-second socket timeouts. Hosted connections require canonical sslmode=verify-full;
+uppercase/encoded option names are rejected. The runtime takes an explicit DatabaseConfig for tests, or reads the server environment
+for ordinary startup. Its directory path selects managed images and locking only;
+legacy marketplace.db files are left untouched. There is no SQLite runtime dependency.
+
+Disposable PostgreSQL 17 Docker fixtures are verified, including isolation, teardown and
+ignoring application database configuration. Docker client/server 29.8.2 are reachable.
+Configuration/connection/TLS regressions pass 21 focused tests; both styles passed.
+The initial engine passed49 cases and independent readiness review. The final
+PostgreSQL-only suite reports746 tests with zero failures/errors/skips. Coordinator
+confirmed test, both styles, check, build and shadowJar on 2026-10-20: exit0,
+BUILD SUCCESSFUL16s, all15 tasks UP-TO-DATE from completed verification.
+Final Luna specification/coverage and security reviews found no unresolved in-scope findings; hosted acceptance is separate. Reviewers inspected source and relied on supplied check results without rerunning tests.
+Final provenance and approvals are consolidated in the feature summary linked above.
+Old per-task logs were deleted at the owner's request; do not recreate them.
+
+The owner granted one bounded third correction cycle for the TLS fix; cycle 3/3 is complete and independently verified. Final approval/correction state is consolidated in the feature summary and
+the decision record. Further unexpected fixes require explicit owner direction.
+JPro directory locking, image recovery, two-browser isolation and shared-storage cleanup
+remain separately gated integration work; database checks do not prove hosted readiness.
+
+### PostgreSQL operator setup
+
+Local Supabase certificate is stored outside this repository at
+C:/Users/jonat/.postgresql/prod-supabase.cer. Use that path as the sslrootcert URL
+parameter together with sslmode=verify-full. Its file copy is verified; connecting
+to the hosted database and validating the server trust chain are still pending.
+For a dedicated JDBC-only project, disabling the unused Data API prevents a separate
+access route; leaving it enabled requires appropriate grants/RLS for exposed tables.
+
+
+Set HOTSHOP_DB_URL to a credential-free jdbc:postgresql URL, and supply
+HOTSHOP_DB_USER and HOTSHOP_DB_PASSWORD as separate server environment values.
+Remote URLs require canonical sslmode=verify-full and appropriate certificate trust;
+local Docker PostgreSQL can use a local connection. Do not put credentials in the URL.
+
+Run .\gradlew.bat migrateDatabase on Windows or ./gradlew migrateDatabase on Unix.
+The command creates/upgrades schema without starting the UI. Repeated setup preserves
+existing records; it neither imports SQLite data nor seeds/resets the database.
+Use operator permissions for schema changes. Runtime credentials need SELECT, INSERT,
+UPDATE and DELETE on marketplace tables and SELECT on schema_migrations, without
+CREATE/ALTER permissions. Use a distinct database per environment. Restart preserves
+marketplace records; no startup seeding, reset or migration occurs.
+
+Failed provisioning exits nonzero with Database provisioning failed; driver exception
+text and configuration/credentials are omitted. Check server environment settings,
+connectivity, certificate trust and provisioning permissions outside application logs.
+The executable-command cases use disposable local PostgreSQL. Hosted Supabase execution
+remains unverified. Owner reports PostgreSQL 17.11, matching tested major 17. See the existing feature summary
+for consolidated checks. The final746-case suite and wrapper checks pass. One earlier
+listing-setup failure did not reproduce alone, in the52-case meetup class, or in the
+repeat full suite; its cause is unconfirmed. The buyer permission assertion stayed intact.
+Proposal and cancellation histories use an internal BIGINT identity history_order
+as the tiebreaker when application timestamps coincide. This replaces SQLite rowid
+insertion order without generating domain event times or sorting random UUIDs.
+
+### Local development and isolated tests
+
+Use PostgreSQL 17 locally (the test image is postgres:17.6-alpine3.22). For example,
+start a disposable development server with a separately supplied local password:
+
+```powershell
+docker run --name hotshop-dev -p 127.0.0.1:5432:5432 -e POSTGRES_DB=hotshop -e POSTGRES_USER=hotshop -e POSTGRES_PASSWORD postgres:17.6-alpine3.22
+```
+
+Set POSTGRES_PASSWORD in the invoking shell before that command. Supply matching
+HOTSHOP_DB_USER/HOTSHOP_DB_PASSWORD and a credential-free local URL such as
+jdbc:postgresql://127.0.0.1:5432/hotshop. Run migrateDatabase, then the existing run
+or jproRun task. Use a Docker volume when development data must outlive the container.
+Never supply hosted/demo credentials to automated tests or print environment values.
+
+Database-backed service/UI tests share one disposable server per class and create a
+fresh database per test. Tests inject generated local credentials directly and never
+load application environment settings. Runtime close drains workers before fixture
+teardown; restart assertions keep the same database. Standalone command tests copy
+an isolated build context to avoid recursively locking the active Gradle project.
+Non-database unit tests do not start Docker. Full verification remains:
+`./gradlew test checkstyleMain checkstyleTest check build shadowJar` (Windows: gradlew.bat).
+CI uses xvfb-run for JavaFX and verifies Docker first.
+
+Database conflicts at SQLSTATE 40001/40P01 return safe retry guidance without automatic
+callback replay. A username-specific unique violation returns Username is unavailable;
+other constraint failures stay storage errors. Preserve the directory lock and shared
+image cleanup safety until the separately approved JPro/storage integration replaces
+that lifecycle. PostgreSQL test success does not establish two-browser hosting readiness.
+
 ## Acknowledgements
 
 See [Acknowledgements](developerGuide/Acknowledgements.html) for the sources of
 reused or adapted ideas, code, documentation, tools, and third-party libraries.
+
+The PostgreSQL conversion uses [PostgreSQL JDBC](https://jdbc.postgresql.org/) 42.7.14 and [Testcontainers for Java](https://java.testcontainers.org/) 2.0.5 for disposable database tests.
+
+## Owner-approved correction limit (2026-10-19)
+
+Use one initial implementation pass and required initial reviews, then at most one
+shared correction pass and re-review per task/batch. Group findings into that pass.
+Corrections still require an explicitly approved plan. If findings remain, stop
+and report them; no further loop without explicit owner direction. Required initial
+readiness, coverage and security checkpoints remain. Avoid repeating unchanged checks.
+This owner instruction supersedes older two-cycle wording in saved skills and client
+configurations. Preserve historical counts: PG-CONVERSION remains exhausted at 3/3.
+Execution was resumed by the owner; no new correction budget is granted.
+
+## Targeted context and handoff rule — owner approved 2026-10-19
+
+Workflow reporting was reduced on 2026-10-20: subagents return concise messages
+without Markdown logs/summaries. The coordinator keeps one current handoff and
+consolidates approvals/results into existing records after final reviews pass.
+See AGENTS.md "Minimal workflow records"; older per-task log requirements are superseded.
+
+Coordinators and workers must read only context needed for the current assignment.
+Search headings/symbols first; read bounded relevant sections or line ranges. Use the
+current handoff plus selected task/acceptance criteria and relevant source/tests.
+Do not reread whole chats, long decision records, historical logs or unrelated specs.
+For new subagents use fork_turns=none and a compact self-contained brief containing
+scope, ownership, current decisions, exact document sections, checks and blockers.
+Reuse an active implementer instead of restarting it merely to remove old context.
+Mandatory instructions still apply: read applicable instructions once, then consult
+only changed/relevant sections. Expand reads only when needed to resolve a concrete
+ambiguity or dependency. Keep current handoffs short and link supporting evidence.
+Already injected app conversation context cannot be selectively removed by agents;
+this rule controls requested history, file/tool reads and future agent handoffs.
+The ongoing approved PostgreSQL batch continues; this is not a pause request.
+
+## Owner model preference — 2026-10-19
+
+Use gpt-6.1-sol for the coordinator and gpt-6-luna for specialist subagents.
+Repository .codex/config.toml sets the main/default specialist preferences; the four
+.codex/agents/hotshop_*.toml roles explicitly select Luna. New specialist launches
+use no full-history inheritance. Do not claim an existing session changed model
+merely because configuration changed; the coordinator model is selected in the app.
+Let an already-running verification finish rather than restart it solely for model
+selection. Final specialist reviews use Luna. Settings persistence is verified by
+file inspection; a new live session's actual model requires runtime confirmation.
+
+Old standalone interaction logs and verbose histories were deleted on owner request
+2026-10-20. Keep only the short current handoff and consolidated acceptance summary;
+do not recreate task logs or read removed historical paths by default.
+
+The PostgreSQL/workflow changes are prepared for the owner-requested
+postgres-migration branch. Local .env.local files are ignored and must not be
+published; supply database credentials through the process/server environment.

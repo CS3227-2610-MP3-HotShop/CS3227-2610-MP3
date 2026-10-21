@@ -5,7 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
-import java.sql.DriverManager;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -19,12 +18,13 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import hotshop.ApplicationRuntime;
+import hotshop.support.PostgresTestSupport;
 import hotshop.model.Category;
 import hotshop.model.Condition;
 import hotshop.model.ListingStatus;
 import hotshop.model.OfferStatus;
 
-class ListingServiceTest {
+class ListingServiceTest extends PostgresTestSupport {
     private static final String PASSWORD = "Sample1!";
     private static final Instant START = Instant.parse("2026-09-24T00:00:00Z");
 
@@ -456,18 +456,8 @@ class ListingServiceTest {
         return runtime.getListings().createListing(draft(title, 5000), List.of()).join().listing().getId();
     }
 
-    /** Stands in for OfferService and TransactionService, which will own these transitions. */
-    static void setStatus(Path data, UUID id, ListingStatus status) throws Exception {
-        try (var connection = DriverManager.getConnection("jdbc:sqlite:" + data.resolve("marketplace.db"));
-                var statement = connection.prepareStatement("UPDATE listings SET status = ? WHERE id = ?")) {
-            statement.setString(1, status.name());
-            statement.setString(2, id.toString());
-            assertEquals(1, statement.executeUpdate());
-        }
-    }
-
     private ApplicationRuntime open() throws Exception {
-        return ApplicationRuntime.open(directory, clock);
+        return openTestRuntime(directory, clock);
     }
 
     static ListingDraft draft(String title, long price) {
