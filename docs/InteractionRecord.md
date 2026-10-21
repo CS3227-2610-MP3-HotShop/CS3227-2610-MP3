@@ -1,20 +1,16 @@
 # Current project handoff
 
-## Docker packaging and publication — 2026-10-21
+## UI-CI-FIX-1 — 2026-10-21
 
-Owner Jonat authorised .dockerignore and Java25 JDK-to-JRE packaging after Render
-failed to find the host-generated ZIP. DOCKER-PACKAGE-1 builds Linux jproRelease
-inside Docker, normalizes wrapper CRLF there, and copies ZIP into JRE25. Local
-settings/certificates/build outputs excluded. Actual image build passed; root
-no-network runtime-layout and diff checks passed. Final Luna specification/security
-source reviews clear, relying on supplied build results; no app/DB/live calls.
-Initial implementation, post-submission correction0/1. Existing guides/PLAN/AGENTS
-updated; original benchmark snapshots unchanged. Preparing update to draft PR11.
+Jonat explicitly approved one grouped correction pass for six PR11 CI failures.
+Baseline fb61099; CI39564388245 has869 tests/six failures, same set before Docker.
+Three known blank-query preview fixtures; reproduce feedback and navigation lookup
+failures; fix JavaFX shared-toolkit initialization. Preserve assertions, specs and
+original measured snapshots/results. Single Luna implementer owns fix/tests and
+required checks; final spec/security reviews only. Shared correction1/1 in progress.
+See workflow/PLAN.md task for scope/checks. No hosted data/live SoC/deployment.
 
 PR10 postgres-migration -> master; PR11 codex/ai-search-consolidated ->
-postgres-migration is draft. UI acceptance still blocked by three frozen tests
-with blank-query helper; correction requires explicit approval. Prior163 focused
-tests/styles/package checks passed before packaging change; Java tests not repeated
-for packaging/docs. Hosted operator provisioning succeeded separately. Supabase
-Storage, JPro browser-session/directory-lock readiness and deployment acceptance
-remain separate. See existing PLAN and benchmark-results.csv for measured evidence.
+postgres-migration draft. Docker packaging fb61099 built and final-reviewed locally.
+Prior163 focused tests passed; full Linux CI exposed additional UI setup failures.
+Supabase Storage and JPro browser-session/directory-lock readiness remain separate.

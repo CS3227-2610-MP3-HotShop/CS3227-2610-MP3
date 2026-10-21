@@ -9,7 +9,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -48,19 +47,16 @@ import javafx.stage.Stage;
 
 /** Frozen shared UI contract tests; the measured AI-search behavior is not implemented here. */
 class AiSearchUiBenchmarkTest extends PostgresTestSupport {
+    private static final String SAFE_AI_FAILURE =
+            "AI Search could not create a preview. Edit your request and select AI Search to retry.";
     @TempDir
     Path directory;
     private ApplicationRuntime runtime;
     private Stage stage;
 
     @BeforeAll
-    static void startToolkit() throws Exception {
-        CountDownLatch started = new CountDownLatch(1);
-        Platform.startup(() -> {
-            Platform.setImplicitExit(false);
-            started.countDown();
-        });
-        assertTrue(started.await(15, TimeUnit.SECONDS), "JavaFX toolkit did not start");
+    static void startToolkit() throws InterruptedException {
+        JavaFxTestSupport.startToolkit();
     }
 
     @BeforeEach
@@ -323,15 +319,11 @@ class AiSearchUiBenchmarkTest extends PostgresTestSupport {
             assertEquals(1, calls.get());
             return null;
         });
-        String feedback = onFx(() -> {
-            Node status = stage.getScene().lookup("#ai-search-status");
-            assertNotNull(status, "A failed result must provide user feedback");
-            String text = visibleText(status);
-            assertFalse(text.contains("PROVIDER_AUTH"));
-            assertFalse(text.contains("private-error-token"));
+        String feedback = awaitSafeAiFailure("A failed result must provide user feedback");
+        onFx(() -> {
             assertEquals("manual desk", ((TextField) stage.getScene().lookup("#search-query")).getText());
             assertEquals("manual desk", uiRef.get().searchState.getSubmitted().orElseThrow().titleText());
-            return text;
+            return null;
         });
         onFx(() -> {
             assertEquals(1, calls.get(), "Failure must not retry automatically");
@@ -339,20 +331,15 @@ class AiSearchUiBenchmarkTest extends PostgresTestSupport {
             assertEquals(2, calls.get(), "Retry requires another explicit click");
             return null;
         });
-        onFx(() -> {
-            String text = visibleText(Objects.requireNonNull(stage.getScene().lookup("#ai-search-status")));
-            assertEquals(feedback, text, "Provider exceptions must use the same fixed safe feedback");
-            assertFalse(text.contains("private-error-token"));
-            return null;
-        });
+        assertEquals(feedback, awaitSafeAiFailure("Provider exceptions must provide user feedback"),
+                "Provider exceptions must use the same fixed safe feedback");
         onFx(() -> {
             aiButton().fire();
             assertEquals(3, calls.get(), "Null response retry also requires an explicit click");
             return null;
         });
+        assertEquals(feedback, awaitSafeAiFailure("Null responses must provide user feedback"));
         onFx(() -> {
-            String text = visibleText(Objects.requireNonNull(stage.getScene().lookup("#ai-search-status")));
-            assertEquals(feedback, text);
             assertEquals("manual desk", uiRef.get().searchState.getSubmitted().orElseThrow().titleText());
             return null;
         });
@@ -433,17 +420,24 @@ class AiSearchUiBenchmarkTest extends PostgresTestSupport {
     void leavingSearchPage_ignoresLateProposalCompletion() throws Exception {
         var user = registerAndLogin("leavebuyer");
         CompletableFuture<SocSearchClient.Result> response = new CompletableFuture<>();
+        AtomicInteger calls = new AtomicInteger();
         onFx(() -> {
             stage = new Stage();
-            MarketplaceUi ui = new MarketplaceUi(stage, runtime, text -> response);
+            MarketplaceUi ui = new MarketplaceUi(stage, runtime, text -> {
+                calls.incrementAndGet();
+                return response;
+            });
             ui.loggedIn(user);
             stage.show();
+            ((TextField) stage.getScene().lookup("#search-query")).setText("proposal request");
             aiButton().fire();
+            assertEquals(1, calls.get(), "A valid query must start one pending proposal request");
             ((Button) stage.getScene().lookup("#nav-offers")).fire();
             response.complete(new SocSearchClient.Proposed(new ListingSearch("stale", null, Set.of(), null,
                     null, ListingSort.NEWEST)));
             return null;
         });
+        awaitSceneText("#page-title", "My Offers");
         onFx(() -> {
             assertEquals("My Offers", ((Labeled) stage.getScene().lookup("#page-title")).getText());
             assertNull(stage.getScene().lookup("#ai-search-preview"));
@@ -455,12 +449,18 @@ class AiSearchUiBenchmarkTest extends PostgresTestSupport {
     void logout_ignoresLateProposalCompletion() throws Exception {
         var user = registerAndLogin("logoutbuyer");
         CompletableFuture<SocSearchClient.Result> response = new CompletableFuture<>();
+        AtomicInteger calls = new AtomicInteger();
         onFx(() -> {
             stage = new Stage();
-            MarketplaceUi ui = new MarketplaceUi(stage, runtime, text -> response);
+            MarketplaceUi ui = new MarketplaceUi(stage, runtime, text -> {
+                calls.incrementAndGet();
+                return response;
+            });
             ui.loggedIn(user);
             stage.show();
+            ((TextField) stage.getScene().lookup("#search-query")).setText("proposal request");
             aiButton().fire();
+            assertEquals(1, calls.get(), "A valid query must start one pending proposal request");
             ((Button) stage.getScene().lookup("#nav-logout")).fire();
             return null;
         });
@@ -582,16 +582,59 @@ class AiSearchUiBenchmarkTest extends PostgresTestSupport {
         return text.toString();
     }
 
+    private void awaitSceneText(String selector, String expected) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
+        while (System.nanoTime() < deadline) {
+            if (onFx(() -> stage.getScene().lookup(selector) instanceof Labeled label
+                    && label.getText().equals(expected))) {
+                return;
+            }
+            Thread.sleep(25);
+        }
+        assertEquals(expected, onFx(() -> ((Labeled) stage.getScene().lookup(selector)).getText()));
+    }
+
+    private String awaitSafeAiFailure(String message) throws Exception {
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
+        while (System.nanoTime() < deadline) {
+            String text = onFx(() -> {
+                Node status = stage.getScene().lookup("#ai-search-status");
+                Button button = aiButton();
+                if (button.isDisabled()) {
+                    return null;
+                }
+                assertNotNull(status, message);
+                String visible = visibleText(status);
+                assertFalse(visible.contains("PROVIDER_AUTH"));
+                assertFalse(visible.contains("private-error-token"));
+                return status instanceof Labeled labeled ? labeled.getText() : visible.strip();
+            });
+            if (SAFE_AI_FAILURE.equals(text)) {
+                return text;
+            }
+            Thread.sleep(25);
+        }
+        String text = onFx(() -> visibleText(Objects.requireNonNull(stage.getScene().lookup("#ai-search-status"))));
+        assertEquals(SAFE_AI_FAILURE, text);
+        return text;
+    }
+
     private void assertPendingCompletionInvalidated(String username, java.util.function.Consumer<Scene> action)
             throws Exception {
         var user = registerAndLogin(username);
         CompletableFuture<SocSearchClient.Result> response = new CompletableFuture<>();
+        AtomicInteger calls = new AtomicInteger();
         onFx(() -> {
             stage = new Stage();
-            MarketplaceUi ui = new MarketplaceUi(stage, runtime, text -> response);
+            MarketplaceUi ui = new MarketplaceUi(stage, runtime, text -> {
+                calls.incrementAndGet();
+                return response;
+            });
             ui.loggedIn(user);
             stage.show();
+            ((TextField) stage.getScene().lookup("#search-query")).setText("proposal request");
             aiButton().fire();
+            assertEquals(1, calls.get(), "A valid query must start one pending proposal request");
             action.accept(stage.getScene());
             response.complete(new SocSearchClient.Proposed(new ListingSearch("stale", null, Set.of(), null,
                     null, ListingSort.NEWEST)));
@@ -608,12 +651,18 @@ class AiSearchUiBenchmarkTest extends PostgresTestSupport {
             throws Exception {
         var user = registerAndLogin(username);
         CompletableFuture<SocSearchClient.Result> response = new CompletableFuture<>();
+        AtomicInteger calls = new AtomicInteger();
         onFx(() -> {
             stage = new Stage();
-            MarketplaceUi ui = new MarketplaceUi(stage, runtime, text -> response);
+            MarketplaceUi ui = new MarketplaceUi(stage, runtime, text -> {
+                calls.incrementAndGet();
+                return response;
+            });
             ui.loggedIn(user);
             stage.show();
+            ((TextField) stage.getScene().lookup("#search-query")).setText("proposal request");
             aiButton().fire();
+            assertEquals(1, calls.get(), "A valid query must start one proposal request");
             return null;
         });
         response.complete(new SocSearchClient.Proposed(new ListingSearch("proposal", null, Set.of(), null, null,

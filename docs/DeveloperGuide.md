@@ -651,3 +651,7 @@ remain. Publication preparation does not waive the three known frozen UI fixture
 conflicts or constitute final feature acceptance.
 
 DOCKER-PACKAGE-1 packaging verification (2026-10-21): docker build -f dockerfile -t hotshop:render-check . succeeded from source with host build output excluded. The wrapper is normalized to Linux line endings inside the builder. A no-network runtime filesystem check confirmed the executable start script, libraries and Linux JavaFX directory. Independent final specification/security source reviews passed using supplied build evidence; no app launch, database access or hosted deployment was performed in this check. Existing UI fixture acceptance blockers remain.
+
+### UI CI fixture correction
+
+Owner-approved UI-CI-FIX-1 updates delivery tests after the benchmark: valid query/request preconditions for preview and stale-completion checks, bounded observation of asynchronous UI feedback/navigation, and shared JavaFX toolkit startup across test classes. Existing security, invalidation and manual-search assertions are preserved. Original measured snapshots/results are unchanged; this is a separate correction pass, not a benchmark rerun. The combined 84-case UI run and final focused AI21/style checks passed locally; full Windows regression and Linux PR CI are pending at candidate publication. Runtime behavior is unchanged.

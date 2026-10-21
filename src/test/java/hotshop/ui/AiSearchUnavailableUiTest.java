@@ -6,7 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Path;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 
@@ -31,17 +30,8 @@ class AiSearchUnavailableUiTest extends PostgresTestSupport {
     private Stage stage;
 
     @BeforeAll
-    static void startToolkit() throws Exception {
-        CountDownLatch started = new CountDownLatch(1);
-        try {
-            Platform.startup(() -> {
-                Platform.setImplicitExit(false);
-                started.countDown();
-            });
-        } catch (IllegalStateException alreadyStarted) {
-            Platform.runLater(started::countDown);
-        }
-        assertTrue(started.await(15, TimeUnit.SECONDS));
+    static void startToolkit() throws InterruptedException {
+        JavaFxTestSupport.startToolkit();
     }
 
     @BeforeEach
