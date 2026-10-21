@@ -1,19 +1,21 @@
 # AGENTS.md
 
-## Minimal workflow records — owner approved 2026-10-20
+## Minimal workflow records
 
-Subagents return concise results in messages; they do not create or maintain task logs,
-interaction summaries, approval records or other reporting Markdown files. Reports
-include changed files, actual check results and unresolved findings, without transcripts.
-The coordinator maintains one short current handoff in docs/InteractionRecord.md.
-Keep approvals in the chat until final review passes, then consolidate decisions,
-approvals and verification into the existing feature summary and decision record once.
-Do not create a separate log per task, agent, discussion or workflow adjustment.
-Required product/setup documentation still changes with behavior. On 2026-10-20
-the owner explicitly requested deletion of old interaction logs and verbose histories;
-retain only the current handoff and consolidated final summary. This rule supersedes older per-agent/per-task logging and
-every-decision documentation requirements in skills, role briefs and templates.
+AGENTS.md contains durable instructions, constraints and short documentation pointers
+only. Do not append task progress, approval history, test counts, CI runs, commit/PR
+publication updates or other activity logs here. Put execution records under logs/.
+The coordinator consolidates them in logs/ExecutionRecord.md or an existing feature
+summary; do not create one log per task, agent or discussion. Subagents return concise
+messages, not reporting Markdown. Keep approvals in chat until final review, then
+consolidate them once in the relevant logs/ record. Never include secrets/transcripts.
 
+Keep docs/InteractionRecord.md as a short pointer to the current logs/ record, rather
+than a second execution history. PLAN retains task definitions/status and benchmark
+results retain measured evidence. Product/setup guides describe delivered behavior.
+Update AGENTS.md only when durable guidance changes, not merely because a task ran
+or completed. This overrides older per-task logging and every-task AGENTS.md update
+requirements in this file, skills and role templates. Do not restore deleted logs.
 
 This file defines the repository-wide instructions that AI coding agents must follow when working on HotShop.
 
@@ -300,13 +302,13 @@ When an existing user-facing feature changes, update its existing User Guide doc
 
 ### Feature completion record
 
-Before declaring a feature Done, update docs/UserGuide.md, docs/DeveloperGuide.md, AGENTS.md, and its feature-level SDD interaction summary. Follow docs/agents/SDDInteractionSummary.md and link supporting task logs. Intermediate task completion does not waive parent-feature documentation gates.
+Before declaring a feature Done, update the applicable user/developer guides and existing feature summary under logs/. Update AGENTS.md only if durable instructions or constraints change. Follow docs/agents/SDDInteractionSummary.md subject to Minimal workflow records; reuse consolidated logs rather than creating task logs. Intermediate task completion does not waive parent-feature documentation gates.
 
 ### Developer Documentation
 
-For every completed feature or change, update both `AGENTS.md` and
-`docs/DeveloperGuide.md` as part of the same task, before reporting completion.
-This includes changes to agent configuration, workflow, and documentation.
+Update `docs/DeveloperGuide.md` when behavior, setup or workflow changes. Update
+`AGENTS.md` only when durable instructions or constraints change; routine activity
+and verification belong under `logs/`, not in agent instructions.
 
 - In `AGENTS.md`, maintain the relevant durable instructions, constraints, or a
   concise pointer to the updated developer documentation for future agents.
@@ -314,7 +316,7 @@ This includes changes to agent configuration, workflow, and documentation.
   workflow and relevant verification or limitations. For a small change, use a
   brief note in the relevant section.
 - Update existing guidance in place and remove superseded statements. Keep
-  detailed interaction history and command output in the task's `logs/` file.
+  concise execution evidence in the existing consolidated `logs/` record.
 - Explanatory conversations that complete no change do not require edits to
   these two documents. Newly agreed standing rules count as workflow changes.
 
@@ -415,11 +417,11 @@ Do not disable tests, Checkstyle, or other verification mechanisms merely to mak
 
 ## Logging Agent Interactions
 
-Follow the owner-approved "Minimal workflow records" rule above. Subagents return
-concise results in messages and do not write reporting Markdown. Coordinator keeps
-one current handoff and consolidates approvals/results into existing records after
-final review passes. Do not create per-task or per-agent logs. Old log deletion was explicitly authorised; do not include credentials, secrets, private reasoning or unrelated personal
-material. Product/setup documentation still reflects delivered behavior.
+Follow Minimal workflow records above. Execution logs, approvals and verification
+belong under logs/; AGENTS.md contains only durable guidance. Subagents report in
+messages and the coordinator maintains existing consolidated records. No per-task
+or per-agent logs, secrets, transcripts or restored deleted histories.
+
 ## Handling Ambiguity
 When requirements are ambiguous:
 - inspect existing behaviour and documentation for evidence;
@@ -444,7 +446,7 @@ A task is complete only when all applicable conditions below are satisfied:
 - [ ] Checkstyle passes for modified Java code.
 - [ ] The project builds successfully.
 - [ ] User-facing changes are reflected in docs/UserGuide.md.
-- [ ] AGENTS.md and docs/DeveloperGuide.md are updated for the completed feature or change.
+- [ ] Applicable developer guidance is current; AGENTS.md changes only for durable instructions, and execution evidence is recorded under logs/.
 - [ ] No credentials or sensitive information were introduced.
 - [ ] No temporary/debugging code remains.
 - [ ]The final diff has been inspected for unrelated changes.
@@ -536,31 +538,20 @@ The coordinator retains shared records, plan status and final acceptance ownersh
 
 Existing completed entries, historical evidence and exhausted correction budgets
 remain unchanged. This workflow change grants no extra PG-CONVERSION correction cycle.
-The owner resumed PostgreSQL implementation on 2026-10-19; current execution status
-is recorded in workflow/PLAN.md and docs/InteractionRecord.md.
+See workflow/PLAN.md for task eligibility and logs/ExecutionRecord.md for execution status.
 
-## Retained Java PostgreSQL conversion
+## Retained Java PostgreSQL constraints
 
-The owner approved PG-T1, PG-P1 execution and recorded staged follow-ups; use
-workflow/PLAN.md for eligibility and logs/2026-10-19-feature-pg-conversion-sdd-summary.md
-for the current handoff. Fresh data, no SQLite import; separate schema provisioning,
-no startup migration; disposable local Docker PostgreSQL tests, never hosted test data.
-Use BIGINT for Java long epoch-millisecond timestamps/counters and BYTEA for credentials.
+Use PostgreSQL in every environment, fresh data without SQLite import, and separate
+schema provisioning; normal startup does not migrate. Tests use disposable local
+Docker PostgreSQL, never hosted/demo data. Use BIGINT for Java long epoch-millisecond
+timestamps/counters and BYTEA for credentials. Hosted database URLs require canonical
+sslmode=verify-full and appropriate external certificate trust.
 
-Docker fixtures and narrow configuration/credential-aware connections are verified.
-The TLS query-key fix rejects noncanonical raw sslmode keys; canonical hosted URLs
-require verify-full before connection. Initial PostgreSQL storage engine passes49
-tests and both styles (PG018); PG019/PG020 engine readiness and standalone command
-focused checks are recorded. Consolidated runtime/service/test conversion is accepted locally2026-10-20.
-Final746-case suite, required wrapper checks and specification/security reviews pass; see current
-workflow/PLAN.md and the feature SDD summary rather than historical stage notes.
-Current batch PG-CONVERSION has an explicit owner exception for TLS correction cycle3;
-cycle3/3 is complete and independently verified; PG014 baseline is recorded. The default is now one correction cycle; historical PG-CONVERSION exhaustion is preserved.
-Further unexpected corrective edits require explicit owner direction.
-
-PostgreSQL does not establish JPro multi-user readiness. Preserve directory-lock/image
-recovery protection until separately approved integration supplies per-browser sessions
-and server-owned shared storage with coordinated cleanup. No hosted readiness claim.
+Preserve directory-lock/image recovery protection until separately approved JPro
+session/shared-storage integration supplies coordinated ownership and cleanup.
+Database readiness does not prove hosted multi-user readiness. See the current
+specifications and Developer Guide for setup; execution evidence belongs in logs/.
 
 ## Owner-approved correction limit (2026-10-19)
 
@@ -573,7 +564,7 @@ This owner instruction supersedes older two-cycle wording in saved skills and cl
 configurations. Preserve historical counts: PG-CONVERSION remains exhausted at 3/3.
 Execution was resumed by the owner; no new correction budget is granted.
 
-Owner resumed the approved PostgreSQL batch on 2026-10-19 after adopting consolidated implementation ownership. Current execution status is in workflow/PLAN.md and docs/InteractionRecord.md; earlier pause entries are historical.
+Execution status belongs in workflow/PLAN.md and logs/ExecutionRecord.md; historical approvals do not grant additional correction passes.
 
 
 ## Targeted context and handoff rule — owner approved 2026-10-19
@@ -603,60 +594,21 @@ Let an already-running verification finish rather than restart it solely for mod
 selection. Final specialist reviews use Luna. Settings persistence is verified by
 file inspection; a new live session's actual model requires runtime confirmation.
 
-Old standalone interaction logs, full handoff histories and archive were deleted at
-the owner's explicit request2026-10-20. Historical filenames in completed plan entries
-are provenance references, not files to restore/read. Use the current short handoff
-and consolidated feature summary. Public CA certificate stays outside the repo.
+## AI Search and packaging constraints
 
-Active AI-search benchmark: see AI-P1/AI-T1 and BENCH-P1 in existing workflow specs/plan. Owner authorised sequential multiagent-search then singleagent-search from one frozen contract/test checkpoint. Runtime SoC/UI remains separate. Fixed tests/specs are read-only to measured implementation agents; do not share arm-specific results. Workers return messages, no Markdown logs.
+Use current AI specifications and PLAN for requirements. Preserve original measured
+benchmark commits/results; delivery corrections must not rewrite experimental data.
+Run measured arms sequentially from a frozen shared baseline with explicit readiness
+and manual usage readings; do not share one arm's implementation with the other.
+Percent dashboard changes are not exact token/credit totals. Never use live provider
+calls for automated tests or claim error handling alone establishes quota compliance.
 
-AI-search validator benchmark completed locally on multiagent-search and singleagent-search from b87d215. Both pass 76 cases, including 42 security-tagged cases, and Checkstyle. Read workflow/PLAN.md results and workflow/benchmark-results.csv for observations and limits; no task logs. One common setup correction (1/1) was approved; measured arms had no post-submission corrections. SoC/UI integration is pending. Do not infer a general workflow winner or runtime LLM safety from this paired validator case.
+The SoC client reads process settings and uses /v1 plus /chat/completions; model choice
+is configurable. Keep keys and deployment CA files outside the repository/image.
+UI tests share JavaFxTestSupport; preview/late-completion fixtures must start a real
+nonblank request and observe asynchronous completion before asserting results.
 
-For the proposed larger SoC benchmark, follow AI-T2/BENCH-P2: manual starting/ending credit readings, one measured workflow at a time, and explicit user readiness before starting each window. Preserve Task 1 branches/results. Resolve provider and seller shared-client contracts before measured implementation; never read keys into logs or use live SoC for automated tests.
-
-Friend's llm-feature snapshot 7d028e4 has unfinished transport/parser and still uses SQLite. Consult AI-T2 before reusing its LLM code; preserve PostgreSQL and resolve shared transport ownership rather than importing its build/workflow wholesale.
-
-Owner clarified scope: independently implement transport/parser plus buyer adapter for the larger benchmark; overlap with friend's work is accepted for later reconciliation. Do not edit/merge his branch or wait for its transport. Freeze one common contract/test baseline before both arms and require each manual starting credit reading/ready signal. Reconciliation is separate from measured work.
-
-SoC benchmark common setup is SOC-SETUP/AI-T2-C1 on multiagent-soc-search. A testing specialist owns new declarations/tests and Gson-only dependency addition; this is outside measured runs. Per-account/provider admission and UI wiring are excluded; do not claim 429 handling establishes quota compliance.
-
-SoC initial runs are complete: multi a47df93 and single 560ffcb pass the same 149 focused tests, 100 security-tagged cases and styles. Common source evaluation finds both fail AI-T2-C1 (4 multi/1 single attributable findings), excluding one shared test/spec encoding conflict as unscorable; see PLAN results and CSV for evidence/limits. Preserve both initial candidates. Owner approved SOC-FIX-1 on 2026-10-20: single-client readiness corrections on codex/soc-client-readiness, cycle 1/1; see the final PLAN task and current handoff. User revised multi ending to session28%/weekly42% (original30%/42% retained); single ends25%/41%. Percentages are coarse observations, not exact credits/tokens. No live SoC connection, UI, provider-wide quota or production readiness is established.
-
-SoC common evaluation packaging passes, PostgreSQL driver present and SQLite absent. Broad regression/build runs were interrupted after approximately14minutes, not passed; Testcontainers PostgreSQL was reachable despite missing Docker CLI. Full regression and contract repairs remain gates before actual feature acceptance.
-
-Current consolidated connection baseline is on codex/soc-client-readiness. AI-T2-C2 /
-SOC-CHAT-1 supersedes the historical Responses format: base /v1 plus /chat/completions,
-messages, reasoning_effort none, local documented model qwen3.5:9b. One live synthetic
-request accepted a validated proposal on2026-10-20; not proof of model quality/quota
-compliance. Never expose .env.local credentials or change benchmark snapshots/CSV.
-
-SOC-LIFECYCLE-1 owner-approved extension resolves the known close/scheduler exception
-race.159 focused tests/styles and remaining build/packaging pass; both final reviews
-accept the fix. See PLAN/DeveloperGuide for exact full-suite limits and evidence.
-Historical SOC-FIX-1 allowance1/1 is preserved; the explicit extension is consumed,
-total readiness repair passes2/2. No further corrective loop without owner direction.
-Shutdown cancels registered raced work; no stronger zero-transient-dispatch guarantee
-was specified. No UI/session redesign, provider-wide quota or deployment claim.
-
-UI benchmark is specified as AI-P3/AI-T3/BENCH-P3 in existing specs/PLAN: explicit
-button labelled exactly "AI Search" beside the existing search field (no new bar),
-preview/Apply, zero provider calls on ordinary search, stale/page/
-session guards and identical frozen fake-provider checks for both arms. Lifecycle
-foundation is fixed. Owner approved UI benchmark implementation on2026-10-20 and
-supplied pre-setup5-hour37%/weekly27%. UI-SETUP is authorised on
-codex/ai-search-ui-setup; setup is outside measured windows. UI-SETUP has one shared
-explicitly approved correction pass maximum; owner approved grouped tests/docs
-correction1/1 on2026-10-20, now accepted after focused re-review; historical client
-readiness2/2 stays consumed. Both measured UI runs and equal common source evaluation
-are now finished; preserve saved snapshots and initial results. No candidate repair
-or merge is authorised by evaluation completion. See PLAN/benchmark-results.csv.
-
-UI-SETUP is accepted: fixed UI21 baseline is3 pass/18 expected missing-feature assertion failures, zero errors/skips. Both saved candidates pass18/21; three shared preview fixtures violate blank-input preconditions and remain failed. Equal source review found no confirmed implementation/security defects; this does not establish full automated acceptance. Multi has four extra configuration/UI tests; single source-only evidence for those paths. Manual drops8/4 session points and2/1 weekly points are coarse; multi's0% endpoint may censor usage. Timing bounds overlap and single includes environment delay. No live provider calls or full-regression claims in timed runs.
-
-AI-search consolidation: delivery branch codex/ai-search-consolidated selects multi UI 3efbeb1 plus single search-guide wording and retains the repaired common SoC client. Preserve measured snapshots/results. See DeveloperGuide consolidation note; three blank-query fixture corrections require explicit approval before acceptance.
-
-Publication preparation (2026-10-21): presentation export/build folders removed at owner request. DeveloperGuide local AI Search section is the current environment/loading/provisioning reference; images remain local, Storage integration pending. Hosted operator provisioning succeeded, not hosted deployment acceptance. No Java checks need repeating solely for documentation/cleanup edits. Frozen UI fixture correction still awaits explicit approval.
-
-Docker packaging (owner authorised 2026-10-21): build the Linux JPro ZIP inside the JDK25 Docker build stage and copy it into JRE25; do not require a local build artifact. Keep local .env files, deployment certificates and runtime secrets out of image layers. See DeveloperGuide JPro and Docker packaging; image build does not migrate data or establish JPro multi-user acceptance.
-
-UI-CI-FIX-1 (2026-10-21): owner approved one grouped delivery test correction for six PR11 CI failures, correction1/1 used and final-reviewed. Linux full CI39568040457 on5f0c3ea passes; original benchmark snapshots/results are immutable. UI tests share JavaFxTestSupport toolkit initialization; preview/late-completion fixtures must prove a nonblank provider request started, and async assertions wait for observable completion. See DeveloperGuide UI CI fixture correction and PLAN for current verification; do not infer full acceptance from focused passes.
+Docker builds the Linux JPro ZIP in a JDK25 stage and copies it into JRE25. A fresh
+checkout must not depend on host build output. See DeveloperGuide packaging/setup.
+Image builds do not provision databases or establish deployment/multi-user readiness.
+Execution status, test counts, reviews and correction history belong in logs/.

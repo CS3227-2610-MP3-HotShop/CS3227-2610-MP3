@@ -522,9 +522,11 @@ Execution was resumed by the owner; no new correction budget is granted.
 
 ## Targeted context and handoff rule — owner approved 2026-10-19
 
-Workflow reporting was reduced on 2026-10-20: subagents return concise messages
-without Markdown logs/summaries. The coordinator keeps one current handoff and
-consolidates approvals/results into existing records after final reviews pass.
+Subagents return concise messages without Markdown logs/summaries. The coordinator
+keeps execution history, approvals and verification under logs/ExecutionRecord.md
+or an existing feature summary. AGENTS.md contains durable instructions only;
+docs/InteractionRecord.md points to the current log. Do not append routine task,
+test or publication history to AGENTS.md, or create per-task/per-agent logs.
 See AGENTS.md "Minimal workflow records"; older per-task log requirements are superseded.
 
 Coordinators and workers must read only context needed for the current assignment.

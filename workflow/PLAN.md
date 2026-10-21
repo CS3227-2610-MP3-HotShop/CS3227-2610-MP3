@@ -1404,3 +1404,148 @@ Authority: Jonat approved one grouped correction pass for six CI failures in PR1
 One Luna implementer owns relevant UI tests/setup/helpers and only directly necessary SearchPage fixes if reproduction proves an approved-criterion implementation defect; related existing guides allowed. Correct three existing-preview blank-query fixtures by supplying valid input while preserving assertions/empty-input checks. Reproduce safe-feedback and navigation lookup failures, correct their demonstrated cause without weakening checks. Make JavaFX toolkit setup compatible across test classes. Preserve original benchmark worktrees/commits and measured results. Coordinator owns shared records/AGENTS/PLAN. No new task logs, hosted data, live SoC, deployment, storage integration or unrelated refactors.
 
 Acceptance: meaningful reproduced evidence; focused UI/config/client/validator checks and both styles pass; full wrapper test/check/build/shadowJar suite passes; final independent specification/security reviews find no unresolved in-scope failure. Publish fix to existing PR11 and verify GitHub CI. If additional scope or defects remain after this shared pass, report rather than loop. Completed: Yes for grouped Linux CI correction, 2026-10-21. Stable5f0c3ea published; full GitHub Linux CI39568040457 passes test/bothstyles/check/build/shadowJar in8m33s. Actual local baseline reproduced three preview failures and repeated-toolkit initialization; feedback/navigation failures only reproduced in original Linux CI, corrected with observable async waits and valid request preconditions. All valid assertions retained or strengthened. Local combinedUI84 and finalAI21/styles pass. Final independent Luna specification and security reviews clear by source inspection using supplied checks. Shared correction1/1 consumed. Supplementary full Windows run still active at review; no success claimed until it finishes. Original measured snapshots/CSV unchanged. No production changes, hosted/live calls or deployment readiness claim.
+
+## Supabase image storage implementation — ST-PLAN1
+
+Status: owner-approved ST-001..ST-007 execution,2026-10-21 (start work on a new branch and implement). Source ST-P1 and ST-T1. Owner resumed
+bucket work after agreeing disposable PostgreSQL/local Storage fixtures remain the
+automated-test strategy. ST-001 starts initial implementation; one complete batch followed by final reviews.
+Branch codex/supabase-image-storage; source baseline27cdc2b. Preserve pending
+log-relocation docs, original benchmark snapshots and both existing PR branches.
+
+Human owner/approver: Jonat. One Luna implementer owns ST-001..ST-006 as a single
+batch (production, tests, fixtures, build/setup and associated guides). No tester or
+intermediate-review handoffs. Coordinator owns specifications, PLAN, shared logs and
+publication state; only coordinator updates Completed fields. All tasks start with
+Completed: No. One shared post-submission correction pass maximum, requiring explicit
+approval; historical PG/SoC/UI correction budgets are unchanged and not reused.
+
+### ST-001 — Storage seam, private HTTP client and configuration
+
+- Depends on: approved ST-T1/ST-PLAN1; existing validated ImageStorage behavior.
+- Requirements: ST-01..04,08,09; ST-T1 backend/config/private-read contract.
+- Own: src/main/java/hotshop/storage/; narrow relevant HTTP fixtures/storage tests;
+  existing build.gradle only if required by the approved design.
+- Keep byte validation/limits/generated filenames; introduce the small byte-store
+  seam and injected local fixture backend. Add HTTPS Supabase client using existing
+  HttpClient/Gson, two fixed buckets, apikey secret handling and bounded whole-body
+  requests. No public/signed browser URLs, credentials in paths/logs or runtime
+  fallback. Tests cover malformed settings, immutable binary upload/read/delete,
+  malformed/truncated/oversized responses, HTTP/TLS failures and resource cleanup.
+- Check: focused storage/config/HTTP tests and both styles; meaningful red for new
+  behavior. Existing valid image-validation assertions remain unchanged.
+- Completed: No.
+
+### ST-002 — Provisioned image manifest, binding and lifecycle guard
+
+- Depends on: ST-001 contracts; existing separate migrateDatabase command.
+- Requirements: ST-05,06,08,09.
+- Own: database/repository image lifecycle code, next numbered SQL migration (new),
+  migration registration and focused disposable-PostgreSQL tests.
+- Add image_objects manifest, namespace/project/bucket activation binding and durable
+  retirement integration. Add bounded session-advisory-lock guard. Protected writes
+  use its SAME connection across committed phases; no nested fresh-connection bypass.
+  Preserve existing schema/startup-version checks and application-clock timestamps.
+- Check: migration atomicity/idempotence/version rejection, session-lock contention,
+  connection-loss fencing, durable PENDING/ACTIVE/RETIRED transitions and incomplete
+  binding rejection. No hosted migration performed by automated tests.
+- Completed: No.
+
+### ST-003 — Service/reference transactions and coordinated recovery
+
+- Depends on: ST-001,ST-002.
+- Requirements: ST-02,04..06,09.
+- Own: ManagedImages, ProfileImages, AccountService, ListingService and related
+  narrow repository/runtime/image fixture changes and tests.
+- Reserve before upload, commit entity refs and ACTIVE/retirement state atomically,
+  retain old reference on failure, and reconcile owned unreferenced objects safely.
+  Cover every reference-mutating path. No full-bucket orphan scan; uncertain writes
+  retain tracking. Keep existing authorization, offer/state rules and directory lock.
+  Add identity-authorized async reads; do not expose arbitrary filename read bypass.
+- Check: profile/listing regressions; gated two-runtime upload-vs-cleanup, DB rollback,
+  failed/late remote writes, retired-object deletion retries, namespace isolation and
+  unknown-object preservation. Controlled HTTP fixture + disposable local PostgreSQL.
+- Completed: No.
+
+### ST-004 — Browser/desktop file selection and private display
+
+- Depends on: ST-001,ST-003.
+- Requirements: ST-01..04,09.
+- Own: UiImages, affected profile/listing/card/detail/editor UI/runtime API surfaces
+  and related tests. Extend current patterns rather than parallel screens.
+- Use existing JPro WebAPI upload futures in browser mode and native FileChooser on
+  desktop; transfer actual bytes to an owned temporary file. Validate again on save.
+  Fetch authorized private image bytes off FX with bounded resources, safe fallback
+  and page/session guards. Preserve Add Photo/remove/reorder and existing limits.
+  Clean temp files on save/cancel/failure/stale completion. No private key in browser.
+- Check: control/provider calls, selection/transfer failure, limits/order, stale page/
+  logout, temp cleanup, no FX-blocking network and authenticated image reads. Run the
+  combined UI classes to exercise shared JavaFxTestSupport initialization.
+- Completed: No.
+
+### ST-005 — Repeatable importer and cutover verification
+
+- Depends on: ST-001..ST-003.
+- Requirements: ST-01,07..09.
+- Own: new operator image-import command under storage/, narrow Gradle command entry,
+  tests and existing setup/developer guide instructions.
+- Inventory only DB-referenced images from both Windows and Docker sources via
+  read-only source access; preserve flat names/originals. Coalesce identical copies,
+  block missing/conflicting content, verify existing remote bytes without overwrites,
+  and activate BOTH namespace bindings only after complete verification. Support
+  verify-only/restartable runs; no startup import, bucket reset or silent data loss.
+  Document stop-old-app prerequisite and rollback limits after remote-only writes.
+- Check: two source roots, matching/conflicting duplicates, missing source, provider
+  conflicts/outages, crash/resume, repeat import, activation atomicity, originals
+  intact, no key leakage. Automated command tests use local fixtures only.
+- Completed: No.
+
+### ST-006 — Integration, guides and stable-candidate verification
+
+- Depends on: ST-001..ST-005.
+- Requirements: all ST-01..09.
+- Own: assigned implementation guides (UserGuide, DeveloperGuide and affected linked
+  pages), existing test fixtures, narrowly required build/runtime configuration.
+- Update PostgresTestSupport/runtime injection so all automated tests remain isolated
+  from Supabase and existing local images. Update actual configuration/import/browser
+  behavior in guides; do not claim future live acceptance. Preserve logging cleanup.
+- Run focused changed areas/styles during development; after batch is green run one
+  full wrapper test/checkstyleMain/checkstyleTest/check/build/shadowJar verification.
+  Build the Docker image if packaging changes and verify no settings/CA/key leakage.
+  Review diff for weakened assertions, unrelated changes and sensitive data.
+- Return exact source snapshot, actual check results/counts and unresolved findings
+  in a concise message, with no new reporting Markdown/per-agent logs.
+- Completed: No.
+
+### ST-007 — Final acceptance reviews and consolidation
+
+- Depends on: ST-006 stable candidate and actual verification evidence.
+- Owners: independent Luna specification/coverage reviewer and security reviewer,
+  source-only where existing executed checks suffice; coordinator consolidates.
+- Assess ST-01..09 traceability, backend auth/read boundaries, bounded JPro uploads,
+  reference/cleanup races and importer cutover/rollback without repeating unchanged
+  green checks. Group any findings into the one shared correction plan; no extra
+  loop or unapproved weakening. Record evidence in existing logs/ExecutionRecord.md
+  or the existing feature summary, never AGENTS.md. No benchmark score rewrites.
+- Code acceptance does not establish hosted/provider or general JPro readiness.
+- Completed: No.
+
+### ST-008 — Operator setup and live photo cutover (separately gated)
+
+- Depends on: ST-007 acceptance, configured private buckets/key and reviewed inventory.
+- Owner: coordinator/operator Jonat; no implementer automated hosted writes.
+- Prepare a read-only inventory/verification report for actual Windows .hotshop and
+  Docker hotshop-images sources, exact referenced-image counts/conflicts and target
+  project/buckets. Verify private visibility and permissions without logging secrets.
+  Present concrete transfer/activation/rollback scope for owner approval BEFORE live
+  uploads/cutover. Tests never use these credentials or source assets.
+- Only after that approval: stop old writers, preserve backups/originals, execute
+  importer, verify both buckets and refs, activate binding, test real browser upload/
+  display/remove and app restart without old image volume. Record actual evidence;
+  do not automatically remove directory lock, merge PRs or deploy production.
+- Missing keys, source conflicts or browser/session blockers pause only this gate;
+  they do not authorize silent resets or erase local code-verification evidence.
+- Completed: No.
+
+Execution approval granted for ST-001..ST-007 only. ST-008 live writes and cutover
+remain separately gated on a concrete inventory and explicit operator approval.

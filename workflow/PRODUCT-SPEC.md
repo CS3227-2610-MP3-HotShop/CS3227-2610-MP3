@@ -166,3 +166,63 @@ Each arm gets the same frozen contract/tests/client and isolated workspace. This
 a new paired case, not pooled with the previous two experiments. No measured run
 starts before its own explicit ready/credit checkpoint. The prior close/scheduling
 race was resolved and accepted in SOC-LIFECYCLE-1 before this setup.
+
+## Supabase image storage — ST-P1
+
+Status: owner-approved for technical design, 2026-10-21 (explicit chat approval). This is a separate image-storage task; the
+completed PostgreSQL conversion and immutable benchmark scopes are unchanged.
+Source inspection baseline: delivery source at27cdc2b (current source is unchanged
+by the separate uncommitted log-relocation documentation). No Storage code changed.
+
+### Confirmed owner decisions
+
+- Preserve/import existing local listing and profile photos, retaining their
+  database references; do not reset marketplace records or silently discard images.
+- Use private Supabase Storage buckets named exactly `listingImages` and
+  `profileImages`, as supplied by the owner. Actual bucket visibility/configuration
+  still needs operator verification; selecting private access is approved intent.
+- Preserve/import images from both the Windows app folder and Docker hotshop-images volume. Confirm exact mounted paths during technical design without exposing file contents or secrets.
+
+### Existing behavior to preserve
+
+ImageStorage validates real JPEG/PNG content before copying bounded bytes into
+UUID filenames. Profile limits are5MiB and512x512; listing limits are10MiB and
+4096x4096, with up to10 ordered listing photos. No automatic crop/resize. Current
+service authorization, listing-state restrictions, explicit photo order and
+replace/remove behavior remain. PostgreSQL stores image filenames; files are
+currently local. Runtime resolves local Paths; UI uses JavaFX file chooser/Path
+images. ManagedImages scans for unreferenced files and retries queued deletion,
+protected by the current directory lock. These observations are source evidence,
+not passing Storage-integration or browser-upload results.
+
+### Acceptance criteria
+
+| ID | Expected behavior and acceptance evidence |
+| --- | --- |
+| ST-01 | New profile/listing photos use their respective private bucket. Images remain available after app/container replacement without requiring the old local image volume; desktop and hosted browser flows are verified separately. |
+| ST-02 | Only already-authorized users may perform existing upload/replace/remove actions. Reads follow app access rules. Storage credentials remain server/operator-side and never appear in browser code, database image references, logs, image URLs or user errors; no public bucket is required. |
+| ST-03 | Keep current JPEG/PNG content, byte/dimension and listing-photo-count/order rules. Invalid files are rejected before permanent persistence. Browser selection/upload must reach the server as actual file bytes rather than assume a browser client's file exists on Render. The visible Add Photo/profile-photo workflow stays familiar. |
+| ST-04 | Display saved listing/profile images through the app. Missing/unavailable images use safe fallback feedback; an image-read outage does not erase records or unrelated marketplace data. Local paths and credentials are not exposed. |
+| ST-05 | Upload failures leave the prior saved image/reference unchanged. Database failure after upload leaves recoverable cleanup work. Replacement/removal retires only the affected unreferenced object after the record change commits; failed cleanup is retryable. |
+| ST-06 | Shared-bucket cleanup must not delete referenced images, another namespace's objects or an upload still being committed by any app instance. Test upload-versus-cleanup and interrupted-operation races. Do not transplant the current unreferenced-file scan into a shared bucket without coordination. |
+| ST-07 | Provide a separate repeatable operator import/verification step for approved local sources. Retain local originals and bucket objects; preserve existing DB references and image ordering. Missing sources or conflicting bytes are reported without silent overwrites/deletions. Verify all referenced images before switching storage; pause image writes during cutover if needed. No automatic startup import or database reset. |
+| ST-08 | Configuration has explicit project URL, credentials and two bucket names. Missing/invalid required remote settings produce safe operator feedback; there is no silent fallback to disposable local storage. Document setup, import, rollback and deployment configuration. |
+| ST-09 | Automated tests use isolated local storage/HTTP fixtures and disposable local PostgreSQL, never the real buckets or hosted/demo data. Live bucket smoke verification, if requested later, is separate evidence with named scope and cleanup. Passing mock checks do not establish hosted readiness. |
+
+### Scope boundary and remaining gates
+
+Include listing/profile image storage, display, browser-upload compatibility,
+existing-photo import, coordinated cleanup, configuration, tests and existing guides.
+Do not remove directory-lock/image-recovery protections as an incidental edit.
+Broader JPro authentication/session lifecycle and deployment automation are separate;
+this storage task must document any dependency rather than claim general multi-user
+readiness. No seller LLM changes, benchmark reruns, bucket reset, public access or
+hosted writes are authorized by discovery/specification work.
+
+Before implementation: technical
+design resolves backend credentials/private-image delivery, cleanup coordination,
+local/browser upload behavior, storage switch/rollback and test seams. The owner
+creates/configures private buckets; no secret values belong in specifications.
+
+Provider references: [private buckets](https://supabase.com/docs/guides/storage/buckets/fundamentals),
+[storage access control](https://supabase.com/docs/guides/storage/security/access-control).
