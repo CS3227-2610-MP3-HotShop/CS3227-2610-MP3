@@ -1413,8 +1413,13 @@ automated-test strategy. Initial implementation candidate3b431ab is published in
 draft PR12. Full Linux CI39595457297 passed; final reviews found unresolved HTTP,
 restart-recovery, upload-bound, configuration and provider-contract defects.
 Owner approved the grouped correction pass in chat on2026-10-21; shared cycle1/1
-is in progress with the same implementer. Tasks stay incomplete until affected
-checks and focused re-review pass. See logs/ExecutionRecord.md. Initial full Windows
+is complete on441a6ae:48 focused tests, styles and aggregate build checks pass.
+Original findings are resolved, but security re-review reports uncapped recovery
+work under the shared guard (S-2). Owner explicitly authorised narrow cycle2 on
+2026-10-22 for capped queries, bounded work and fair repeat recovery; shared budget
+is extended to2/2 for this finding only. Same implementer is executing it, followed
+by focused checks and re-review. Full Linux CI39633201840
+is running. Tasks stay incomplete. See logs/ExecutionRecord.md. Initial full Windows
 verification passed946 tests and required wrapper checks. No live Storage writes
 or deployment were performed.
 Branch codex/supabase-image-storage; source baseline27cdc2b. Preserve pending

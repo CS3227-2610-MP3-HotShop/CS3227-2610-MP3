@@ -24,6 +24,7 @@ import hotshop.storage.ImageStorage;
  */
 final class ManagedImages {
     private static final int BYTES_PER_MIB = 1024 * 1024;
+    private static final int RECOVERY_BATCH_SIZE = 16;
     private static final System.Logger LOGGER = System.getLogger(ManagedImages.class.getName());
     private final Database database;
     private final ImageStorage storage;
@@ -34,6 +35,8 @@ final class ManagedImages {
     private final ImageCleanupRepository cleanup = new ImageCleanupRepository();
     private final ImageObjectRepository objects = new ImageObjectRepository();
     private final Set<String> confirmedUploads = ConcurrentHashMap.newKeySet();
+    private String pendingRecoveryCursor;
+    private String cleanupRecoveryCursor;
 
     /** Lists every filename in this namespace that saved records still reference. */
     @FunctionalInterface
@@ -128,10 +131,18 @@ final class ManagedImages {
                 }
                 return null;
             });
-            List<ImageObjectRepository.PendingObject> pendingObjects =
-                    guard.transaction(connection -> objects.getPending(connection, namespace));
+            List<ImageObjectRepository.PendingObject> pendingObjects = guard.transaction(connection -> {
+                List<ImageObjectRepository.PendingObject> batch = objects.getPending(
+                        connection, namespace, pendingRecoveryCursor, RECOVERY_BATCH_SIZE);
+                if (batch.isEmpty() && pendingRecoveryCursor != null) {
+                    pendingRecoveryCursor = null;
+                    batch = objects.getPending(connection, namespace, null, RECOVERY_BATCH_SIZE);
+                }
+                return batch;
+            });
             Set<String> verifiedPending = new HashSet<>();
             for (ImageObjectRepository.PendingObject pending : pendingObjects) {
+                pendingRecoveryCursor = pending.filename();
                 if (referenced.contains(pending.filename())) {
                     continue;
                 }
@@ -164,9 +175,17 @@ final class ManagedImages {
                     return null;
                 });
             }
-            Set<String> pendingCleanup = guard.transaction(
-                    connection -> cleanup.getPending(connection, namespace));
+            List<String> pendingCleanup = guard.transaction(connection -> {
+                List<String> batch = cleanup.getPendingBatch(
+                        connection, namespace, cleanupRecoveryCursor, RECOVERY_BATCH_SIZE);
+                if (batch.isEmpty() && cleanupRecoveryCursor != null) {
+                    cleanupRecoveryCursor = null;
+                    batch = cleanup.getPendingBatch(connection, namespace, null, RECOVERY_BATCH_SIZE);
+                }
+                return batch;
+            });
             for (String name : pendingCleanup) {
+                cleanupRecoveryCursor = name;
                 try {
                     boolean delete = guard.transaction(connection -> {
                         if (references.find(connection).contains(name)) {

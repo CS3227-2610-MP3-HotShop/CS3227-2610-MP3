@@ -23,7 +23,20 @@ The corrected candidate passes48 focused tests across six matching classes, both
 styles and check/build/shadowJar with tests explicitly excluded from that aggregate.
 One new recovery fixture initially failed because it omitted the persisted profile
 reference; setup was corrected without weakening the protection assertion.
-Post-correction full Linux CI and focused re-reviews are pending; source is frozen.
+Corrected source441a6ae is published in draft PR12; full Linux CI39633201840 is
+running. Specification re-review resolves all six original findings. Security
+re-review also resolves original findings but reports remaining medium availability
+finding S-2: pending-object and cleanup queries are uncapped, and recovery performs
+all remote operations under the global image-write guard (ST-T1 bounded-batch rule).
+Owner explicitly authorised narrow cycle2 on2026-10-22 for capped queries,
+bounded work and fair repeat recovery. Shared budget is extended to2/2 for S-2
+only; same implementer owns this fix and regressions. Focused checks and re-review
+remain required; no hosted cutover or unrelated scope is authorised.
+Cycle2 candidate caps pending manifests and cleanup queries at16 rows each and
+at32 provider operations per recovery pass, with ordered per-instance cursors for
+later progress. Eight lifecycle/cleanup tests pass, including21-row backlog tests,
+reference protection and guard release; both styles and aggregate check/build/
+shadowJar with -x test pass. Source is frozen for full Linux CI and focused re-review.
 No live photo writes, activation or deployment. AGENTS contains durable guidance only.
 ## Previous UI delivery status
 

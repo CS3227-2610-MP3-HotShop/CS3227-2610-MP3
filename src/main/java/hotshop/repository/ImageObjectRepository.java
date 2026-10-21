@@ -7,11 +7,20 @@ import java.util.List;
 
 /** Durable ownership and activation state for known image objects. */
 public final class ImageObjectRepository {
-    public List<PendingObject> getPending(Connection connection, String namespace) throws SQLException {
+    public List<PendingObject> getPending(Connection connection, String namespace, String afterFilename, int limit)
+            throws SQLException {
         List<PendingObject> result = new ArrayList<>();
+        String cursorClause = afterFilename == null ? "" : " AND filename > ?";
         try (var statement = connection.prepareStatement("SELECT filename, sha256 FROM image_objects "
-                + "WHERE namespace = ? AND state = 'PENDING' ORDER BY filename")) {
+                + "WHERE namespace = ? AND state = 'PENDING'" + cursorClause
+                + " ORDER BY filename LIMIT ?")) {
             statement.setString(1, namespace);
+            int limitParameter = 2;
+            if (afterFilename != null) {
+                statement.setString(2, afterFilename);
+                limitParameter++;
+            }
+            statement.setInt(limitParameter, limit);
             try (var rows = statement.executeQuery()) {
                 while (rows.next()) {
                     result.add(new PendingObject(rows.getString(1), rows.getString(2)));

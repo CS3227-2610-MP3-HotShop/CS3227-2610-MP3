@@ -684,6 +684,9 @@ Uploads use create-only REST requests, and a name conflict never replaces an exi
 object. Storage requests have a whole-response deadline and bounded response bodies.
 Pending upload manifests remain as tombstones until a later guarded recovery observes
 and removes an unreferenced object; an absent response never discards that tracking.
+Each recovery invocation examines at most 16 pending manifests and 16 cleanup entries.
+Ordered cursors let later entries progress on subsequent invocations despite retained
+absent or conflicting tombstones; a process restart begins a fresh bounded pass.
 Automated tests do not run either command against hosted credentials or buckets.
 
 When provisioning succeeds, launch with `.\gradlew.bat run`. Provision once before

@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import hotshop.database.Database;
+import hotshop.repository.ImageCleanupRepository;
 import hotshop.repository.ImageObjectRepository;
 import hotshop.repository.UserRepository;
 import hotshop.storage.ImageObjectStore;
@@ -24,6 +25,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -184,6 +187,100 @@ class ImageLifecycleTest extends PostgresTestSupport {
         assertEquals(0, store.deletes);
     }
 
+    @Test
+    void recover_largePendingQueue_boundsEachPassAndEventuallyProcessesLaterObjects() throws Exception {
+        BlockingStore store = new BlockingStore(false, false);
+        Database database = new Database(databaseConfig);
+        UserRepository users = new UserRepository();
+        byte[] bytes = Files.readAllBytes(image());
+        List<String> filenames = new ArrayList<>();
+        for (int index = 0; index < 21; index++) {
+            filenames.add(String.format("00000000-0000-0000-0000-%012d.png", index));
+        }
+        try (Database.ImageLifecycleGuard guard = database.acquireImageLifecycleGuard()) {
+            guard.transaction(connection -> {
+                users.insert(connection, new hotshop.model.User("alice", "Alice", filenames.get(0), null),
+                        new hotshop.security.PasswordHash("test", 1, new byte[] {1}, new byte[] {1}));
+                try (var statement = connection.prepareStatement(
+                        "UPDATE users SET profile_image = ? WHERE username = 'alice'")) {
+                    statement.setString(1, filenames.get(0));
+                    statement.executeUpdate();
+                }
+                for (String filename : filenames) {
+                    new ImageObjectRepository().reserve(connection, "profiles", filename,
+                            digest(bytes), bytes.length, CLOCK.millis());
+                    store.objects.put("profiles/" + filename, Arrays.copyOf(bytes, bytes.length));
+                }
+                return null;
+            });
+        }
+        ManagedImages recovery = new ManagedImages(database, new ImageStorage(store, "profiles"), "profiles",
+                ImageStorage.PROFILE_LIMITS, users::getReferencedImages, CLOCK);
+
+        recovery.recover();
+
+        assertEquals(15, store.reads);
+        assertTrue(store.reads + store.deletes <= 32);
+        assertTrue(store.objects.containsKey("profiles/" + filenames.get(20)));
+        assertTrue(store.objects.containsKey("profiles/" + filenames.get(0)));
+        try (var executor = Executors.newSingleThreadExecutor()) {
+            assertTrue(executor.submit(() -> {
+                try (Database.ImageLifecycleGuard ignored = database.acquireImageLifecycleGuard()) {
+                    return true;
+                }
+            }).get(2, TimeUnit.SECONDS), "recovery released its lifecycle guard");
+        }
+
+        int operationsBeforeSecondRecovery = store.reads + store.deletes;
+        recovery.recover();
+
+        assertTrue(store.reads + store.deletes - operationsBeforeSecondRecovery <= 32);
+        assertFalse(store.objects.containsKey("profiles/" + filenames.get(20)));
+        assertTrue(store.objects.containsKey("profiles/" + filenames.get(0)));
+        assertEquals("PENDING", state(database));
+    }
+
+    @Test
+    void recover_largeCleanupQueue_boundsEachPassAndEventuallyProcessesLaterEntries() throws Exception {
+        BlockingStore store = new BlockingStore(false, false);
+        Database database = new Database(databaseConfig);
+        byte[] bytes = Files.readAllBytes(image());
+        List<String> filenames = new ArrayList<>();
+        try (Database.ImageLifecycleGuard guard = database.acquireImageLifecycleGuard()) {
+            guard.transaction(connection -> {
+                ImageObjectRepository objects = new ImageObjectRepository();
+                ImageCleanupRepository cleanup = new ImageCleanupRepository();
+                for (int index = 0; index < 21; index++) {
+                    String filename = String.format("00000000-0000-0000-0000-%012d.png", index);
+                    filenames.add(filename);
+                    objects.reserve(connection, "profiles", filename, digest(bytes), bytes.length, CLOCK.millis());
+                    objects.retire(connection, "profiles", filename, CLOCK.millis());
+                    cleanup.schedule(connection, "profiles", filename);
+                    store.objects.put("profiles/" + filename, Arrays.copyOf(bytes, bytes.length));
+                }
+                return null;
+            });
+        }
+        ManagedImages recovery = managed(database, store);
+
+        recovery.recover();
+
+        assertEquals(16, store.deletes);
+        assertTrue(store.objects.containsKey("profiles/" + filenames.get(20)));
+        try (var executor = Executors.newSingleThreadExecutor()) {
+            assertTrue(executor.submit(() -> {
+                try (Database.ImageLifecycleGuard ignored = database.acquireImageLifecycleGuard()) {
+                    return true;
+                }
+            }).get(2, TimeUnit.SECONDS), "recovery released its lifecycle guard");
+        }
+
+        recovery.recover();
+
+        assertEquals(21, store.deletes);
+        assertTrue(store.objects.isEmpty());
+    }
+
     private ManagedImages managed(Database database, BlockingStore store) {
         return new ManagedImages(database, new ImageStorage(store, "profiles"), "profiles",
                 ImageStorage.PROFILE_LIMITS, connection -> Set.of(), CLOCK);
@@ -219,6 +316,7 @@ class ImageLifecycleTest extends PostgresTestSupport {
         private final boolean block;
         private final boolean unknownOutcome;
         private volatile int deletes;
+        private volatile int reads;
 
         BlockingStore(boolean block, boolean unknownOutcome) {
             this.block = block;
@@ -255,6 +353,7 @@ class ImageLifecycleTest extends PostgresTestSupport {
 
         @Override
         public byte[] readIfExists(String namespace, String filename, int maximumBytes) throws IOException {
+            reads++;
             byte[] bytes = objects.get(namespace + "/" + filename);
             if (bytes == null) {
                 return null;
