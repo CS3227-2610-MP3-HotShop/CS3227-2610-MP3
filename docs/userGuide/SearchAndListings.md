@@ -18,6 +18,15 @@ includes all conditions. **Clear Filters** restores these defaults and clears bo
 price fields. Query and filter changes take effect only on submission. If a price
 is invalid when you submit, **Filters** opens automatically to show the error.
 
+With AI search configured, enter a description in the same query field and choose
+**AI Search** to request suggested filters. Review the title, category, conditions,
+price limits, and sort order in the preview, then choose **Apply filters** to replace
+the current filter draft and run the ordinary search. **Dismiss** closes the preview
+without changing the search. Editing a query or filter, submitting a manual search,
+or leaving Search clears any pending suggestion. AI search accepts 1 to 1,000
+nonblank Unicode characters. When it is unavailable or a request fails, the screen
+shows a safe status message and manual search remains available.
+
 ### Sorting and refreshing results
 
 The sort choices are **Newest**, **Price low to high**, and **Price high to low**.

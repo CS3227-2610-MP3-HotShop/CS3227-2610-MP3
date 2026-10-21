@@ -638,7 +638,7 @@ total readiness repair passes2/2. No further corrective loop without owner direc
 Shutdown cancels registered raced work; no stronger zero-transient-dispatch guarantee
 was specified. No UI/session redesign, provider-wide quota or deployment claim.
 
-Next UI benchmark is drafted as AI-P3/AI-T3/BENCH-P3 in existing specs/PLAN: explicit
+UI benchmark is specified as AI-P3/AI-T3/BENCH-P3 in existing specs/PLAN: explicit
 button labelled exactly "AI Search" beside the existing search field (no new bar),
 preview/Apply, zero provider calls on ordinary search, stale/page/
 session guards and identical frozen fake-provider checks for both arms. Lifecycle
@@ -647,8 +647,12 @@ supplied pre-setup5-hour37%/weekly27%. UI-SETUP is authorised on
 codex/ai-search-ui-setup; setup is outside measured windows. UI-SETUP has one shared
 explicitly approved correction pass maximum; owner approved grouped tests/docs
 correction1/1 on2026-10-20, now accepted after focused re-review; historical client
-readiness2/2 stays consumed. Each measured run still needs fresh manual credit/ready
-after freezing. Do not disclose one arm's code/findings to the other. No measured
-UI implementation or timed run has started; common setup may add only test seam.
+readiness2/2 stays consumed. Both measured UI runs and equal common source evaluation
+are now finished; preserve saved snapshots and initial results. No candidate repair
+or merge is authorised by evaluation completion. See PLAN/benchmark-results.csv.
 
-UI-SETUP is accepted: fixed UI21 baseline is3 pass/18 expected missing-feature assertion failures, zero errors/skips. Same packet and common SOURCE assessment (including Main configuration/ownership and safe unavailable feedback) apply to both arms; see PLAN for limits. No live provider calls or full-regression claims in timed runs. Await fresh credit/ready after freeze.
+UI-SETUP is accepted: fixed UI21 baseline is3 pass/18 expected missing-feature assertion failures, zero errors/skips. Both saved candidates pass18/21; three shared preview fixtures violate blank-input preconditions and remain failed. Equal source review found no confirmed implementation/security defects; this does not establish full automated acceptance. Multi has four extra configuration/UI tests; single source-only evidence for those paths. Manual drops8/4 session points and2/1 weekly points are coarse; multi's0% endpoint may censor usage. Timing bounds overlap and single includes environment delay. No live provider calls or full-regression claims in timed runs.
+
+AI-search consolidation: delivery branch codex/ai-search-consolidated selects multi UI 3efbeb1 plus single search-guide wording and retains the repaired common SoC client. Preserve measured snapshots/results. See DeveloperGuide consolidation note; three blank-query fixture corrections require explicit approval before acceptance.
+
+Publication preparation (2026-10-21): presentation export/build folders removed at owner request. DeveloperGuide local AI Search section is the current environment/loading/provisioning reference; images remain local, Storage integration pending. Hosted operator provisioning succeeded, not hosted deployment acceptance. No Java checks need repeating solely for documentation/cleanup edits. Frozen UI fixture correction still awaits explicit approval.

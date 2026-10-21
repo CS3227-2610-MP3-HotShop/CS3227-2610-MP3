@@ -435,8 +435,7 @@ remain separately gated integration work; database checks do not prove hosted re
 
 Local Supabase certificate is stored outside this repository at
 C:/Users/jonat/.postgresql/prod-supabase.cer. Use that path as the sslrootcert URL
-parameter together with sslmode=verify-full. Its file copy is verified; connecting
-to the hosted database and validating the server trust chain are still pending.
+parameter together with sslmode=verify-full. The certificate-backed connection and separate schema provisioning succeeded on 2026-10-21; this does not establish hosted deployment or multi-user readiness.
 For a dedicated JDBC-only project, disabling the unused Data API prevents a separate
 access route; leaving it enabled requires appropriate grants/RLS for exposed tables.
 
@@ -457,8 +456,7 @@ marketplace records; no startup seeding, reset or migration occurs.
 Failed provisioning exits nonzero with Database provisioning failed; driver exception
 text and configuration/credentials are omitted. Check server environment settings,
 connectivity, certificate trust and provisioning permissions outside application logs.
-The executable-command cases use disposable local PostgreSQL. Hosted Supabase execution
-remains unverified. Owner reports PostgreSQL 17.11, matching tested major 17. See the existing feature summary
+The executable-command cases use disposable local PostgreSQL. Hosted provisioning succeeded on 2026-10-21 using operator-supplied settings; automated tests continue to use disposable local databases. Owner reports PostgreSQL 17.11, matching tested major 17. See the existing feature summary
 for consolidated checks. The final746-case suite and wrapper checks pass. One earlier
 listing-setup failure did not reproduce alone, in the52-case meetup class, or in the
 repeat full suite; its cause is unconfirmed. The buyer permission assertion stayed intact.
@@ -583,6 +581,68 @@ SOC-CHAT-1 changes the consolidated SoC client to Chat Completions while preserv
 
 The optional one-request smoke runner is `tools/benchmark/SocSearchSmoke.java`. With Java 25, `release/HotShop.jar`, and locally supplied `SOCLAAS_BASE_URL`, `SOCLAAS_MODEL`, and `SOCLAAS_API_KEY`, run `java --class-path release/HotShop.jar tools/benchmark/SocSearchSmoke.java`. It prints only a safe result category and suppresses exception details. The current Chat Completions implementation passed 83 focused client cases plus 76 validator cases, and both Checkstyle tasks. The final `check build shadowJar -x test` aggregate passed; it explicitly excluded tests, and the unchanged full PostgreSQL/application suite was not repeated. Final specification/coverage and security reviews of the lifecycle correction passed with no remaining contract finding; their adjacent dispatch-race concern was withdrawn after confirming late HTTP futures are cancelled and raced response bodies are closed. The coordinator made one live synthetic request against the configured `/v1` base with model `qwen3.5:9b`; the smoke runner reported `proposal accepted`. This confirms compatibility for that single request only, not general model quality or reliability. The approved SOC-LIFECYCLE-1 follow-up handles scheduler rejection after close begins by resolving the request as `CLOSED`; its deterministic regression passed, with no transport dispatched or deadline left queued. No additional live request or full database-suite run was performed for this lifecycle correction. UI wiring, quota admission, deployment readiness, and seller integration remain outside this slice.
 
-The next explicit AI-search UI benchmark is specified in AI-P3/AI-T3/BENCH-P3. The owner-confirmed UI uses the existing query field and a separate button labelled exactly "AI Search"; frozen tests assert that label. The lifecycle correction is approved and accepted, and common UI setup is approved. The measured AI-search UI implementation and each sequential measured-run readiness checkpoint remain pending. Existing ordinary search remains the only implemented search UI behavior.
+The explicit AI-search UI benchmark is specified in AI-P3/AI-T3/BENCH-P3. The owner-confirmed UI uses the existing query field and a separate button labelled exactly "AI Search". Both measured implementations are saved on isolated benchmark branches. The delivery branch selects the multi-agent UI and four additional tests; ordinary search stays available without AI calls. Multi candidate3efbeb1 and single candidate05eec8d each pass18 of21 fixed UI cases; three preview-invalidation cases have a common blank-input fixture conflict and remain failed. Equal read-only source assessment found no confirmed implementation/security defects. Multi additionally supplies four configuration/unavailable-feedback tests; single relies on source assessment for that path. Actual process-environment launch and full regression remain unverified in this slice.
 
-Common UI benchmark setup is accepted after the owner-approved test/documentation correction and focused specification/security re-review. Its 21-case baseline has 3 passing existing-behavior cases and 18 expected missing-AI-control assertion failures, with no errors or skips. Main and SearchPage remain unimplemented for AI search. Both arms receive the same frozen tests and provider seam; the common assessment separately checks actual environment wiring, client ownership and safe unavailable-configuration feedback. The correction reran only the changed UI tests, test style and diff checks; unchanged prerequisite evidence was reused.
+Common UI setup used one frozen source/test checkpoint98e6302. Both arms report styles and check/build/shadowJar -x test passing; the common evaluator inspected saved XML/source without rerunning checks. Multi observed workflow493–512seconds versus single472–497seconds; ranges overlap and single includes a restricted-shell Java visibility delay. Dashboard drops were8/4 session points and2/1 weekly points respectively, across different allowance windows; multi reached0%, which may censor usage. These are coarse observations, not exact credits or a general workflow winner. No candidate corrections, live calls or full database suite were performed. PLAN and benchmark-results.csv contain the evidence and limitations; fixture repair and production integration remain separate.
+
+### AI-search consolidation
+
+Owner requested consolidation on codex/ai-search-consolidated. Select multi UI candidate 3efbeb1 including four configuration/unavailable-feedback tests, atop the already repaired common SoC client; retain single candidate search-guide instructions. Original measured branches/results remain unchanged. Three frozen preview-invalidation tests have the known blank-input setup conflict; correcting them needs explicit approval. Full feature acceptance remains pending. No hosted data or live provider calls are required.
+
+Consolidation verification: 163 selected tests passed (83 client, 76 validator, 3 config, 1 unavailable-UI), plus both style tasks and check/build/shadowJar with tests excluded from that second aggregate invocation. The full application/database suite and known-conflicting UI21 suite were not rerun; no full-feature acceptance is claimed.
+
+### Run the consolidated AI Search feature locally
+
+Use JDK 25 and the Gradle Wrapper. PostgreSQL settings are required; AI settings are
+optional. The application reads process environment variables and does not load
+`.env.local` automatically. Keep this ignored file local, with one NAME=value entry
+per line and no `export` prefix:
+
+```dotenv
+HOTSHOP_DB_URL=jdbc:postgresql://YOUR_DATABASE_HOST:5432/postgres?sslmode=verify-full&sslrootcert=C:/path/to/database-ca.crt
+HOTSHOP_DB_USER=YOUR_DATABASE_USERNAME
+HOTSHOP_DB_PASSWORD=YOUR_DATABASE_PASSWORD
+SOCLAAS_BASE_URL=https://soclaas-api.comp.nus.edu.sg/v1
+SOCLAAS_API_KEY=YOUR_SOCLAAS_KEY
+SOCLAAS_MODEL=qwen3.5:9b
+```
+
+Use the exact host, port and username from the selected Supabase connection option.
+Use the database password rather than a Supabase API key. The SoC base URL is `/v1`;
+the client appends `/chat/completions`. A local PostgreSQL server can instead use
+`jdbc:postgresql://127.0.0.1:5432/hotshop` with matching local credentials.
+Docker Desktop is needed for a Docker database and container tests, not for running
+against an existing hosted database. Supabase Storage buckets are not used: images
+remain in the local application data directory.
+
+In PowerShell, from the repository root, load the file into the current process:
+
+```powershell
+Get-Content .env.local | ForEach-Object {
+    if ($_ -match '^\s*([A-Za-z_][A-Za-z0-9_]*)=(.*)$') {
+        [Environment]::SetEnvironmentVariable(
+            $Matches[1], $Matches[2].Trim().Trim('"').Trim("'"), 'Process'
+        )
+    }
+}
+.\gradlew.bat migrateDatabase
+```
+
+When provisioning succeeds, launch with `.\gradlew.bat run`. Provision once before
+first launch and when applying schema upgrades; normal startup validates the schema
+without modifying it. Reload the environment after editing the file. Missing or
+invalid AI settings disable AI Search with visible feedback; manual search remains
+available. A network/provider failure appears as a safe UI message after a request.
+Do not print environment values or enable verbose credential-bearing diagnostics.
+Database provisioning intentionally reports a generic failure; authentication
+SQLSTATE 28P01 indicates a rejected username/password combination.
+
+The selected implementation sends a request only after **AI Search**, previews all
+proposed filters, and requires **Apply filters** before running marketplace search.
+Edits, manual actions and navigation invalidate pending proposals; stale page/session
+completions are ignored. Main owns and closes the optional SoC client on shutdown.
+
+Presentation exports and build drafts were removed from docs/presentations and
+tools/benchmark/presentation-build at the owner's request. Benchmark source/results
+remain. Publication preparation does not waive the three known frozen UI fixture
+conflicts or constitute final feature acceptance.

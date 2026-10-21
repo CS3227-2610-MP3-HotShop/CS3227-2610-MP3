@@ -41,6 +41,21 @@ change, refresh the relevant record and submit the action again.
 Hosted JPro multi-user sessions and Supabase image storage remain separate integration
 work; this database conversion retains the current single-runtime directory lock.
 
+## Optional AI Search
+
+On the Search page, the optional **AI Search** button uses 1–1,000 Unicode
+code points of text from the existing search field to propose filters. Review the title, category, conditions,
+price range, and sort order in the preview, then choose **Apply filters** to
+replace the current filter draft and run the ordinary search. Choose **Dismiss**
+to discard the preview. Typing, changing filters, or running a manual search
+clears a pending proposal. If AI search is not configured or a request fails,
+the page shows a fixed status message; ordinary search remains available.
+
+For example, enter **used bicycle under S$200**, choose **AI Search**, and review
+the proposed filters before applying them. Ordinary **Search** and Enter do not
+call the AI service. Leaving Search or logging out discards the pending proposal.
+Images remain local; no Supabase Storage bucket is needed to use AI Search.
+
 ## Purpose of this Guide
 
 This guide aims to:

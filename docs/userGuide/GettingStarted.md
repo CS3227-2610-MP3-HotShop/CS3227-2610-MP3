@@ -30,6 +30,11 @@ HOTSHOP_DB_PASSWORD and run the separate migrateDatabase setup command. See the
 provisioning creates an empty marketplace; it does not import older SQLite files.
 Startup validates the schema and never upgrades, seeds or resets it automatically.
 
+For optional AI Search, the operator also supplies SOCLAAS_BASE_URL, SOCLAAS_API_KEY
+and SOCLAAS_MODEL. The app reads process settings; it does not automatically load
+.env.local. Follow the Developer Guide local AI Search setup to load that file
+before launching. You can use ordinary search when AI is unavailable.
+
 Marketplace records persist in PostgreSQL. Images and the application lock remain
 in the local .hotshop directory under your home folder. Only one runtime may use
 that image folder at a time. Back up the database and matching image files together;
