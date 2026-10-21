@@ -26,7 +26,7 @@ shown with an outline.
 
 Before launch, ask the operator to configure HOTSHOP_DB_URL, HOTSHOP_DB_USER and
 HOTSHOP_DB_PASSWORD and run the separate migrateDatabase setup command. See the
-[PostgreSQL setup guide](../DeveloperGuide.html#postgresql-operator-setup). The first
+[PostgreSQL setup guide](../developerGuide/AccountServiceAndLocalPersistence.html#postgresql-operator-setup). The first
 provisioning creates an empty marketplace; it does not import older SQLite files.
 Startup validates the schema and never upgrades, seeds or resets it automatically.
 
@@ -44,7 +44,7 @@ image folder and no competing instance. Close HotShop before backing up its imag
 ### Download a prebuilt JAR
 
 Prebuilt JARs for 64-bit Windows and Linux are attached to the
-[latest release](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/releases/latest),
+[latest release](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/releases/latest),
 and are also in the repository's `release/` folder:
 
 - `HotShop-windows.jar` for Windows

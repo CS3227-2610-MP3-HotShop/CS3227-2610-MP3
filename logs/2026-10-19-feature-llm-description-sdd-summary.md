@@ -7,7 +7,7 @@ are recorded complete, including runtime/UI integration, stale-result protection
 deterministic boundary checks, two live corpus runs and final independent local
 reviews. The user accepted all 26 second-run semantic results; the first run's
 failure is preserved. TASK-016/017 complete final documentation and scoped
-acceptance: 17/17 plan tasks recorded complete on 2026-10-20. See the [acceptance report](../docs/developerGuide/LlmAcceptance.md)
+acceptance: 17/17 plan tasks recorded complete on 2026-10-20. See the [acceptance report](2026-10-20-llm-documentation-reorganisation.md#archived-acceptance-record)
 for their final status and evidence. **Feature not Done:** provider tool assurance
 (G-03) and independent hosted-client session isolation (G-04) remain open.
 
@@ -176,9 +176,16 @@ as approval. Word-counting mechanics remain a technical-design detail.
 
 ## Documentation and completion
 
-[User Guide](../docs/UserGuide.md#generating-a-listing-description),
+The user requested a MarkBind documentation reorganisation after TASK-016/017.
+The landing pages are brief; complete usage lives in SearchAndListings.md and
+design/setup/testing guidance in LLMImplementation.md. Historical detailed
+acceptance and coverage records are preserved in the
+[reorganisation log](2026-10-20-llm-documentation-reorganisation.md).
+This changes documentation locations, not task status or security acceptance.
+
+[User Guide](../docs/userGuide/SearchAndListings.md#generating-a-listing-description),
 [listing instructions](../docs/userGuide/SearchAndListings.md),
-[Developer Guide](../docs/DeveloperGuide.md#llm-description-preparation-and-specification),
+[Developer Guide](../docs/developerGuide/LLMImplementation.md),
 [AGENTS.md](../AGENTS.md), this summary and per-task logs now describe actual
 local behaviour and limits. TASK-016/017 records are linked from the acceptance
 report; [independent final documentation review](2026-10-20-task016-017-documentation-review.md)
@@ -191,7 +198,7 @@ Later execution and approval evidence:
 - [Runtime/UI integration](2026-10-20-llm-task010-011-integration.md) and
   [stale UI guards](2026-10-20-llm-task012-integration.md).
 - [Integrated boundaries](2026-10-20-llm-task013-integration.md) and
-  [TC-01–12 trace](../docs/developerGuide/LlmSecurityCoverage.md).
+  [TC-01–12 trace](2026-10-20-llm-documentation-reorganisation.md#archived-security-coverage).
 - [Live correction approval](2026-10-20-task014-prompt-correction-plan.md),
   [second run](2026-10-20-task014-prompt-rerun.md) and
   [user semantic acceptance](2026-10-20-task014-completion.md).

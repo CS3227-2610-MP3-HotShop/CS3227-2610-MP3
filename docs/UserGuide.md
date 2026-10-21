@@ -26,7 +26,7 @@ topic in detail.
 ## PostgreSQL setup and persistence
 
 The operator must configure the PostgreSQL connection and run the separate schema
-setup command before launching HotShop; see [Developer Guide](DeveloperGuide.html#postgresql-operator-setup).
+setup command before launching HotShop; see [PostgreSQL setup](developerGuide/AccountServiceAndLocalPersistence.html#postgresql-operator-setup).
 An internet or local network connection to that database is required. Marketplace
 records persist across application restarts. New installations start empty; old SQLite
 files are not imported or reset. Your local data directory holds images and the
