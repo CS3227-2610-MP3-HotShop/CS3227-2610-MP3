@@ -38,8 +38,9 @@ import hotshop.service.DescriptionService.FailureKind;
 import hotshop.service.DescriptionService.Generated;
 import hotshop.service.DescriptionService.GenerationResult;
 import hotshop.storage.ImageStorage;
+import hotshop.support.PostgresTestSupport;
 
-class DescriptionServiceTest {
+class DescriptionServiceTest extends PostgresTestSupport {
     private static final UUID ACCOUNT = UUID.fromString("00000000-0000-0000-0000-000000000001");
     private static final UUID OTHER_ACCOUNT = UUID.fromString("00000000-0000-0000-0000-000000000002");
     private static final String DESCRIPTION = "Wooden chair in good condition.";
@@ -633,8 +634,7 @@ class DescriptionServiceTest {
     @Test
     void generateDescription_successAndFailure_preserveTemporaryDatabaseAndFiles() throws Exception {
         try (Harness harness = new Harness()) {
-            Database database = new Database(directory.resolve("marketplace.db"));
-            database.migrate();
+            Database database = new Database(databaseConfig);
             ImageStorage images = new ImageStorage(directory.resolve("images"));
             AccountService accounts = new AccountService(database, new UserRepository(),
                     harness.worker, harness.session, images);
@@ -642,6 +642,7 @@ class DescriptionServiceTest {
             await(accounts.login("alice", "Sample1!"));
             Files.writeString(directory.resolve("private-context.txt"), PRIVATE_CANARY, StandardCharsets.UTF_8);
             Map<Path, List<Byte>> before = snapshot(directory);
+            String databaseBefore = snapshotDatabase();
             var successful = harness.generate("Chair", Condition.GOOD);
             harness.dispatch(harness.preparation(successful), true).completion.complete(
                     new LlmClient.Generated(DESCRIPTION));
@@ -651,6 +652,7 @@ class DescriptionServiceTest {
                     new LlmClient.Failed(LlmClient.Failure.NETWORK));
             assertFailed(failed, FailureKind.NETWORK);
             assertEquals(before, snapshot(directory));
+            assertEquals(databaseBefore, snapshotDatabase());
             var pending = harness.generate("Chair", Condition.GOOD);
             var attempt = harness.dispatch(harness.preparation(pending), true);
             await(accounts.logout());

@@ -36,7 +36,7 @@
   * [Architecture Overview]({{ baseUrl }}/docs/developerGuide/ArchitectureOverview.html)
   * [JavaFX UI]({{ baseUrl }}/docs/developerGuide/JavaFXUI.html)
   * [Service Worker]({{ baseUrl }}/docs/developerGuide/ServiceWorker.html)
-  * [Account Service and Local Persistence]({{ baseUrl }}/docs/developerGuide/AccountServiceAndLocalPersistence.html)
+  * [Account Service and PostgreSQL Persistence]({{ baseUrl }}/docs/developerGuide/AccountServiceAndLocalPersistence.html)
   * [Marketplace Services]({{ baseUrl }}/docs/developerGuide/MarketplaceServices.html)
   * [LLM Implementation]({{ baseUrl }}/docs/developerGuide/LLMImplementation.html)
   * [Listing Service]({{ baseUrl }}/docs/developerGuide/ListingService.html)

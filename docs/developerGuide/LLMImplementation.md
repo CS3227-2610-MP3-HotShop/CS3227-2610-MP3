@@ -213,6 +213,19 @@ same completion. `close()` waits off JavaFX and returns immediately on JavaFX;
 observe `closeAsync()` for shutdown failures. No HTTP termination is awaited on
 JavaFX. These guards do not establish independent JPro client identity.
 
+JUnit runtime tests use `PostgresTestSupport.openTestRuntime` so they share the
+test's disposable PostgreSQL database while preserving each runtime's directory,
+clock and optional description owner. Tests that need the same account across
+runtime sessions seed it once, then log in from each session; separate directories
+do not imply separate databases. The shared-account session helper closes a newly
+opened runtime if login fails. The server-shutdown test uses distinct accounts so
+both generation requests can remain pending. Tests that simulate connection failures pass an
+explicit `DatabaseConfig`. The live adapter is outside the JUnit lifecycle, so it
+starts and provisions its own disposable PostgreSQL fixture, creates a synthetic
+account and runtime, then closes the runtime and fixture. Storage-preservation
+checks include public PostgreSQL table rows and sequence state alongside local
+file snapshots. Docker is required for these database-backed runtime tests.
+
 ## Offline verification
 
 Ordinary `test`, `check` and `build` exclude the `llm-live` tag. Run targeted
@@ -224,8 +237,9 @@ checks from the repository root with the Gradle Wrapper:
 ```
 
 These commands describe how to verify the feature; they are not a claim of a new
-run during this documentation reorganisation. Tests use temporary SQLite data,
-synthetic settings, controlled clients, clocks and completion gates. Loopback HTTPS
+run during this documentation reorganisation. Runtime tests use disposable local
+PostgreSQL data through PostgresTestSupport.openTestRuntime and require Docker.
+They use synthetic settings, controlled clients, clocks and completion gates. Loopback HTTPS
 uses a public synthetic test CA trusted only by the injected client; it preserves
 hostname checks and never changes global production TLS. See the
 [HTTPS fixture guide](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/src/test/resources/hotshop/llm/HTTPS-FIXTURES.md).

@@ -27,8 +27,9 @@ import hotshop.ApplicationRuntime;
 import hotshop.model.Category;
 import hotshop.model.Condition;
 import hotshop.service.ListingDraft;
+import hotshop.support.PostgresTestSupport;
 
-class LlmConfigurationTest {
+class LlmConfigurationTest extends PostgresTestSupport {
     private static final String ENDPOINT_KEY = "SOCLAAS_BASE_URL";
     private static final String TOKEN_KEY = "SOCLAAS_API_KEY";
     private static final String MODEL_KEY = "SOCLAAS_MODEL";
@@ -235,14 +236,14 @@ class LlmConfigurationTest {
         assertUnavailable(loadEnvironment(Map.of(TOKEN_KEY, TOKEN)));
         Path data = directory.resolve("manual-data");
         java.util.UUID listingId;
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(data)) {
+        try (ApplicationRuntime runtime = openTestRuntime(data)) {
             runtime.getAccounts().register("manualuser", "Sample1!", "Manual User").join();
             runtime.getAccounts().login("manualuser", "Sample1!").join();
             var draft = new ListingDraft("Manual item", "Handwritten description", Category.OTHER,
                     100, Condition.GOOD, "Campus");
             listingId = runtime.getListings().createListing(draft, List.of()).join().listing().getId();
         }
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(data)) {
+        try (ApplicationRuntime runtime = openTestRuntime(data)) {
             runtime.getAccounts().login("manualuser", "Sample1!").join();
             var saved = runtime.getListings().getMyListings().join().getFirst().listing().listing();
             assertEquals(listingId, saved.getId());

@@ -40,9 +40,10 @@ import hotshop.model.Category;
 import hotshop.model.Condition;
 import hotshop.service.DescriptionService;
 import hotshop.service.ListingDraft;
+import hotshop.support.PostgresTestSupport;
 
 /** Integrated local authority boundaries, without asserting that a model resists semantic attacks. */
-class LlmSecurityIntegrationTest {
+class LlmSecurityIntegrationTest extends PostgresTestSupport {
     private static final String TOKEN = "synthetic-integrated-token-canary";
     private static final String ACCOUNT_CANARY = "synthetic-private-account-canary";
     private static final String LISTING_CANARY = "synthetic-private-listing-canary";
@@ -206,7 +207,7 @@ class LlmSecurityIntegrationTest {
         };
         try (Diagnostics diagnostics = new Diagnostics()) {
             try (DescriptionRuntime owner = new DescriptionRuntime(client);
-                    ApplicationRuntime runtime = ApplicationRuntime.open(directory.resolve("data"), CLOCK, owner)) {
+                    ApplicationRuntime runtime = openTestRuntime(directory.resolve("data"), CLOCK, owner)) {
                 runtime.getAccounts().register("alice", "Sample1!", "Alice").get(10, TimeUnit.SECONDS);
                 runtime.getAccounts().login("alice", "Sample1!").get(10, TimeUnit.SECONDS);
                 Map<String, String> before = snapshot();
@@ -271,6 +272,7 @@ class LlmSecurityIntegrationTest {
                 snapshot.put(directory.relativize(path).toString(), value);
             }
         }
+        snapshot.put("<postgres>", snapshotDatabase());
         return snapshot;
     }
 
@@ -306,7 +308,7 @@ class LlmSecurityIntegrationTest {
                         return handle::cancel;
                     });
             owner = new DescriptionRuntime(client);
-            runtime = ApplicationRuntime.open(directory.resolve("data"), CLOCK, owner);
+            runtime = openTestRuntime(directory.resolve("data"), CLOCK, owner);
             runtime.getAccounts().register("alice", "Sample1!", "Alice").get(10, TimeUnit.SECONDS);
             runtime.getAccounts().login("alice", "Sample1!").get(10, TimeUnit.SECONDS);
             runtime.getAccounts().updateProfile("Alice", ACCOUNT_CANARY).get(10, TimeUnit.SECONDS);

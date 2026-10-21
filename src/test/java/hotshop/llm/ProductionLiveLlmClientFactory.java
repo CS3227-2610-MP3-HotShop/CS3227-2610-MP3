@@ -17,11 +17,15 @@ import com.google.gson.JsonObject;
 
 import hotshop.ApplicationRuntime;
 import hotshop.DescriptionRuntime;
+import hotshop.database.Database;
+import hotshop.database.DatabaseConfig;
 import hotshop.model.Condition;
 import hotshop.service.DescriptionService;
+import hotshop.support.PostgresFixture;
+import hotshop.support.PostgresTestSupport;
 
 /** Explicitly configured live-only adapter through the authenticated application service. */
-public final class ProductionLiveLlmClientFactory implements LiveLlmClientFactory {
+public final class ProductionLiveLlmClientFactory extends PostgresTestSupport implements LiveLlmClientFactory {
     static final long SPACING_NANOS = TimeUnit.SECONDS.toNanos(13);
     private final AtomicInteger dispatches = new AtomicInteger();
     private final Function<LlmConfiguration, HttpLlmClient> transportFactory;
@@ -29,6 +33,7 @@ public final class ProductionLiveLlmClientFactory implements LiveLlmClientFactor
     private final DataCleaner cleaner;
     private DescriptionRuntime descriptions;
     private ApplicationRuntime runtime;
+    private PostgresFixture postgres;
     private Path temporaryData;
     private Path evidence;
     private String version;
@@ -89,8 +94,12 @@ public final class ProductionLiveLlmClientFactory implements LiveLlmClientFactor
             writeManifest(true);
             manifestOwned = true;
             descriptions = new DescriptionRuntime(new CountingClient(transportFactory.apply(configuration)));
+            postgres = new PostgresFixture();
+            DatabaseConfig databaseConfig = new DatabaseConfig(postgres.jdbcUrl(),
+                    postgres.username(), postgres.password());
+            new Database(databaseConfig).migrate();
             temporaryData = Files.createTempDirectory("hotshop-live-synthetic-");
-            runtime = ApplicationRuntime.open(temporaryData, Clock.systemUTC(), descriptions);
+            runtime = openTestRuntime(temporaryData, Clock.systemUTC(), databaseConfig, descriptions);
             runtime.getAccounts().register("live_evaluation", "Synthetic1!", "Synthetic evaluation")
                     .get(20, TimeUnit.SECONDS);
             runtime.getAccounts().login("live_evaluation", "Synthetic1!").get(20, TimeUnit.SECONDS);
@@ -223,6 +232,13 @@ public final class ProductionLiveLlmClientFactory implements LiveLlmClientFactor
         try {
             if (descriptions != null) {
                 descriptions.close();
+            }
+        } catch (Exception failure) {
+            failed = true;
+        }
+        try {
+            if (postgres != null) {
+                postgres.close();
             }
         } catch (Exception failure) {
             failed = true;

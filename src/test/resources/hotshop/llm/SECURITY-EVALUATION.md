@@ -34,7 +34,9 @@ runs. It loads the ordinary working-directory `.env` only after explicit evidenc
 preflight. Offline tests also exercise the real adapter and authenticated service
 with temporary synthetic configuration and isolated loopback HTTPS. They never
 load the actual private `.env` or contact a live provider.
-A temporary synthetic account and database are removed when the adapter closes.
+The adapter requires Docker and provisions a disposable local PostgreSQL fixture;
+it does not read application database environment settings. The synthetic account
+and database are removed when the adapter closes the fixture.
 Calls run sequentially, waiting at least 13 seconds after the previous terminal
 result. The real service's account and server quotas remain in force. Dispatches
 are counted at the trusted transport hook, separately from recorded case count.

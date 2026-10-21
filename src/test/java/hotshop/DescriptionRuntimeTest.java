@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Files;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -29,9 +28,10 @@ import hotshop.model.Condition;
 import hotshop.service.DescriptionService;
 import hotshop.service.DescriptionService.FailureKind;
 import hotshop.service.ListingDraft;
+import hotshop.support.PostgresTestSupport;
 
-/** Exercises runtime ownership using isolated SQLite data and controlled transports. */
-class DescriptionRuntimeTest {
+/** Exercises runtime ownership and shared PostgreSQL accounts using controlled transports. */
+class DescriptionRuntimeTest extends PostgresTestSupport {
     private static final Clock CLOCK = Clock.systemUTC();
     private static final String DESCRIPTION = "A wooden chair in good condition.";
 
@@ -41,7 +41,7 @@ class DescriptionRuntimeTest {
     @Test
     void open_missingConfiguration_preservesManualListingAndReturnsUnavailable() throws Exception {
         try (DescriptionRuntime owner = new DescriptionRuntime(LlmConfiguration.load(directory));
-                ApplicationRuntime runtime = ApplicationRuntime.open(directory.resolve("data"), CLOCK, owner)) {
+                ApplicationRuntime runtime = openTestRuntime(directory.resolve("data"), CLOCK, owner)) {
             loginNew(runtime);
             assertFailed(runtime.getDescriptions().generateDescription("Chair", Condition.GOOD),
                     FailureKind.UNAVAILABLE);
@@ -54,10 +54,10 @@ class DescriptionRuntimeTest {
 
     @Test
     void open_existingOverloads_exposesOfflineDescriptionService() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory.resolve("default"))) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory.resolve("default"))) {
             assertNotNull(runtime.getDescriptions());
         }
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory.resolve("clock"), CLOCK)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory.resolve("clock"), CLOCK)) {
             loginNew(runtime);
             assertFailed(runtime.getDescriptions().generateDescription("Chair", Condition.GOOD),
                     FailureKind.UNAVAILABLE);
@@ -68,7 +68,7 @@ class DescriptionRuntimeTest {
     void generateDescription_injectedClient_usesRuntimeSessionAndDoesNotPersist() throws Exception {
         FakeClient client = new FakeClient();
         try (DescriptionRuntime owner = new DescriptionRuntime(client);
-                ApplicationRuntime runtime = ApplicationRuntime.open(directory, CLOCK, owner)) {
+                ApplicationRuntime runtime = openTestRuntime(directory, CLOCK, owner)) {
             assertFailed(runtime.getDescriptions().generateDescription("Chair", Condition.GOOD),
                     FailureKind.LOGIN_REQUIRED);
             assertEquals(0, client.dispatches.get());
@@ -84,8 +84,8 @@ class DescriptionRuntimeTest {
     void generateDescription_twoRuntimeSessions_remainIndependent() throws Exception {
         FakeClient client = new FakeClient();
         try (DescriptionRuntime owner = new DescriptionRuntime(client);
-                ApplicationRuntime first = ApplicationRuntime.open(directory.resolve("first"), CLOCK, owner);
-                ApplicationRuntime second = ApplicationRuntime.open(directory.resolve("second"), CLOCK, owner)) {
+                ApplicationRuntime first = openTestRuntime(directory.resolve("first"), CLOCK, owner);
+                ApplicationRuntime second = openTestRuntime(directory.resolve("second"), CLOCK, owner)) {
             loginNew(first);
             assertFailed(second.getDescriptions().generateDescription("Chair", Condition.GOOD),
                     FailureKind.LOGIN_REQUIRED);
@@ -95,11 +95,11 @@ class DescriptionRuntimeTest {
 
     @Test
     void generateDescription_sameAccountAcrossRuntimes_sharesActiveAdmission() throws Exception {
-        seedCopies();
+        seedAccount();
         FakeClient client = new FakeClient();
         try (DescriptionRuntime owner = new DescriptionRuntime(client);
-                ApplicationRuntime first = openCopy("first", owner);
-                ApplicationRuntime second = openCopy("second", owner)) {
+                ApplicationRuntime first = openSession("first", owner);
+                ApplicationRuntime second = openSession("second", owner)) {
             var pending = first.getDescriptions().generateDescription("Chair", Condition.GOOD);
             CompletableFuture<LlmClient.Result> transport = client.next();
             assertFailed(second.getDescriptions().generateDescription("Chair", Condition.GOOD),
@@ -112,11 +112,11 @@ class DescriptionRuntimeTest {
 
     @Test
     void close_oneRuntime_preservesSharedQuotaAndOtherRuntimeTransport() throws Exception {
-        seedCopies();
+        seedAccount();
         FakeClient client = new FakeClient();
         try (DescriptionRuntime owner = new DescriptionRuntime(client);
-                ApplicationRuntime first = openCopy("first", owner);
-                ApplicationRuntime second = openCopy("second", owner)) {
+                ApplicationRuntime first = openSession("first", owner);
+                ApplicationRuntime second = openSession("second", owner)) {
             for (int index = 0; index < 5; index++) {
                 var result = (index % 2 == 0 ? first : second).getDescriptions()
                         .generateDescription("Chair", Condition.GOOD);
@@ -136,7 +136,7 @@ class DescriptionRuntimeTest {
     void close_pendingAttempt_cancelsTransportRejectsNewGenerationAndReleasesDirectory() throws Exception {
         FakeClient client = new FakeClient();
         try (DescriptionRuntime owner = new DescriptionRuntime(client)) {
-            ApplicationRuntime runtime = ApplicationRuntime.open(directory, CLOCK, owner);
+            ApplicationRuntime runtime = openTestRuntime(directory, CLOCK, owner);
             loginNew(runtime);
             var pending = runtime.getDescriptions().generateDescription("Chair", Condition.GOOD);
             var transport = client.next();
@@ -146,7 +146,7 @@ class DescriptionRuntimeTest {
             assertFailed(pending, FailureKind.CLOSED);
             assertFailed(runtime.getDescriptions().generateDescription("Chair", Condition.GOOD), FailureKind.CLOSED);
             assertEquals(0, client.closes.get());
-            try (ApplicationRuntime reopened = ApplicationRuntime.open(directory, CLOCK, owner)) {
+            try (ApplicationRuntime reopened = openTestRuntime(directory, CLOCK, owner)) {
                 assertNotNull(reopened.getAccounts());
             }
         }
@@ -156,10 +156,11 @@ class DescriptionRuntimeTest {
     void close_serverOwner_cancelsAllPendingServicesAndClosesClientOnce() throws Exception {
         FakeClient client = new FakeClient();
         try (DescriptionRuntime owner = new DescriptionRuntime(client);
-                ApplicationRuntime first = ApplicationRuntime.open(directory.resolve("first"), CLOCK, owner);
-                ApplicationRuntime second = ApplicationRuntime.open(directory.resolve("second"), CLOCK, owner)) {
+                ApplicationRuntime first = openTestRuntime(directory.resolve("first"), CLOCK, owner);
+                ApplicationRuntime second = openTestRuntime(directory.resolve("second"), CLOCK, owner)) {
             loginNew(first);
-            loginNew(second);
+            second.getAccounts().register("bobby", "Sample1!", "Bob").get(10, TimeUnit.SECONDS);
+            second.getAccounts().login("bobby", "Sample1!").get(10, TimeUnit.SECONDS);
             var firstResult = first.getDescriptions().generateDescription("Chair", Condition.GOOD);
             var firstTransport = client.next();
             var secondResult = second.getDescriptions().generateDescription("Desk", Condition.GOOD);
@@ -182,7 +183,7 @@ class DescriptionRuntimeTest {
         CountDownLatch entered = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
         try (DescriptionRuntime owner = new DescriptionRuntime(client);
-                ApplicationRuntime runtime = ApplicationRuntime.open(directory, CLOCK, owner)) {
+                ApplicationRuntime runtime = openTestRuntime(directory, CLOCK, owner)) {
             loginNew(runtime);
             var result = runtime.getDescriptions().generateDescription("Chair", Condition.GOOD);
             var transport = client.next();
@@ -211,7 +212,7 @@ class DescriptionRuntimeTest {
         FakeClient client = new FakeClient();
         client.preparation = new CompletableFuture<>();
         try (DescriptionRuntime owner = new DescriptionRuntime(client);
-                ApplicationRuntime runtime = ApplicationRuntime.open(directory, CLOCK, owner)) {
+                ApplicationRuntime runtime = openTestRuntime(directory, CLOCK, owner)) {
             loginNew(runtime);
             var result = runtime.getDescriptions().generateDescription("Chair", Condition.GOOD);
             assertTrue(client.prepared.await(10, TimeUnit.SECONDS));
@@ -228,7 +229,7 @@ class DescriptionRuntimeTest {
         CountDownLatch entered = new CountDownLatch(1);
         CountDownLatch release = new CountDownLatch(1);
         try (DescriptionRuntime owner = new DescriptionRuntime(client);
-                ApplicationRuntime runtime = ApplicationRuntime.open(directory, CLOCK, owner)) {
+                ApplicationRuntime runtime = openTestRuntime(directory, CLOCK, owner)) {
             var busy = runtime.getAccounts().register("alice", "Sample1!", "Alice").thenRun(() -> {
                 entered.countDown();
                 awaitLatch(release);
@@ -238,7 +239,7 @@ class DescriptionRuntimeTest {
                 var close = CompletableFuture.supplyAsync(runtime::closeAsync).get(2, TimeUnit.SECONDS);
                 assertFalse(close.isDone());
                 assertSame(close, runtime.closeAsync());
-                assertThrows(IOException.class, () -> ApplicationRuntime.open(directory));
+                assertThrows(IOException.class, () -> openTestRuntime(directory));
                 assertFailed(runtime.getDescriptions().generateDescription("Chair", Condition.GOOD),
                         FailureKind.CLOSED);
                 release.countDown();
@@ -248,7 +249,7 @@ class DescriptionRuntimeTest {
                 release.countDown();
             }
         }
-        try (ApplicationRuntime reopened = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime reopened = openTestRuntime(directory)) {
             assertNotNull(reopened.getAccounts());
         }
     }
@@ -258,29 +259,32 @@ class DescriptionRuntimeTest {
         FakeClient client = new FakeClient();
         DescriptionRuntime owner = new DescriptionRuntime(client);
         owner.close();
-        assertThrows(IllegalStateException.class, () -> ApplicationRuntime.open(directory, CLOCK, owner));
-        try (ApplicationRuntime reopened = ApplicationRuntime.open(directory)) {
+        assertThrows(IllegalStateException.class, () -> openTestRuntime(directory, CLOCK, owner));
+        try (ApplicationRuntime reopened = openTestRuntime(directory)) {
             assertNotNull(reopened.getAccounts());
         }
         assertEquals(1, client.closes.get());
     }
 
-    private void seedCopies() throws Exception {
-        Path seed = directory.resolve("seed");
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(seed)) {
+    private void seedAccount() throws Exception {
+        try (ApplicationRuntime runtime = openTestRuntime(directory.resolve("seed"), CLOCK)) {
             loginNew(runtime);
-        }
-        for (String name : List.of("first", "second")) {
-            Path target = directory.resolve(name);
-            Files.createDirectories(target);
-            Files.copy(seed.resolve("marketplace.db"), target.resolve("marketplace.db"));
         }
     }
 
-    private ApplicationRuntime openCopy(String name, DescriptionRuntime owner) throws Exception {
-        ApplicationRuntime runtime = ApplicationRuntime.open(directory.resolve(name), CLOCK, owner);
-        runtime.getAccounts().login("alice", "Sample1!").get(10, TimeUnit.SECONDS);
-        return runtime;
+    private ApplicationRuntime openSession(String name, DescriptionRuntime owner) throws Exception {
+        ApplicationRuntime runtime = openTestRuntime(directory.resolve(name), CLOCK, owner);
+        try {
+            runtime.getAccounts().login("alice", "Sample1!").get(10, TimeUnit.SECONDS);
+            return runtime;
+        } catch (Exception failure) {
+            try {
+                runtime.close();
+            } catch (Exception closeFailure) {
+                failure.addSuppressed(closeFailure);
+            }
+            throw failure;
+        }
     }
 
     private static void loginNew(ApplicationRuntime runtime) throws Exception {

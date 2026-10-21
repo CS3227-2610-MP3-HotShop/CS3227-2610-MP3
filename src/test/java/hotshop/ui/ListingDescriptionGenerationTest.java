@@ -39,6 +39,7 @@ import hotshop.model.Category;
 import hotshop.model.Condition;
 import hotshop.service.DescriptionService;
 import hotshop.service.ListingDraft;
+import hotshop.support.PostgresTestSupport;
 import javafx.application.Platform;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
@@ -53,7 +54,7 @@ import javafx.stage.Window;
 import javafx.stage.WindowEvent;
 
 /** Real-control checks against temporary storage and a controlled, network-free transport. */
-class ListingDescriptionGenerationTest {
+class ListingDescriptionGenerationTest extends PostgresTestSupport {
     private static final String DESCRIPTION = "A wooden chair in good condition.";
 
     @TempDir
@@ -83,7 +84,7 @@ class ListingDescriptionGenerationTest {
     void openCreateListing() throws Exception {
         client = new FakeClient();
         owner = new DescriptionRuntime(client);
-        runtime = ApplicationRuntime.open(directory, Clock.systemUTC(), owner);
+        runtime = openTestRuntime(directory, Clock.systemUTC(), owner);
         runtime.getAccounts().register("alice", "Sample1!", "Alice").get(10, TimeUnit.SECONDS);
         var user = runtime.getAccounts().login("alice", "Sample1!").get(10, TimeUnit.SECONDS);
         fx(() -> {

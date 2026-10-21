@@ -56,7 +56,9 @@
   documentation tool only and is not part of the build.
 - [Gradle](https://docs.gradle.org/9.1.0/release-notes.html): wrapper and Java 25 build support.
 - [Shadow](https://gradleup.com/shadow/): executable dependency bundling.
-- [Xerial SQLite JDBC](https://github.com/xerial/sqlite-jdbc): bundled SQLite driver.
+- [PostgreSQL JDBC](https://jdbc.postgresql.org/) (42.7.14): PostgreSQL database driver.
+- [Testcontainers for Java](https://java.testcontainers.org/) (2.0.5): disposable
+  PostgreSQL instances for database-backed tests.
 - [Gson](https://github.com/google/gson) (2.14.0): streaming `JsonReader` and
   `JsonWriter` for bounded, strict LLM request/response JSON handling.
 - [OWASP Password Storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)

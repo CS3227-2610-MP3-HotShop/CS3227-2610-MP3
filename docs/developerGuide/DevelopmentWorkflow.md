@@ -17,6 +17,49 @@ necessary. Import the root directory as a Gradle project in your IDE.
 
 Use `./gradlew` on macOS/Linux. Initial dependency resolution requires network access.
 
+### Local PostgreSQL development
+
+Use PostgreSQL 17 locally. The disposable test image is `postgres:17.6-alpine3.22`.
+For a disposable development server, set `POSTGRES_PASSWORD` in the invoking shell
+without printing it, then run:
+
+```powershell
+docker run --name hotshop-dev -p 127.0.0.1:5432:5432 -e POSTGRES_DB=hotshop -e POSTGRES_USER=hotshop -e POSTGRES_PASSWORD postgres:17.6-alpine3.22
+```
+
+Set matching `HOTSHOP_DB_USER` and `HOTSHOP_DB_PASSWORD`, and a credential-free
+`HOTSHOP_DB_URL` such as `jdbc:postgresql://127.0.0.1:5432/hotshop`.
+Follow [PostgreSQL operator setup](AccountServiceAndLocalPersistence.html#postgresql-operator-setup)
+to provision the schema before running `run` or `jproRun`. Use a Docker volume when
+development records must outlive the container. Never supply hosted/demo database
+settings to automated tests or print environment values.
+
+### Isolated database tests
+
+Database-backed service and UI tests require Docker with its Linux engine running;
+missing Docker is a setup failure, with no SQLite fallback. `PostgresTestSupport`
+shares one disposable PostgreSQL server per class and creates a fresh database per
+test. Tests inject fixture-owned credentials rather than application environment
+settings. Runtime openings within the same test share its database even when their
+image/lock directories differ. Restart checks reopen the same database.
+
+Use `openTestRuntime(directory)` for the default clock, or pass an explicit clock
+and description owner through the helper overloads when needed. The explicit
+database-configuration overload preserves synthetic connection-failure tests.
+Close runtimes to drain workers before fixture teardown. Standalone provisioning
+command tests copy an isolated build context to avoid locking the active Gradle
+project recursively. Tests without database fixtures do not need Docker.
+
+Full verification uses the wrapper:
+
+```powershell
+.\gradlew.bat test checkstyleMain checkstyleTest check build shadowJar
+```
+
+CI checks Docker availability and uses `xvfb-run` for JavaFX tests. See
+[LLM verification](LLMImplementation.html#offline-verification) for controlled
+description-generation tests and the separate live evaluation process.
+
 ### Diagrams
 
 The seven diagrams of listings, offers, sales, meetups, and chat (the
@@ -98,7 +141,7 @@ the JavaFX platform dependencies differ.
 
 Database-backed tests require Docker Desktop with its Linux engine running. Tests
 provision disposable local PostgreSQL with fixture-owned credentials; never configure
-them with hosted/demo settings. See [PostgreSQL operator setup](../DeveloperGuide.html#postgresql-operator-setup)
+them with hosted/demo settings. See [PostgreSQL operator setup](AccountServiceAndLocalPersistence.html#postgresql-operator-setup)
 for development setup and the separate schema command before application launch.
 
 ### Continuous integration

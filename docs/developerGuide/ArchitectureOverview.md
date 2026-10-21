@@ -74,3 +74,11 @@ recovers managed images before returning. Closing the runtime drains accepted
 worker operations before releasing the lock. The session is in memory and starts
 logged out on each launch.
 
+The four-argument overload, `open(directory, clock, config, descriptions)`, owns
+initialization. The overload taking a description owner supplies the server's
+environment-derived `DatabaseConfig`; the overload taking only a database
+configuration supplies the offline description owner. The two-argument overload
+supplies both defaults, and the one-argument overload also supplies the system
+clock. Runtime directories select image storage and locking; PostgreSQL connection
+settings are supplied separately.
+
