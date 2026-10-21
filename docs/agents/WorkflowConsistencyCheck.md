@@ -59,7 +59,7 @@ Current changes remain local. No GitHub issue status was modified by this audit.
 ## Later prepublication review
 
 The earlier audit above is historical. The subsequent
-[prepublication review](../../logs/2026-10-17-workflow-prepublication-review.md)
+prepublication review (historical log deleted at owner request2026-10-20)
 identified four findings. Plan-status ownership, parent documentation prompts and
 current status pointers have now been corrected per user approval. Mandatory-red
 wording versus already-satisfied baseline behaviour remains open for explanation

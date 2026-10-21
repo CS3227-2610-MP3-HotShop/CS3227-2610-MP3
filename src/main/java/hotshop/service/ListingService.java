@@ -93,7 +93,9 @@ public final class ListingService {
         return worker.submit(() -> {
             try {
                 images.recover();
-            } catch (SQLException | IOException exception) {
+            } catch (SQLException exception) {
+                throw ServiceSupport.storageFailure(exception, "Image storage is unavailable");
+            } catch (IOException exception) {
                 throw new ServiceException(ServiceException.Code.STORAGE, "Image storage is unavailable", exception);
             }
             return null;

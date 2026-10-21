@@ -51,7 +51,7 @@ public record ListingSearch(String titleText, Category category, Set<Condition> 
         };
     }
 
-    /** Case-insensitive for all scripts, which SQLite's own matching is not. */
+    /** Applies consistent Unicode case-insensitive matching across database environments. */
     private boolean matchesTitle(String title) {
         if (titleText == null || titleText.isBlank()) {
             return true;

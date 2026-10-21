@@ -2,7 +2,6 @@ package hotshop.service;
 
 import static hotshop.service.ListingServiceTest.assertFailure;
 import static hotshop.service.ListingServiceTest.registerAndLogin;
-import static hotshop.service.ListingServiceTest.setStatus;
 import static hotshop.service.ListingServiceTest.titles;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -20,11 +19,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import hotshop.ApplicationRuntime;
+import hotshop.support.PostgresTestSupport;
 import hotshop.model.Category;
 import hotshop.model.Condition;
 import hotshop.model.ListingStatus;
 
-class ListingSearchTest {
+class ListingSearchTest extends PostgresTestSupport {
     @TempDir
     Path directory;
 
@@ -182,6 +182,6 @@ class ListingSearchTest {
     }
 
     private ApplicationRuntime open() throws Exception {
-        return ApplicationRuntime.open(directory, clock);
+        return openTestRuntime(directory, clock);
     }
 }

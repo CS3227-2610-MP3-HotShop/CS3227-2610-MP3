@@ -96,9 +96,10 @@ Creating these files locally does not attach them to a GitHub Release.
 JARs built from the same source should contain identical `hotshop/` classes;
 the JavaFX platform dependencies differ.
 
-On Windows 11, Smart App Control blocks the unsigned native library that SQLite
-JDBC unpacks into `%TEMP%`, so every database test and the application itself
-fail on a machine where it is on. CI runs on Linux, so it is unaffected.
+Database-backed tests require Docker Desktop with its Linux engine running. Tests
+provision disposable local PostgreSQL with fixture-owned credentials; never configure
+them with hosted/demo settings. See [PostgreSQL operator setup](../DeveloperGuide.html#postgresql-operator-setup)
+for development setup and the separate schema command before application launch.
 
 ### Continuous integration
 

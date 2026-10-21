@@ -13,6 +13,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 import hotshop.database.Database;
+import hotshop.database.DatabaseConfig;
 import hotshop.llm.LlmConfiguration;
 import hotshop.repository.ChatRepository;
 import hotshop.repository.ListingRepository;
@@ -182,11 +183,11 @@ public final class ApplicationRuntime implements AutoCloseable {
      * @throws SQLException if database access fails
      */
     public static ApplicationRuntime open(Path directory, Clock clock) throws IOException, SQLException {
-        return open(directory, clock, OFFLINE_DESCRIPTIONS);
+        return open(directory, clock, DatabaseConfig.fromEnvironment(System.getenv()), OFFLINE_DESCRIPTIONS);
     }
 
     /**
-     * Opens local data with caller-owned server generation resources, without reading private configuration.
+     * Opens PostgreSQL data using server database settings and caller-owned generation resources.
      * Closing this runtime cancels its requests but leaves the shared transport and quota history intact.
      *
      * @param directory the local application data directory
@@ -197,6 +198,39 @@ public final class ApplicationRuntime implements AutoCloseable {
      * @throws SQLException if database access fails
      */
     public static ApplicationRuntime open(Path directory, Clock clock, DescriptionRuntime descriptions)
+            throws IOException, SQLException {
+        return open(directory, clock, DatabaseConfig.fromEnvironment(System.getenv()), descriptions);
+    }
+
+    /**
+     * Opens a runtime against an explicitly configured, already provisioned PostgreSQL database.
+     *
+     * @param directory the local image storage and lock directory
+     * @param clock the application event clock
+     * @param config the PostgreSQL connection configuration
+     * @return the runtime, which the caller must close
+     * @throws IOException if filesystem initialization fails or the directory is locked
+     * @throws SQLException if connectivity or schema validation fails
+     */
+    public static ApplicationRuntime open(Path directory, Clock clock, DatabaseConfig config)
+            throws IOException, SQLException {
+        return open(directory, clock, config, OFFLINE_DESCRIPTIONS);
+    }
+
+    /**
+     * Opens a provisioned PostgreSQL database with caller-owned server generation resources.
+     * Closing this runtime cancels its requests but leaves the shared transport and quota history intact.
+     *
+     * @param directory the local image storage and lock directory
+     * @param clock the application event clock
+     * @param config the PostgreSQL connection configuration
+     * @param descriptions the server owner, shared by all application sessions
+     * @return the runtime, which the caller must close
+     * @throws IOException if filesystem initialization fails or the directory is locked
+     * @throws SQLException if connectivity or schema validation fails
+     */
+    public static ApplicationRuntime open(Path directory, Clock clock, DatabaseConfig config,
+            DescriptionRuntime descriptions)
             throws IOException, SQLException {
         Files.createDirectories(directory);
         FileChannel channel = FileChannel.open(directory.resolve("application.lock"),
@@ -211,8 +245,13 @@ public final class ApplicationRuntime implements AutoCloseable {
             if (lock == null) {
                 throw new IOException("HotShop is already using this data directory");
             }
-            Database database = new Database(directory.resolve("marketplace.db"));
-            database.migrate();
+            Database database = new Database(config);
+            try {
+                database.validateSchema();
+            } catch (SQLException failure) {
+                throw new SQLException("Database unavailable or not provisioned; check configuration and run "
+                        + "migrateDatabase", failure.getSQLState());
+            }
             ImageStorage profileImages = new ImageStorage(directory.resolve("images/profiles"));
             ImageStorage listingImages = new ImageStorage(directory.resolve("images/listings"));
             ApplicationRuntime runtime = new ApplicationRuntime(channel, lock, database, profileImages,

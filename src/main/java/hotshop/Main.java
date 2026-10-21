@@ -3,6 +3,7 @@ package hotshop;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.sql.SQLException;
 
 import hotshop.llm.LlmConfiguration;
 import hotshop.ui.MarketplaceUi;
@@ -43,7 +44,7 @@ public class Main extends Application {
                     Clock.systemDefaultZone(), ServerDescriptions.OWNER);
         } catch (Exception exception) {
             startupFailure = exception;
-            LOGGER.log(System.Logger.Level.ERROR, "Unable to initialize HotShop", exception);
+            LOGGER.log(System.Logger.Level.ERROR, "Unable to initialize HotShop; check storage and database setup");
         }
     }
 
@@ -60,8 +61,13 @@ public class Main extends Application {
             alert.getDialogPane().getStylesheets().add(MarketplaceUi.stylesheet());
             alert.setTitle("HotShop startup failed");
             alert.setHeaderText("Unable to open HotShop data");
-            alert.setContentText("Check that the data folder is writable and no other HotShop instance is using it. "
-                    + "Existing data has not been reset. See the application log for details.");
+            if (startupFailure instanceof SQLException || startupFailure instanceof IllegalArgumentException) {
+                alert.setContentText("Check PostgreSQL connection settings and connectivity. "
+                        + "Ask the operator to run migrateDatabase with a compatible application version.");
+            } else {
+                alert.setContentText("Check that the image data folder is writable and no other HotShop instance "
+                        + "is using it. Existing data has not been reset.");
+            }
             alert.showAndWait();
             Platform.exit();
             return;

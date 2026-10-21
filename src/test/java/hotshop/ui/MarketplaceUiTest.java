@@ -33,6 +33,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import hotshop.ApplicationRuntime;
+import hotshop.support.PostgresTestSupport;
 import hotshop.model.Category;
 import hotshop.model.Condition;
 import hotshop.model.Meetup;
@@ -61,8 +62,8 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import javafx.stage.Window;
 
-/** Exercises real JavaFX controls against temporary SQLite data, without mocking services. */
-class MarketplaceUiTest {
+/** Exercises real JavaFX controls against isolated PostgreSQL data, without mocking services. */
+class MarketplaceUiTest extends PostgresTestSupport {
     private static final Duration MEETUP_LENGTH = Duration.ofMinutes(30);
     /** Too long for the two place lines on a listing card, so the card must end it with an ellipsis. */
     private static final String LONG_PLACE =
@@ -93,7 +94,7 @@ class MarketplaceUiTest {
 
     @BeforeEach
     void openWindow() throws Exception {
-        runtime = ApplicationRuntime.open(directory);
+        runtime = openTestRuntime(directory);
         fx(() -> {
             stage = new Stage();
             ui = new MarketplaceUi(stage, runtime);

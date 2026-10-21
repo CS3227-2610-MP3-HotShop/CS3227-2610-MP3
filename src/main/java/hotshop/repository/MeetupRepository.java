@@ -169,7 +169,7 @@ public final class MeetupRepository {
     public Optional<Meetup> findCurrentForSale(Connection connection, UUID transactionId) throws SQLException {
         try (var statement = connection.prepareStatement("SELECT " + MEETUP_COLUMNS
                 + " WHERE meetups.transaction_id = ? "
-                + "AND meetups.status <> 'CANCELLED' ORDER BY meetups.status = 'SCHEDULED' DESC, "
+                + "AND meetups.status <> 'CANCELLED' ORDER BY (meetups.status = 'SCHEDULED') DESC, "
                 + "meetups.created_at DESC LIMIT 1")) {
             statement.setString(1, transactionId.toString());
             return readMeetups(connection, statement).stream().findFirst();
@@ -257,7 +257,7 @@ public final class MeetupRepository {
     private List<RescheduleProposal> readProposals(Connection connection, UUID meetupId) throws SQLException {
         List<RescheduleProposal> result = new ArrayList<>();
         try (var statement = connection.prepareStatement("SELECT * FROM meetup_reschedule_proposals "
-                + "WHERE meetup_id = ? ORDER BY created_at, rowid")) {
+                + "WHERE meetup_id = ? ORDER BY created_at, history_order")) {
             statement.setString(1, meetupId.toString());
             try (var rows = statement.executeQuery()) {
                 while (rows.next()) {

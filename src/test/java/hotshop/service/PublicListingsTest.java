@@ -15,14 +15,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import hotshop.ApplicationRuntime;
+import hotshop.support.PostgresTestSupport;
 
-class PublicListingsTest {
+class PublicListingsTest extends PostgresTestSupport {
     @TempDir
     Path directory;
 
     @Test
     void getPublicListings_loggedOut_rejectsAccess() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             var seller = registerAndLogin(runtime, "seller");
             runtime.getAccounts().logout().join();
             assertFailure(ServiceException.Code.SESSION,
@@ -32,7 +33,7 @@ class PublicListingsTest {
 
     @Test
     void getPublicListings_unknownSeller_reportsNotFound() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             registerAndLogin(runtime, "viewer");
             assertFailure(ServiceException.Code.NOT_FOUND,
                     () -> runtime.getListings().getPublicListings(UUID.randomUUID()).join());
@@ -41,7 +42,7 @@ class PublicListingsTest {
 
     @Test
     void getPublicListings_nullSeller_reportsValidation() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             registerAndLogin(runtime, "viewer");
             assertFailure(ServiceException.Code.VALIDATION,
                     () -> runtime.getListings().getPublicListings(null).join());
@@ -50,7 +51,7 @@ class PublicListingsTest {
 
     @Test
     void getPublicListings_sellerWithNoListings_returnsEmpty() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             UUID seller = registerAndLogin(runtime, "seller");
             assertEquals(List.of(), runtime.getListings().getPublicListings(seller).join());
         }
@@ -58,7 +59,7 @@ class PublicListingsTest {
 
     @Test
     void getPublicListings_reservedAndSold_excludesBothStates() throws Exception {
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory)) {
             UUID seller = registerAndLogin(runtime, "seller");
             var listing = runtime.getListings().createListing(draft("Desk", 100), List.of()).join().listing();
             registerAndLogin(runtime, "buyer");
@@ -76,7 +77,7 @@ class PublicListingsTest {
     @Test
     void getPublicListings_selectedSeller_returnsOnlyAvailableListingsNewestFirst() throws Exception {
         TestClock clock = new TestClock(Instant.parse("2026-09-24T00:00:00Z"));
-        try (ApplicationRuntime runtime = ApplicationRuntime.open(directory, clock)) {
+        try (ApplicationRuntime runtime = openTestRuntime(directory, clock)) {
             var seller = registerAndLogin(runtime, "seller");
             var listings = runtime.getListings();
             listings.createListing(draft("Older", 100), List.of()).join();

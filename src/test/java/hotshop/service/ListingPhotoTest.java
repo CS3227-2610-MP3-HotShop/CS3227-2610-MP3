@@ -10,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.awt.image.BufferedImage;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.DriverManager;
 import java.time.Instant;
 import java.util.Collections;
 import java.util.List;
@@ -24,9 +23,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import hotshop.ApplicationRuntime;
+import hotshop.support.PostgresTestSupport;
 import hotshop.model.ListingImage;
 
-class ListingPhotoTest {
+class ListingPhotoTest extends PostgresTestSupport {
     @TempDir
     Path directory;
 
@@ -167,12 +167,7 @@ class ListingPhotoTest {
             var listings = runtime.getListings();
             var original = listings.createListing(draft("Chairs", 5000), List.of(ListingPhoto.add(source)))
                     .join().listing();
-            try (var connection = DriverManager.getConnection(
-                    "jdbc:sqlite:" + directory.resolve("data/marketplace.db"));
-                    var statement = connection.createStatement()) {
-                statement.execute("CREATE TRIGGER fail_listing BEFORE UPDATE ON listings "
-                        + "BEGIN SELECT RAISE(ABORT, 'simulated failure'); END");
-            }
+            failWrites("listings", "UPDATE");
             assertFailure(ServiceException.Code.STORAGE, () -> listings.updateListing(original.getId(),
                     draft("Chair", 2500), List.of(ListingPhoto.add(source))).join());
             var unchanged = listings.getListing(original.getId()).join().listing();
@@ -211,7 +206,7 @@ class ListingPhotoTest {
     }
 
     private ApplicationRuntime open() throws Exception {
-        return ApplicationRuntime.open(directory.resolve("data"), clock);
+        return openTestRuntime(directory.resolve("data"), clock);
     }
 
     private Path photos() {

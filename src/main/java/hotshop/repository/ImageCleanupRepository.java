@@ -20,7 +20,7 @@ public final class ImageCleanupRepository {
      */
     public void schedule(Connection connection, String namespace, String filename) throws SQLException {
         try (var statement = connection.prepareStatement(
-                "INSERT OR IGNORE INTO image_cleanup(namespace, filename) VALUES (?, ?)")) {
+                "INSERT INTO image_cleanup(namespace, filename) VALUES (?, ?) ON CONFLICT DO NOTHING")) {
             statement.setString(1, namespace);
             statement.setString(2, filename);
             statement.executeUpdate();

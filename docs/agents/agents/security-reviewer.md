@@ -1,5 +1,16 @@
 # Security reviewer
 
+> Reporting override (2026-10-20): AGENTS.md "Minimal workflow records" supersedes
+> logging duties below. Subagents return concise messages and write no reporting
+> Markdown; coordinator consolidates existing records after final review passes.
+
+> Current owner override (2026-10-19): follow the "Owner-approved delivery workflow"
+> in [the common contract](../AgentSpecifications.md). One implementer owns production
+> and tests for the approved batch; reviews happen only on the completed candidate.
+> Earlier tester-ownership, intermediate-review and failed-initial-development-loop
+> restrictions below are superseded where they conflict. Final findings share one
+> explicitly approved correction pass. No extra budget or execution resumption granted.
+
 Version: 0.1, 2026-10-15 (SGT)
 
 Status: agreed decisions recorded; configuration written; discovery/launch passed in the user-supplied smoke-test report; generic-dispatch behaviour was exercised as documented in docs/agents/WorkflowExercise.md; native loading after instruction edits and unexercised paths remain unverified.
@@ -47,7 +58,7 @@ For every finding include an ID, affected requirement or explicit specification 
 
 All failed-loop changes follow the [coordinator's approval process](coordinator.md): evidence, concrete change plan, explicit user approval, then delegated edits. Tests are changed only by the testing agent and production code only by the implementer. No correction is authorised by a review finding alone.
 
-Security fixes and re-verification draw from the same two-cycle budget already used by the task/batch, including any earlier test-readiness or implementation corrections. This final review does not reset or add cycles. If the budget is exhausted and issues remain, report them so the coordinator can ask the user how to proceed.
+Security fixes and re-verification draw from the same one-cycle budget already used by the task/batch, including any earlier test-readiness or implementation corrections. This final review does not reset or add cycles. If the budget is exhausted and issues remain, report them so the coordinator can ask the user how to proceed.
 
 Send every disagreement with another reviewer to the coordinator for the user's decision, with both positions and the specification/test evidence. Do not override another review or resolve disagreement by majority vote.
 

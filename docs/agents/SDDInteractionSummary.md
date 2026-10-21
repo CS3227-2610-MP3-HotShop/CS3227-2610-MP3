@@ -1,11 +1,11 @@
 # SDD interaction summary
 
 Use one feature-level summary under logs/, named YYYY-MM-DD-feature-<issue-number>-sdd-summary.md.
-Create it when feature work begins and update it as decisions and evidence arrive.
+Coordinator consolidates it after final reviews pass; maintain only one short current handoff during implementation. Subagents do not write summaries or task logs.
 Use a stable feature identifier if an issue number is not assigned yet.
 Do not create a completed-feature summary for unimplemented work.
 
-This supplements per-task logs and docs/InteractionRecord.md. Link them rather than
+This consolidates final approvals and docs/InteractionRecord.md. Link existing evidence rather than
 duplicating transcripts or specification text. Record concise engineering rationale,
 not private reasoning, secrets, or unrelated personal conversation.
 
