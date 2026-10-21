@@ -2,9 +2,11 @@
 
 ## Feature and current status
 
-Stable identifier: llm-description; no issue assigned in this task. TASK-001–006
+Stable identifier: llm-description; no issue assigned in this task. TASK-001–009
 are implemented and verified: build/test preparation, live corpus definition,
-private configuration, account quota primitive and request encoding. Generation,
+private configuration, account quota primitive, request encoding, strict response
+validation and asynchronous bounded HTTPS transport. TASK-009 adds verified
+session-bound orchestration and actual-dispatch quota accounting. Application generation,
 runtime/UI integration and parent-feature
 acceptance remain incomplete. No live provider evaluation has run.
 
@@ -14,7 +16,7 @@ acceptance remain incomplete. No live provider evaluation has run.
 FR-001–006, NFR-001–007 and TC-01–12.
 [Technical specification](../workflow/LLM_FEATURE_TECHNICAL_SPEC.md) drafted on
 2026-10-19. [Implementation plan](../workflow/LLM_FEATURE_PLAN.md) created 2026-10-20:
-17 tasks initially incomplete; TASK-001–006 subsequently completed on 2026-10-20.
+17 tasks initially incomplete; TASK-001–009 subsequently completed on 2026-10-20.
 
 ## Decisions and interactions
 
@@ -33,6 +35,9 @@ FR-001–006, NFR-001–007 and TC-01–12.
 | 2026-10-20 | Implementation planning | User requests plan from technical spec. Plan preserves TDD, deferred tests and unresolved acceptance gates; planning only, no execution approval inferred. | TASK-001–017 |
 | 2026-10-20 | Bounded execution and readiness | User explicitly selects TASK-001–004 of the LLM plan and confirms endpoint/key readiness. Offline verification allowed; live calls remain separately gated. | TASK-001–004 |
 | 2026-10-20 | Next bounded selection | User selects TASK-005 and TASK-006 using implement-task-short. Completed prerequisites preserved; quota precedes request encoding. No live permission inferred. | TASK-005–006 |
+| 2026-10-20 | Response and transport selection | User selects TASK-007 and TASK-008 using implement-task-short. Verified response validation precedes transport. Completed prerequisites preserved; offline readiness persists. | TASK-007–008 |
+| 2026-10-20 | Service selection and resume | User selects TASK-009, then requests finishing after interruption. Session-bound orchestration and actual-dispatch quota correction stay within the task; runtime wiring remains later. | TASK-009 |
+| 2026-10-20 | Configuration names | User confirms SOCLAAS_BASE_URL, SOCLAAS_API_KEY and SOCLAAS_MODEL, superseding earlier names in current guidance/tests. BASE_URL remains the exact full HTTPS URI. | Configuration/setup |
 
 ## Plan and execution
 
@@ -57,8 +62,22 @@ and independent read-only review. See
 [request red](2026-10-20-llm-task006-request-red.md),
 [request implementation](2026-10-20-llm-task006-request-implementation.md) and
 [batch integration/review](2026-10-20-llm-task005-006-integration.md).
-Current progress: 6/17. Parent feature remains incomplete; provider-tool and JPro
-session release gates remain open. TASK-007 onward requires new selection.
+The selected TASK-007–008 batch added strict response validation and bounded
+asynchronous HTTPS transport after verified red/green handoffs. See
+[response red](2026-10-20-llm-task007-response-red.md),
+[response implementation](2026-10-20-llm-task007-response-implementation.md),
+[transport red](2026-10-20-llm-task008-transport-red.md),
+[transport implementation](2026-10-20-llm-task008-transport-implementation.md) and
+[integration/review evidence](2026-10-20-llm-task007-008-integration.md).
+TASK-009 completed after resume with service/session revisions, asynchronous
+prepared requests and actual HTTP-start quota marking. See
+[service red](2026-10-20-llm-task009-service-red.md),
+[preparation red](2026-10-20-llm-task009-preparation-red.md),
+[implementation](2026-10-20-llm-task009-service-implementation.md),
+[integration/review](2026-10-20-llm-task009-integration.md) and
+[resume record](2026-10-20-llm-task009-resume.md).
+Current progress: 9/17. Parent feature remains incomplete; provider-tool and JPro
+session release gates remain open. TASK-010 onward requires new selection.
 
 Only specification/documentation authorised by the original task. Follow-up
 reference to implementing configurable code is recorded as future implementation
@@ -88,6 +107,18 @@ with zero failures/errors/skips and both Checkstyle checks. Read-only reviewer
 confirmed no unresolved material findings after the staggered retry regression
 and fix. Local JAR inspection found no .env or test keystore/corpus entries;
 container/Render checks remain future.
+TASK-007–008 coordinator final
+`.\gradlew.bat test checkstyleMain checkstyleTest check build` passed in 4m46s:
+1,014 tests across 35 suites, zero failures/errors/skips, both Checkstyle checks,
+JAR and distribution tasks. This includes 127 strict response and 69 transport
+cases. Independent read-only selected-task review found no outstanding material
+issues. Local JAR entry inspection found no .env or synthetic test credentials/
+corpus entries. These are local structural/transport checks, not live semantic
+or provider-tool acceptance; runtime/UI wiring remains unimplemented.
+TASK-009 final test/style/check/build passed in 4m58s: 1,106 tests across 37
+suites, zero failures/errors/skips, both Checkstyle checks and packaging. Includes
+61 service, 22 preparation and 37 quota cases. Final independent review has no
+outstanding material findings; no live provider calls or real configuration reads.
 Technical design review includes the delegated current-code findings: one identity
 per runtime, exclusive data lock, incomplete universal page-leaving hooks and busy
 page navigation restrictions. Design specifies local generation feedback and
@@ -97,6 +128,14 @@ lifecycle/security coverage. Document structure/dependency/link checks supplemen
 that review; none is runtime or feature acceptance evidence.
 
 ## Corrections and approval history
+
+TASK-009 review found admission-time charging could weaken actual rolling
+dispatch limits after executor delay. Ten quota/service regression cases failed
+before correction; preparation callback tests also recorded four expected failures.
+Matching idempotent actual-start marking resolved the finding. During correction,
+an existing expiry test caught retained expired state after release; production
+cleanup was fixed without changing the test. Both defects are covered by passing
+final checks and independent review. No quota policy values changed.
 
 User replies incorporated above. During TASK-004, inspection found unmatched
 interior quote and Java header character boundaries. New tests failed before
@@ -110,6 +149,12 @@ Provider-side tool non-use remains unverified; OQ-04 is resolved by the
 [limits approval](2026-10-19-llm-limits-approval.md). Earlier proposal entries above
 are historical and superseded by this approval.
 Original response shape: [response-format update](2026-10-19-llm-response-format-decision.md).
+During TASK-008 review, a suspected concatenated-gzip issue based on an older JDK
+was withdrawn after five passing regression cases and actual Java 25 source
+inspection. It was not a reproduced implementation defect and caused no
+production correction or custom decoder. The reviewer recorded a limitation
+for pathological injected HTTP clients blocking inside sendAsync; no such
+failure was demonstrated with the production asynchronous client.
 OQ-01 length decision recorded in the
 [follow-up log](2026-10-19-llm-description-length-decision.md). No silence treated
 as approval. Word-counting mechanics remain a technical-design detail.

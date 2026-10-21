@@ -9,10 +9,12 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.sql.SQLException;
 import java.time.Clock;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 
 import hotshop.database.Database;
 import hotshop.database.DatabaseConfig;
+import hotshop.llm.LlmConfiguration;
 import hotshop.repository.ChatRepository;
 import hotshop.repository.ListingRepository;
 import hotshop.repository.MeetupRepository;
@@ -22,6 +24,7 @@ import hotshop.repository.UserRepository;
 import hotshop.service.AccountService;
 import hotshop.service.AuthenticatedSession;
 import hotshop.service.ChatService;
+import hotshop.service.DescriptionService;
 import hotshop.service.ListingService;
 import hotshop.service.MeetupService;
 import hotshop.service.OfferService;
@@ -29,8 +32,12 @@ import hotshop.service.ServiceWorker;
 import hotshop.service.TransactionService;
 import hotshop.storage.ImageStorage;
 
+import javafx.application.Platform;
+
 /** Owns application resources for exactly one local data directory. */
 public final class ApplicationRuntime implements AutoCloseable {
+    private static final DescriptionRuntime OFFLINE_DESCRIPTIONS =
+            new DescriptionRuntime(LlmConfiguration.load(null));
     private final FileChannel lockChannel;
     private final FileLock lock;
     private final ServiceWorker worker = new ServiceWorker();
@@ -40,18 +47,22 @@ public final class ApplicationRuntime implements AutoCloseable {
     private final TransactionService transactions;
     private final MeetupService meetups;
     private final ChatService chats;
+    private final DescriptionRuntime descriptionOwner;
+    private final DescriptionService descriptions;
     private final ImageStorage profileImages;
     private final ImageStorage listingImages;
-    private boolean isClosed;
+    private CompletableFuture<Void> closing;
 
     private ApplicationRuntime(FileChannel lockChannel, FileLock lock, Database database, ImageStorage profileImages,
-            ImageStorage listingImages, Clock clock) {
+            ImageStorage listingImages, Clock clock, DescriptionRuntime descriptionOwner) {
         this.lockChannel = lockChannel;
         this.lock = lock;
         this.profileImages = profileImages;
         this.listingImages = listingImages;
         UserRepository users = new UserRepository();
         AuthenticatedSession session = new AuthenticatedSession();
+        this.descriptionOwner = descriptionOwner;
+        descriptions = descriptionOwner.register(worker, session);
         accounts = new AccountService(database, users, worker, session, profileImages);
         ListingRepository listingRepository = new ListingRepository();
         OfferRepository offerRepository = new OfferRepository();
@@ -123,6 +134,11 @@ public final class ApplicationRuntime implements AutoCloseable {
         return chats;
     }
 
+    /** Returns the shared session-bound service for unsaved description generation. */
+    public DescriptionService getDescriptions() {
+        return descriptions;
+    }
+
     /**
      * Resolves a generated image reference without exposing database or storage mutation to the UI.
      *
@@ -167,7 +183,23 @@ public final class ApplicationRuntime implements AutoCloseable {
      * @throws SQLException if database access fails
      */
     public static ApplicationRuntime open(Path directory, Clock clock) throws IOException, SQLException {
-        return open(directory, clock, DatabaseConfig.fromEnvironment(System.getenv()));
+        return open(directory, clock, DatabaseConfig.fromEnvironment(System.getenv()), OFFLINE_DESCRIPTIONS);
+    }
+
+    /**
+     * Opens PostgreSQL data using server database settings and caller-owned generation resources.
+     * Closing this runtime cancels its requests but leaves the shared transport and quota history intact.
+     *
+     * @param directory the local application data directory
+     * @param clock the clock supplying event times and the local time zone
+     * @param descriptions the server owner, shared by all application sessions
+     * @return the initialized runtime
+     * @throws IOException if the directory is in use or filesystem initialization fails
+     * @throws SQLException if database access fails
+     */
+    public static ApplicationRuntime open(Path directory, Clock clock, DescriptionRuntime descriptions)
+            throws IOException, SQLException {
+        return open(directory, clock, DatabaseConfig.fromEnvironment(System.getenv()), descriptions);
     }
 
     /**
@@ -181,6 +213,24 @@ public final class ApplicationRuntime implements AutoCloseable {
      * @throws SQLException if connectivity or schema validation fails
      */
     public static ApplicationRuntime open(Path directory, Clock clock, DatabaseConfig config)
+            throws IOException, SQLException {
+        return open(directory, clock, config, OFFLINE_DESCRIPTIONS);
+    }
+
+    /**
+     * Opens a provisioned PostgreSQL database with caller-owned server generation resources.
+     * Closing this runtime cancels its requests but leaves the shared transport and quota history intact.
+     *
+     * @param directory the local image storage and lock directory
+     * @param clock the application event clock
+     * @param config the PostgreSQL connection configuration
+     * @param descriptions the server owner, shared by all application sessions
+     * @return the runtime, which the caller must close
+     * @throws IOException if filesystem initialization fails or the directory is locked
+     * @throws SQLException if connectivity or schema validation fails
+     */
+    public static ApplicationRuntime open(Path directory, Clock clock, DatabaseConfig config,
+            DescriptionRuntime descriptions)
             throws IOException, SQLException {
         Files.createDirectories(directory);
         FileChannel channel = FileChannel.open(directory.resolve("application.lock"),
@@ -205,7 +255,7 @@ public final class ApplicationRuntime implements AutoCloseable {
             ImageStorage profileImages = new ImageStorage(directory.resolve("images/profiles"));
             ImageStorage listingImages = new ImageStorage(directory.resolve("images/listings"));
             ApplicationRuntime runtime = new ApplicationRuntime(channel, lock, database, profileImages,
-                    listingImages, clock);
+                    listingImages, clock, descriptions);
             try {
                 runtime.accounts.recoverImages().join();
                 runtime.listings.recoverImages().join();
@@ -222,20 +272,53 @@ public final class ApplicationRuntime implements AutoCloseable {
 
     /**
      * Drains accepted service work and releases the application lock; repeated calls are harmless.
+     * On JavaFX, starts asynchronous shutdown instead of waiting. Use closeAsync to observe its completion.
      *
      * @throws IOException if releasing the application lock or its channel fails
      */
     @Override
-    public synchronized void close() throws IOException {
-        if (isClosed) {
+    public void close() throws IOException {
+        CompletableFuture<Void> completion = closeAsync();
+        if (Platform.isFxApplicationThread()) {
             return;
         }
-        worker.close();
         try {
-            lock.release();
-        } finally {
-            lockChannel.close();
-            isClosed = true;
+            completion.join();
+        } catch (CompletionException failure) {
+            if (failure.getCause() instanceof IOException ioFailure) {
+                throw ioFailure;
+            }
+            throw failure;
         }
+    }
+
+    /**
+     * Stops generation immediately, then drains accepted database work off the caller thread.
+     * The data-directory lock remains held until draining finishes. The shutdown thread is non-daemon
+     * so JavaFX exit cannot terminate accepted work early. Repeated calls observe the same completion.
+     *
+     * @return completion of service draining and lock release
+     */
+    public synchronized CompletableFuture<Void> closeAsync() {
+        if (closing != null) {
+            return closing;
+        }
+        closing = new CompletableFuture<>();
+        descriptions.close();
+        descriptionOwner.unregister(descriptions);
+        Thread.ofPlatform().name("hotshop-runtime-shutdown").daemon(false).start(() -> {
+            try {
+                worker.close();
+                try {
+                    lock.release();
+                } finally {
+                    lockChannel.close();
+                }
+                closing.complete(null);
+            } catch (IOException | RuntimeException failure) {
+                closing.completeExceptionally(failure);
+            }
+        });
+        return closing;
     }
 }
