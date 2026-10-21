@@ -5,6 +5,8 @@ import java.nio.file.Path;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Set;
+import java.util.List;
+import java.util.HashSet;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HexFormat;
@@ -116,8 +118,8 @@ final class ManagedImages {
     /** Discovers crash-created orphans in this namespace and retries durable cleanup. */
     void recover() throws SQLException, IOException {
         try (Database.ImageLifecycleGuard guard = database.acquireImageLifecycleGuard()) {
+            Set<String> referenced = guard.transaction(references::find);
             guard.transaction(connection -> {
-                Set<String> referenced = references.find(connection);
                 for (String name : confirmedUploads) {
                     if (!referenced.contains(name)) {
                         objects.retire(connection, namespace, name, clock.millis());
@@ -126,39 +128,69 @@ final class ManagedImages {
                 }
                 return null;
             });
-        }
-        var files = storage.listManagedFiles();
-        if (!files.isEmpty()) {
-            database.executeTransaction(connection -> {
-                var referenced = references.find(connection);
-                for (String name : files) {
-                    if (!referenced.contains(name)) {
-                        cleanup.schedule(connection, namespace, name);
-                    }
+            List<ImageObjectRepository.PendingObject> pendingObjects =
+                    guard.transaction(connection -> objects.getPending(connection, namespace));
+            Set<String> verifiedPending = new HashSet<>();
+            for (ImageObjectRepository.PendingObject pending : pendingObjects) {
+                if (referenced.contains(pending.filename())) {
+                    continue;
                 }
-                return null;
-            });
-        }
-        for (String name : database.executeTransaction(connection -> cleanup.getPending(connection, namespace))) {
-            try (Database.ImageLifecycleGuard guard = database.acquireImageLifecycleGuard()) {
-                boolean delete = guard.transaction(connection -> {
-                    if (references.find(connection).contains(name)) {
-                        return false;
+                try {
+                    byte[] observed = storage.readIfExists(pending.filename(), limits.maximumBytes());
+                    if (observed != null && digest(observed).equals(pending.sha256())) {
+                        verifiedPending.add(pending.filename());
+                        guard.transaction(connection -> {
+                            cleanup.schedule(connection, namespace, pending.filename());
+                            return null;
+                        });
+                    } else if (observed != null) {
+                        LOGGER.log(System.Logger.Level.WARNING,
+                                "Image recovery found a conflicting object in " + namespace);
                     }
-                    return objects.isRetired(connection, namespace, name) || !storage.isRemote();
+                } catch (IOException | IllegalArgumentException failure) {
+                    LOGGER.log(System.Logger.Level.WARNING,
+                            "Image recovery in " + namespace + " will retry later");
+                }
+            }
+            Set<String> files = storage.listManagedFiles();
+            if (!files.isEmpty()) {
+                guard.transaction(connection -> {
+                    Set<String> currentReferences = references.find(connection);
+                    for (String name : files) {
+                        if (!currentReferences.contains(name)) {
+                            cleanup.schedule(connection, namespace, name);
+                        }
+                    }
+                    return null;
                 });
-                if (delete) {
-                    storage.delete(name);
-                    guard.transaction(connection -> {
-                        objects.finish(connection, namespace, name);
-                        cleanup.finish(connection, namespace, name);
-                        return null;
+            }
+            Set<String> pendingCleanup = guard.transaction(
+                    connection -> cleanup.getPending(connection, namespace));
+            for (String name : pendingCleanup) {
+                try {
+                    boolean delete = guard.transaction(connection -> {
+                        if (references.find(connection).contains(name)) {
+                            return false;
+                        }
+                        return objects.isRetired(connection, namespace, name)
+                                || (objects.isPending(connection, namespace, name)
+                                        && verifiedPending.contains(name)) || !storage.isRemote();
                     });
-                    confirmedUploads.remove(name);
+                    if (delete) {
+                        storage.delete(name);
+                        guard.transaction(connection -> {
+                            if (!objects.isPending(connection, namespace, name)) {
+                                objects.finish(connection, namespace, name);
+                            }
+                            cleanup.finish(connection, namespace, name);
+                            return null;
+                        });
+                        confirmedUploads.remove(name);
+                    }
+                } catch (SQLException | IOException | IllegalArgumentException exception) {
+                    LOGGER.log(System.Logger.Level.WARNING,
+                            "Image cleanup in " + namespace + " will retry later");
                 }
-            } catch (SQLException | IOException | IllegalArgumentException exception) {
-                LOGGER.log(System.Logger.Level.WARNING,
-                        "Image cleanup in " + namespace + " will retry later");
             }
         }
     }

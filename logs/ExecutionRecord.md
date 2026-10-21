@@ -8,7 +8,23 @@ One Luna implementer owns the complete code/test/fixture/guide batch; final revi
 only. Shared correction0/1, initial implementation. ST-008 live bucket writes/photo
 cutover remain gated on reviewed inventory and operator approval. Automated tests
 use local Storage fixtures/disposable PostgreSQL, never hosted buckets/data.
-Pending log relocation retained; AGENTS contains durable guidance only.
+Candidate3b431ab is published in draft PR12, based on codex/ai-search-consolidated.
+Full Linux CI39595457297 passed test, both styles, check, build and shadowJar.
+Full Windows verification also passed in21m30s:47 suites,946 tests, zero failures,
+errors or skips; test, both styles, check, build and shadowJar succeeded.
+Initial specification/coverage and security reviews found blockers: HTTP body
+deadlines and response cleanup; remote PENDING recovery after restart; bounded
+browser temp copying; documented origin rejection; PUT update versus immutable
+POST creation; and obsolete local-image-folder wording.
+Owner approved the grouped correction pass in chat on2026-10-21. Shared cycle1/1
+is now in progress with the same implementer; affected checks and focused final
+re-review remain required. Approval covers these findings, not live photo cutover.
+The corrected candidate passes48 focused tests across six matching classes, both
+styles and check/build/shadowJar with tests explicitly excluded from that aggregate.
+One new recovery fixture initially failed because it omitted the persisted profile
+reference; setup was corrected without weakening the protection assertion.
+Post-correction full Linux CI and focused re-reviews are pending; source is frozen.
+No live photo writes, activation or deployment. AGENTS contains durable guidance only.
 ## Previous UI delivery status
 
 UI-CI-FIX-1 correction1/1 is complete. Test fix5f0c3ea and record27cdc2b are

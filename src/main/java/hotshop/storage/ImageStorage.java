@@ -260,6 +260,16 @@ public final class ImageStorage {
         }
     }
 
+    /** Reads a known managed object or returns null when the backing store confirms it is absent. */
+    public byte[] readIfExists(String name, int maximumBytes) throws IOException {
+        validateName(name);
+        if (objectStore != null) {
+            return objectStore.readIfExists(namespace, name, maximumBytes);
+        }
+        Path path = resolve(name);
+        return Files.exists(path, LinkOption.NOFOLLOW_LINKS) ? read(name, maximumBytes) : null;
+    }
+
     /** Indicates whether this instance is backed by remote object storage. */
     public boolean isRemote() {
         return objectStore != null;

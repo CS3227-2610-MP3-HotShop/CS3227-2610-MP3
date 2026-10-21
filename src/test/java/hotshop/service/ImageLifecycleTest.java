@@ -3,7 +3,6 @@ package hotshop.service;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -18,6 +17,8 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
@@ -40,7 +41,7 @@ class ImageLifecycleTest extends PostgresTestSupport {
     Path directory;
 
     @Test
-    void importImage_uploadRaceWithRecovery_reservesBeforeUploadAndKeepsInflightObject() throws Exception {
+    void importImage_uploadRaceWithRecovery_serializesUploadAndRetainsTombstone() throws Exception {
         BlockingStore store = new BlockingStore(true, false);
         Database database = new Database(databaseConfig);
         ManagedImages importer = managed(database, store);
@@ -60,12 +61,13 @@ class ImageLifecycleTest extends PostgresTestSupport {
             });
             Thread.sleep(200);
             assertFalse(cleanup.isDone());
-            store.release.countDown();
-            String filename = upload.get(3, TimeUnit.SECONDS);
-            assertTrue(cleanup.get(3, TimeUnit.SECONDS));
-            assertArrayEquals(Files.readAllBytes(source), store.objects.get("profiles/" + filename));
-            assertEquals("PENDING", state(database));
             assertEquals(0, store.deletes);
+            store.release.countDown();
+            upload.get(3, TimeUnit.SECONDS);
+            assertTrue(cleanup.get(3, TimeUnit.SECONDS));
+            assertEquals("PENDING", state(database));
+            assertTrue(store.objects.isEmpty());
+            assertEquals(1, store.deletes);
         }
     }
 
@@ -101,7 +103,8 @@ class ImageLifecycleTest extends PostgresTestSupport {
         ManagedImages recovery = managed(database, store);
         recovery.recover();
         assertEquals("PENDING", state(database));
-        assertNotNull(store.objects.values().stream().findFirst().orElse(null));
+        assertTrue(store.objects.isEmpty());
+        assertEquals(1, store.deletes);
     }
 
     @Test
@@ -113,9 +116,71 @@ class ImageLifecycleTest extends PostgresTestSupport {
         try (Database.ImageLifecycleGuard guard = database.acquireImageLifecycleGuard()) {
             assertThrows(IOException.class, () -> images.importImage(source, guard));
         }
+        String filename = store.objects.keySet().iterator().next().substring("profiles/".length());
+        store.objects.clear();
         managed(database, store).recover();
         assertEquals("PENDING", state(database));
-        assertArrayEquals(Files.readAllBytes(source), store.objects.values().iterator().next());
+        assertEquals(0, store.deletes);
+        store.objects.put("profiles/" + filename, Files.readAllBytes(source));
+        managed(database, store).recover();
+        assertEquals("PENDING", state(database));
+        assertTrue(store.objects.isEmpty());
+        assertEquals(1, store.deletes);
+    }
+
+    @Test
+    void recover_pendingObjectReferencedByProfile_preservesObjectAndReservation() throws Exception {
+        BlockingStore store = new BlockingStore(false, false);
+        Database database = new Database(databaseConfig);
+        UserRepository users = new UserRepository();
+        Path source = image();
+        byte[] bytes = Files.readAllBytes(source);
+        String filename = "123e4567-e89b-12d3-a456-426614174000.png";
+        try (Database.ImageLifecycleGuard guard = database.acquireImageLifecycleGuard()) {
+            guard.transaction(connection -> {
+                users.insert(connection, new hotshop.model.User("alice", "Alice", filename, null),
+                        new hotshop.security.PasswordHash("test", 1, new byte[] {1}, new byte[] {1}));
+                try (var statement = connection.prepareStatement(
+                        "UPDATE users SET profile_image = ? WHERE username = 'alice'")) {
+                    statement.setString(1, filename);
+                    statement.executeUpdate();
+                }
+                new ImageObjectRepository().reserve(connection, "profiles", filename,
+                        digest(bytes), bytes.length, CLOCK.millis());
+                return null;
+            });
+        }
+        store.objects.put("profiles/" + filename, bytes);
+
+        new ManagedImages(database, new ImageStorage(store, "profiles"), "profiles",
+                ImageStorage.PROFILE_LIMITS, users::getReferencedImages, CLOCK).recover();
+
+        assertEquals("PENDING", state(database));
+        assertArrayEquals(bytes, store.objects.get("profiles/" + filename));
+        assertEquals(0, store.deletes);
+    }
+
+    @Test
+    void recover_pendingObjectDigestMismatch_preservesObjectAndReservation() throws Exception {
+        BlockingStore store = new BlockingStore(false, false);
+        Database database = new Database(databaseConfig);
+        Path source = image();
+        byte[] expected = Files.readAllBytes(source);
+        byte[] unexpected = new byte[] {1, 2, 3};
+        String filename = "123e4567-e89b-12d3-a456-426614174000.png";
+        try (Database.ImageLifecycleGuard guard = database.acquireImageLifecycleGuard()) {
+            guard.transaction(connection -> {
+                new ImageObjectRepository().reserve(connection, "profiles", filename,
+                        digest(expected), expected.length, CLOCK.millis());
+                return null;
+            });
+        }
+        store.objects.put("profiles/" + filename, unexpected);
+
+        managed(database, store).recover();
+
+        assertEquals("PENDING", state(database));
+        assertArrayEquals(unexpected, store.objects.get("profiles/" + filename));
         assertEquals(0, store.deletes);
     }
 
@@ -137,6 +202,14 @@ class ImageLifecycleTest extends PostgresTestSupport {
         Path source = directory.resolve("source.png");
         ImageIO.write(new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB), "png", source.toFile());
         return source;
+    }
+
+    private static String digest(byte[] bytes) {
+        try {
+            return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+        } catch (java.security.NoSuchAlgorithmException impossible) {
+            throw new IllegalStateException(impossible);
+        }
     }
 
     private static final class BlockingStore implements ImageObjectStore {
@@ -176,6 +249,18 @@ class ImageLifecycleTest extends PostgresTestSupport {
             byte[] bytes = objects.get(namespace + "/" + filename);
             if (bytes == null) {
                 throw new IOException("fixture object is absent");
+            }
+            return Arrays.copyOf(bytes, bytes.length);
+        }
+
+        @Override
+        public byte[] readIfExists(String namespace, String filename, int maximumBytes) throws IOException {
+            byte[] bytes = objects.get(namespace + "/" + filename);
+            if (bytes == null) {
+                return null;
+            }
+            if (bytes.length > maximumBytes) {
+                throw new IOException("fixture image exceeds limit");
             }
             return Arrays.copyOf(bytes, bytes.length);
         }

@@ -420,8 +420,10 @@ Current implementation provides DatabaseConfig environment parsing, redacted dia
 and separate credential properties for PostgreSQL connections, with 10-second connect
 and 30-second socket timeouts. Hosted connections require canonical sslmode=verify-full;
 uppercase/encoded option names are rejected. The runtime takes an explicit DatabaseConfig for tests, or reads the server environment
-for ordinary startup. Its directory path selects managed images and locking only;
-legacy marketplace.db files are left untouched. There is no SQLite runtime dependency.
+for ordinary startup. In production its directory path selects the local application
+lock only; managed photos use private remote storage. The explicit database-config
+fixture overload keeps local image folders for isolated tests. Legacy marketplace.db
+files are left untouched. There is no SQLite runtime dependency.
 
 Disposable PostgreSQL 17 Docker fixtures are verified, including isolation, teardown and
 ignoring application database configuration. Docker client/server 29.8.2 are reachable.
@@ -678,6 +680,10 @@ together only after successful import. The runtime refuses missing or mismatched
 bindings and has no local image fallback. Keep local originals and backups. Before
 remote-only image writes, restore the previous app and source snapshot for rollback;
 afterward, export every currently referenced remote photo before restoring old code.
+Uploads use create-only REST requests, and a name conflict never replaces an existing
+object. Storage requests have a whole-response deadline and bounded response bodies.
+Pending upload manifests remain as tombstones until a later guarded recovery observes
+and removes an unreferenced object; an absent response never discards that tracking.
 Automated tests do not run either command against hosted credentials or buckets.
 
 When provisioning succeeds, launch with `.\gradlew.bat run`. Provision once before

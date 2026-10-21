@@ -5,7 +5,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -29,7 +28,14 @@ final class ImageUploadFiles {
                 throw new IllegalArgumentException("Image file exceeds the size limit");
             }
             temporary = Files.createTempFile(temporaryDirectory, "hotshop-image-", ".upload");
-            Files.copy(uploaded.toPath(), temporary, StandardCopyOption.REPLACE_EXISTING);
+            byte[] bytes;
+            try (var input = Files.newInputStream(uploaded.toPath())) {
+                bytes = input.readNBytes(limits.maximumBytes() + 1);
+            }
+            if (bytes.length < 1 || bytes.length > limits.maximumBytes()) {
+                throw new IllegalArgumentException("Image file exceeds the size limit");
+            }
+            Files.write(temporary, bytes);
             ImageStorage.validateImage(temporary, limits);
             OWNED.add(temporary);
             return temporary;

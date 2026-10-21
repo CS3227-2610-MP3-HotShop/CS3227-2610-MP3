@@ -41,7 +41,9 @@ public final class ImageImportCommand {
     static void run(String[] arguments, Map<String, String> environment, Clock clock) throws IOException, SQLException {
         Database database = new Database(DatabaseConfig.fromEnvironment(environment));
         SupabaseStorageConfig config = SupabaseStorageConfig.fromEnvironment(environment);
-        runWith(arguments, database, config, new SupabaseImageObjectStore(config), clock);
+        try (SupabaseImageObjectStore storage = new SupabaseImageObjectStore(config)) {
+            runWith(arguments, database, config, storage, clock);
+        }
     }
 
     static void runWith(String[] arguments, Database database, SupabaseStorageConfig config,

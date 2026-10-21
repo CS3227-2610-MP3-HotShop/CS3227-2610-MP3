@@ -1409,7 +1409,14 @@ Acceptance: meaningful reproduced evidence; focused UI/config/client/validator c
 
 Status: owner-approved ST-001..ST-007 execution,2026-10-21 (start work on a new branch and implement). Source ST-P1 and ST-T1. Owner resumed
 bucket work after agreeing disposable PostgreSQL/local Storage fixtures remain the
-automated-test strategy. ST-001 starts initial implementation; one complete batch followed by final reviews.
+automated-test strategy. Initial implementation candidate3b431ab is published in
+draft PR12. Full Linux CI39595457297 passed; final reviews found unresolved HTTP,
+restart-recovery, upload-bound, configuration and provider-contract defects.
+Owner approved the grouped correction pass in chat on2026-10-21; shared cycle1/1
+is in progress with the same implementer. Tasks stay incomplete until affected
+checks and focused re-review pass. See logs/ExecutionRecord.md. Initial full Windows
+verification passed946 tests and required wrapper checks. No live Storage writes
+or deployment were performed.
 Branch codex/supabase-image-storage; source baseline27cdc2b. Preserve pending
 log-relocation docs, original benchmark snapshots and both existing PR branches.
 

@@ -49,7 +49,7 @@ class ImageImportCommandTest extends PostgresTestSupport {
         server.createContext("/storage/v1/object/", exchange -> {
             String path = exchange.getRequestURI().getRawPath();
             String key = path.substring("/storage/v1/object/".length());
-            if ("PUT".equals(exchange.getRequestMethod())) {
+            if ("POST".equals(exchange.getRequestMethod())) {
                 putCount++;
                 remoteObjects.put(key, exchange.getRequestBody().readAllBytes());
                 exchange.sendResponseHeaders(200, -1);

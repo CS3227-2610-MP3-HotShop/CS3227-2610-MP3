@@ -10,6 +10,9 @@ public interface ImageObjectStore {
     /** Reads one object from the fixed namespace. */
     byte[] read(String namespace, String filename, int maximumBytes) throws IOException;
 
+    /** Reads an object or returns null only when the provider confirms that it is absent. */
+    byte[] readIfExists(String namespace, String filename, int maximumBytes) throws IOException;
+
     /** Deletes one known application object. */
     void delete(String namespace, String filename) throws IOException;
 }

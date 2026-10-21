@@ -44,14 +44,16 @@ public final class ApplicationRuntime implements AutoCloseable {
     private final ChatService chats;
     private final ImageStorage profileImages;
     private final ImageStorage listingImages;
+    private final SupabaseImageObjectStore remoteImageStorage;
     private boolean isClosed;
 
     private ApplicationRuntime(FileChannel lockChannel, FileLock lock, Database database, ImageStorage profileImages,
-            ImageStorage listingImages, Clock clock) {
+            ImageStorage listingImages, SupabaseImageObjectStore remoteImageStorage, Clock clock) {
         this.lockChannel = lockChannel;
         this.lock = lock;
         this.profileImages = profileImages;
         this.listingImages = listingImages;
+        this.remoteImageStorage = remoteImageStorage;
         UserRepository users = new UserRepository();
         AuthenticatedSession session = new AuthenticatedSession();
         accounts = new AccountService(database, users, worker, session, profileImages, clock);
@@ -200,6 +202,7 @@ public final class ApplicationRuntime implements AutoCloseable {
         Files.createDirectories(directory);
         FileChannel channel = FileChannel.open(directory.resolve("application.lock"),
                 StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        SupabaseImageObjectStore remoteStorage = null;
         try {
             FileLock lock;
             try {
@@ -227,12 +230,12 @@ public final class ApplicationRuntime implements AutoCloseable {
                 profileImages = new ImageStorage(directory.resolve("images/profiles"));
                 listingImages = new ImageStorage(directory.resolve("images/listings"));
             } else {
-                var storage = new SupabaseImageObjectStore(storageConfig);
-                profileImages = new ImageStorage(storage, "profiles");
-                listingImages = new ImageStorage(storage, "listings");
+                remoteStorage = new SupabaseImageObjectStore(storageConfig);
+                profileImages = new ImageStorage(remoteStorage, "profiles");
+                listingImages = new ImageStorage(remoteStorage, "listings");
             }
             ApplicationRuntime runtime = new ApplicationRuntime(channel, lock, database, profileImages,
-                    listingImages, clock);
+                    listingImages, remoteStorage, clock);
             try {
                 runtime.accounts.recoverImages().join();
                 runtime.listings.recoverImages().join();
@@ -242,6 +245,9 @@ public final class ApplicationRuntime implements AutoCloseable {
             }
             return runtime;
         } catch (IOException | SQLException | RuntimeException failure) {
+            if (remoteStorage != null) {
+                remoteStorage.close();
+            }
             channel.close();
             throw failure;
         }
@@ -259,10 +265,16 @@ public final class ApplicationRuntime implements AutoCloseable {
         }
         worker.close();
         try {
-            lock.release();
+            if (remoteImageStorage != null) {
+                remoteImageStorage.close();
+            }
         } finally {
-            lockChannel.close();
-            isClosed = true;
+            try {
+                lock.release();
+            } finally {
+                lockChannel.close();
+                isClosed = true;
+            }
         }
     }
 }

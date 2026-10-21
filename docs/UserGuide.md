@@ -32,9 +32,9 @@ and photos persist across application restarts. The local data directory holds t
 application lock; saved photos are served through the app from private storage.
 
 If startup reports a database setup/connectivity problem, ask the operator to check
-connection settings and run compatible provisioning. A folder/lock error means the
-image folder is unavailable or another instance is using it. Data is not reset to
-recover from either condition. If an operation asks you to retry after a concurrent
+connection settings and run compatible provisioning. A lock error means another
+instance is using the same local data directory. Data is not reset to recover from
+either condition. If an operation asks you to retry after a concurrent
 change, refresh the relevant record and submit the action again.
 
 The app checks the configured private storage bindings at startup. Ask the operator

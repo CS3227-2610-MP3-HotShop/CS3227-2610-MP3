@@ -119,7 +119,9 @@ final class UiImages {
                     }
                     try {
                         Path temporary = ImageUploadFiles.copyUploadedFile(uploaded, limits);
-                        result.complete(temporary);
+                        if (!result.complete(temporary)) {
+                            ImageUploadFiles.release(temporary);
+                        }
                     } catch (IOException | IllegalArgumentException invalid) {
                         result.completeExceptionally(invalid);
                     }

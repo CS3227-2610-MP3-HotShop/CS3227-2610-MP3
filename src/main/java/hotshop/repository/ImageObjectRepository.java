@@ -2,9 +2,36 @@ package hotshop.repository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /** Durable ownership and activation state for known image objects. */
 public final class ImageObjectRepository {
+    public List<PendingObject> getPending(Connection connection, String namespace) throws SQLException {
+        List<PendingObject> result = new ArrayList<>();
+        try (var statement = connection.prepareStatement("SELECT filename, sha256 FROM image_objects "
+                + "WHERE namespace = ? AND state = 'PENDING' ORDER BY filename")) {
+            statement.setString(1, namespace);
+            try (var rows = statement.executeQuery()) {
+                while (rows.next()) {
+                    result.add(new PendingObject(rows.getString(1), rows.getString(2)));
+                }
+            }
+        }
+        return List.copyOf(result);
+    }
+
+    public boolean isPending(Connection connection, String namespace, String filename) throws SQLException {
+        try (var statement = connection.prepareStatement("SELECT state = 'PENDING' FROM image_objects "
+                + "WHERE namespace = ? AND filename = ?")) {
+            statement.setString(1, namespace);
+            statement.setString(2, filename);
+            try (var rows = statement.executeQuery()) {
+                return rows.next() && rows.getBoolean(1);
+            }
+        }
+    }
+
     public void reserve(Connection connection, String namespace, String filename, String sha256, int byteSize,
             long now) throws SQLException {
         try (var statement = connection.prepareStatement("INSERT INTO image_objects(namespace, filename, sha256, "
@@ -71,5 +98,8 @@ public final class ImageObjectRepository {
             statement.setString(2, filename);
             statement.executeUpdate();
         }
+    }
+
+    public record PendingObject(String filename, String sha256) {
     }
 }

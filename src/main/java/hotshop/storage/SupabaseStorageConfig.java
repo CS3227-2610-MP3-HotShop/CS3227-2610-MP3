@@ -24,11 +24,12 @@ public final class SupabaseStorageConfig {
         if (projectUrl == null || !loopbackFixture && !"https".equalsIgnoreCase(projectUrl.getScheme())
                 || projectUrl.getHost() == null || projectUrl.getRawUserInfo() != null
                 || projectUrl.getRawQuery() != null || projectUrl.getRawFragment() != null
-                || !"/".equals(projectUrl.getPath()) || secretKey == null || secretKey.isBlank()
+                || !("".equals(projectUrl.getPath()) || "/".equals(projectUrl.getPath()))
+                || secretKey == null || secretKey.isBlank()
                 || !"listingImages".equals(listingBucket) || !"profileImages".equals(profileBucket)) {
             throw invalid();
         }
-        this.projectUrl = projectUrl;
+        this.projectUrl = normalizeOrigin(projectUrl);
         this.secretKey = secretKey;
         this.listingBucket = listingBucket;
         this.profileBucket = profileBucket;
@@ -79,5 +80,13 @@ public final class SupabaseStorageConfig {
 
     private static IllegalArgumentException invalid() {
         return new IllegalArgumentException("Invalid Supabase image storage settings; check operator configuration");
+    }
+
+    private static URI normalizeOrigin(URI origin) {
+        try {
+            return new URI(origin.getScheme(), null, origin.getHost(), origin.getPort(), "/", null, null);
+        } catch (java.net.URISyntaxException impossible) {
+            throw invalid();
+        }
     }
 }
