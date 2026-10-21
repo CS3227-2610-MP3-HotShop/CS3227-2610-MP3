@@ -6,10 +6,11 @@ NFR-001–007, TC-01–12 and UC-001–003. Created 2026-10-20.
 
 The plan itself authorises no execution or deployment. On 2026-10-20 the user
 explicitly selected TASK-001–004 and confirmed configuration readiness; see their
-execution records below. Subsequent selections completed TASK-005–011; the user
-has now selected TASK-012–013 in this plan, with one commit per task and full
-regression verification deferred to the user. TASK-014 onward remains
-unauthorised. Initial source
+execution records below. Subsequent selections completed TASK-005–015; the user
+has now selected TASK-016–017 using implement-task-short. This selection covers
+documentation and scoped acceptance only, with no new live calls or deployment.
+The TASK-012–015 full-regression deferral remains recorded; no current full-suite
+result is inferred. Initial source
 inspection found the JavaFX editor, single service worker/session and runtime lock,
 but no feature implementation, JSON dependency or `llmLiveTest` task. Inspection
 is not passing runtime evidence. No SQL migration is planned; generation never
@@ -19,7 +20,7 @@ saves a listing.
 
 | Gate | Current state / affected work | Resolution |
 | --- | --- | --- |
-| G-01: implementation scope | Resolved 2026-10-20: TASK-001–011 completed; user selected TASK-012–013. | Design contracts govern the selected scope; TASK-014 onward remains unauthorised. |
+| G-01: implementation scope | Resolved 2026-10-20: TASK-001–015 recorded complete; user selected TASK-016–017. | Documentation/scoped acceptance only; no new live calls, hosting implementation or deployment. |
 | G-02: deferred tests | Resolved 2026-10-20: user explicitly confirmed endpoints and API key are ready. No secrets inspected. | Offline verification authorised; live calls still require separate explicit authorisation. |
 | G-03: provider tools | Provider-side tools cannot be confirmed disabled. Blocks full end-to-end no-tool security acceptance in TASK-015/017, not independent local-boundary implementation after G-01/02. | Obtain provider capability assurance/configuration evidence, or explicit product-spec revision accepting a narrower guarantee. Prompt instructions or passing samples alone do not close this gate. |
 | G-04: hosted identity | Independent concurrent JPro client identity/session isolation is not established in current code. Multi-user hosted acceptance in TASK-017 remains blocked. | Separately approved lifecycle/session integration review/work; do not add an authentication rewrite to this plan. Local/isolated runtime acceptance can be recorded separately. |
@@ -452,7 +453,17 @@ user by the execution override above. Evidence:
 regressions test-first; reviewer checks feature-relevant trust/capability boundaries.
 **Source:** Technical 3/4/5.2; NFR-001–007; TC-01–12 (live semantics in TASK-014).
 **Dependencies:** TASK-012 — integrated candidate with stale guards.
-**Completed:** No
+**Completed:** Yes — 2026-10-20 under the focused-verification override above.
+TC-01–12 are traced to actual tests with live semantic limits explicit. The focused
+LLM/runtime/service/quota run passed 442 tests (including 12 integration cases);
+the final integration-only rerun passed 13 cases after adding nonempty safe-log
+capture. Both Checkstyle tasks passed. Existing boundaries satisfied new tests;
+initial fixture failures were corrected without production changes or manufactured
+behavioral red. Independent review found no substantial production/test/trace issues.
+Full regression/build checking remains delegated to the user. Evidence:
+[coverage](../docs/developerGuide/LlmSecurityCoverage.md),
+[tests](../logs/2026-10-20-llm-task013-integrated-boundary-tests.md),
+[integration](../logs/2026-10-20-llm-task013-integration.md).
 
 **Steps**
 
@@ -466,9 +477,9 @@ regressions test-first; reviewer checks feature-relevant trust/capability bounda
 
 **Acceptance criteria**
 
-- [ ] Deterministic TC coverage traced and meaningful; all applicable non-live checks pass.
-- [ ] No secret/tool/file side effects; no claim that mocked tests establish model immunity.
-- [ ] Important review failures fixed through approved, test-backed corrections.
+- [x] Deterministic TC coverage traced and meaningful; all applicable non-live checks pass.
+- [x] No secret/tool/file side effects; no claim that mocked tests establish model immunity.
+- [x] Important review failures fixed through approved, test-backed corrections.
 
 ### TASK-014: Execute the separately authorised live security evaluation
 
@@ -476,7 +487,42 @@ regressions test-first; reviewer checks feature-relevant trust/capability bounda
 configured provider; record empirical semantics without secret values.
 **Source:** Technical 3.1, 5.2; FR-004; NFR-001/006; TC-05/06/11.
 **Dependencies:** TASK-003 — prewritten corpus; TASK-013 — local checks passing.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. The user explicitly accepted the second run's
+26 results and instructed TASK-014 completion. Private per-case human decisions
+record all 26 as generated-and-reviewed PASS; provider tool non-use remains
+UNVERIFIED. No full regression/build or later-task acceptance is claimed.
+Execution started 2026-10-20 under the user's explicit
+TASK-014 selection. Public label `task014-20261020-v1` and restricted ignored
+evidence location approved; the user performed the second-run semantic review.
+Prerequisites are complete. Initial focused tests passed six cases; Checkstyle
+and reviews identified a style error and evidence/failure-path gaps. The user
+approved correction plan 1. Re-verification compiled and ran 19 focused cases;
+six setup failures exposed an invalid synthetic username. The user explicitly
+approved correction plan 2; all 22 focused adapter/corpus tests and both styles
+passed. Stable specification/security re-reviews cleared the adapter. Authorized
+`llmLiveTest` passed 26 cases, zero failures/errors/skips, with 26 actual dispatches
+and 26 generated results on 2026-10-20 (15:13–15:19 SGT). Inputs/results and an
+inert private review page are preserved at the approved location. Human review
+identified `attack-internals` as a semantic failure: the response adopted the
+injected request instead of describing the item. No actual disclosure was
+reported. Remaining review decisions are not individually recorded; automated
+passes are not semantic acceptance. Provider tool non-use remains UNVERIFIED.
+After the 2/2 budget exhaustion notice, the user explicitly directed a stronger
+prompt and a full corpus rerun, authorizing one bounded exceptional cycle 3.
+Prompt-contract baseline: 27 cases, 16 expected failures, 11 passes. The approved
+prompt-only change passed 118 focused cases plus 127 parser cases and both styles;
+independent specification/security reviews cleared the scoped snapshot. New run
+`task014-20261020-v2` passed 26 automated cases with zero failures/errors/skips,
+26 dispatches and 26 generated results (15:40–15:46 SGT, 2026-10-20). Original
+evidence is preserved; the private v2 review page compares old/new
+`attack-internals` outputs. The user's final approval closes the new run's
+semantic review; the private `human-review.json` records each case and the
+manifest now reports humanReview PASSED. Original case outputs are unchanged. No
+further correction beyond the one exceptional cycle is authorized.
+Evidence: [coordination](../logs/2026-10-20-llm-task014-coordination.md),
+[approved extension](../logs/2026-10-20-task014-prompt-correction-plan.md),
+[second live run](../logs/2026-10-20-task014-prompt-rerun.md),
+[completion](../logs/2026-10-20-task014-completion.md).
 
 **Steps**
 
@@ -501,7 +547,18 @@ configured provider; record empirical semantics without secret values.
 coverage; coordinator resolves findings without granting unearned security acceptance.
 **Source:** Technical 3.1/3.3, 5.2; NFR-001–007; G-03/04.
 **Dependencies:** TASK-013 — local evidence; TASK-014 — live evidence.
-**Completed:** No
+**Completed:** Yes — 2026-10-20, for the scoped local review only. Three independent
+read-only reviewers assessed candidate `81f71ee578e91a62a7e30be74ecd4d4ecd3ddd9e`
+and found no new material implementation, coverage or security defect in scope.
+The focused offline run passed 586 tests across 15 suites, zero failures/errors/
+skips; both Checkstyle checks were up to date. No source/test correction or live
+rerun was needed. The user confirmed no independent provider assurance is
+available and instructed G-03 remain open: full end-to-end no-tool acceptance
+stays blocked. G-04 remains open, explicitly excluding unverified independent
+hosted-user session safety. No full regression/build, packaging, hosted-browser,
+TASK-016/017 or final feature acceptance is claimed. Evidence:
+[independent reviews](../logs/2026-10-20-task015-independent-reviews.md),
+[scope/checks](../logs/2026-10-20-task015-final-reviews.md).
 
 **Steps**
 
@@ -514,9 +571,9 @@ coverage; coordinator resolves findings without granting unearned security accep
 
 **Acceptance criteria**
 
-- [ ] Review findings, candidate revision and actual corrective evidence recorded.
-- [ ] Important defects resolved; full no-tool acceptance stays blocked while G-03 is open.
-- [ ] Local review explicitly excludes unverified multi-user hosted safety; no blanket approval.
+- [x] Review findings, candidate revision and actual corrective evidence recorded.
+- [x] Important defects resolved; full no-tool acceptance stays blocked while G-03 is open.
+- [x] Local review explicitly excludes unverified multi-user hosted safety; no blanket approval.
 
 ### TASK-016: Complete feature documentation and local packaging evidence
 
@@ -524,7 +581,15 @@ coverage; coordinator resolves findings without granting unearned security accep
 and supporting records to describe actual verified behaviour, with independent review.
 **Source:** Technical 3.2, 5.2; repository documentation/SDD gates; FR-001–006.
 **Dependencies:** TASK-013 — actual implemented local behaviour and verification.
-**Completed:** No
+**Completed:** Yes — 2026-10-20. Both guides, agent instructions, Gson
+acknowledgement and feature SDD summary match the local implementation and
+recorded evidence. Independent documentation review found no material issue;
+its deadline-wording clarification was applied. Packaging inputs did not change,
+so the conditional shadowJar/jproRelease check was not triggered. Packaging,
+fresh synthetic-secret artifact inspection and manual JPro checks were not run;
+all exclusions and future container/Render gates are explicit. Evidence:
+[task log](../logs/2026-10-20-task016-documentation.md),
+[independent review](../logs/2026-10-20-task016-017-documentation-review.md).
 
 **Steps**
 
@@ -542,9 +607,9 @@ and supporting records to describe actual verified behaviour, with independent r
 
 **Acceptance criteria**
 
-- [ ] Both guides, instructions, SDD summary and per-task logs match actual behaviour/evidence.
-- [ ] Applicable packaging/manual checks have actual results; all unperformed checks explicit.
-- [ ] No container/Render publication claim; future secret mounts/image exclusion tracked separately.
+- [x] Both guides, instructions, SDD summary and per-task logs match actual behaviour/evidence.
+- [x] Applicable packaging/manual checks have actual results; all unperformed checks explicit.
+- [x] No container/Render publication claim; future secret mounts/image exclusion tracked separately.
 
 ### TASK-017: Record scoped acceptance and outstanding release gates
 
@@ -552,7 +617,16 @@ and supporting records to describe actual verified behaviour, with independent r
 documentation reviewer checks traceability before feature Done.
 **Source:** Technical readiness statement; all FR/NFR and TC IDs; repository Done gates.
 **Dependencies:** TASK-015 — final reviewed candidate; TASK-016 — reviewed docs/packaging evidence.
-**Completed:** No
+**Completed:** Yes — 2026-10-20, for scoped acceptance recording. The
+[acceptance report](../docs/developerGuide/LlmAcceptance.md) traces every FR/NFR,
+TC-01–12 and UC-001–003 to source, tests, actual recorded outcomes and reviews.
+TASK-015/016 prerequisites are complete; independent documentation review
+confirmed traceability and explicit exclusions. Documentation/dependency/link
+checks and whitespace checks passed with two pre-existing unrelated deleted-doc
+links reported. No new runtime, packaging or manual check is claimed. **Feature
+not Done:** G-03/G-04 still block full security/hosted acceptance. Evidence:
+[task log](../logs/2026-10-20-task017-scoped-acceptance.md),
+[independent review](../logs/2026-10-20-task016-017-documentation-review.md).
 
 **Steps**
 
@@ -566,10 +640,10 @@ documentation reviewer checks traceability before feature Done.
 
 **Acceptance criteria**
 
-- [ ] Acceptance report links actual source/tests/results/reviews and documents residual limits.
-- [ ] Full security and hosted acceptance blocked until G-03/G-04 respectively resolved;
+- [x] Acceptance report links actual source/tests/results/reviews and documents residual limits.
+- [x] Full security and hosted acceptance blocked until G-03/G-04 respectively resolved;
   local completion and feature-level completion are distinguished honestly.
-- [ ] Required guide/AGENTS/SDD/log gates satisfied before any feature Done declaration.
+- [x] Required guide/AGENTS/SDD/log gates satisfied before any feature Done declaration.
 
 ## Coverage and handoff
 
@@ -588,13 +662,24 @@ documentation reviewer checks traceability before feature Done.
 | TC-05/06/11 | TASK-003/006/013/014/015 |
 | TC-10 | TASK-005/008–013 |
 
-Current progress: **12/17 tasks complete** (TASK-001–012, dated evidence above).
-Selected TASK-012 is complete; TASK-013 is eligible. TASK-001–011 records were preserved.
-Prior TASK-010–011 full verification passed with 1,149 tests across 39 suites, zero
-failures/errors/skips, both Checkstyle checks, check and build. Guides and logs
-describe the implemented runtime/UI behavior. TASK-012 focused verification passed
-115 UI tests and both styles. Full regression/build checks for this selection are
-delegated to the user; no current full-suite result is claimed.
-Existing configuration readiness permits offline verification only. G-03/04
-still constrain final acceptance. No live calls, deployment or execution of
-TASK-014 onward is authorised by this selection.
+Current progress: **17/17 tasks recorded complete**, with dated supporting evidence.
+TASK-016/017 complete documentation and scoped acceptance only. Completed prerequisite entries
+are preserved. TASK-014 has historical unchecked acceptance boxes alongside its
+explicit Completed Yes/user acceptance record; this discrepancy is reported
+rather than reopening or rewriting that completed task.
+
+The [acceptance report](../docs/developerGuide/LlmAcceptance.md) consolidates
+requirement coverage, source/test links, actual check history and residual gates.
+TASK-010/011 full verification passed 1,149 tests; TASK-012/013 used focused
+verification under the user's deferral. TASK-014 v2 has 26 user-accepted semantic
+results; its original v1 failure remains preserved. TASK-015's stable local
+candidate passed 586 focused cases and independent reviews. Overlapping runs
+are not a full-suite total; no current full regression/build result is claimed.
+
+**Feature remains not Done.** G-03 blocks full end-to-end no-tool acceptance;
+G-04 blocks independent multi-user hosted acceptance. Packaging is unchanged:
+the conditional shadowJar/jproRelease step was not triggered; neither these
+commands nor jproRun/manual checks were performed for TASK-016/017. Future
+Docker/Render packaging, secret mounts/image exclusion, session integration and
+deployment require separately authorized work. No new live calls or publication
+are included in this selection.
