@@ -39,4 +39,4 @@ is kept between runs.
 
 ## Guides
 
-To view our User Guides and Developer Guides, they can be found in our [website](https://cs3227-2610-mp2-hotshop.github.io/CS3227-2610-MP3/).
+To view our User Guides and Developer Guides, they can be found in our [website](https://cs3227-2610-mp3-hotshop.github.io/CS3227-2610-MP3/).
