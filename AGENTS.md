@@ -1,19 +1,40 @@
 # AGENTS.md
 
-## Minimal workflow records — owner approved 2026-10-20
+## Owner-approved workflow — 2026-10-22
 
-Subagents return concise results in messages; they do not create or maintain task logs,
-interaction summaries, approval records or other reporting Markdown files. Reports
-include changed files, actual check results and unresolved findings, without transcripts.
-The coordinator maintains one short current handoff in docs/InteractionRecord.md.
-Keep approvals in the chat until final review passes, then consolidate decisions,
-approvals and verification into the existing feature summary and decision record once.
-Do not create a separate log per task, agent, discussion or workflow adjustment.
-Required product/setup documentation still changes with behavior. On 2026-10-20
-the owner explicitly requested deletion of old interaction logs and verbose histories;
-retain only the current handoff and consolidated final summary. This rule supersedes older per-agent/per-task logging and
-every-decision documentation requirements in skills, role briefs and templates.
+This agreement takes precedence over conflicting older skills, role briefs, agent
+configuration and workflow text. It changes future execution, not historical results
+or completed benchmark/correction records.
 
+- One implementer owns the approved batch: production code, tests, fixtures, build
+  configuration and associated guides. It may write/update tests, preserving valid
+  assertions. No separate tester or intermediate review handoffs by default.
+- After implementation and checks, independent specification/coverage and security
+  reviewers inspect one stable candidate. The coordinator consolidates their findings.
+- Plan one shared correction pass. Additional passes are permitted only for confirmed
+  errors or mistakes within approved scope, supported by failing checks, a contract
+  violation or concrete execution-path evidence. Record the defect, scoped fix,
+  pass number and affected verification; proceed without repeated approval requests.
+  New features, requirement changes, speculative improvements, unresolved decisions
+  and live/deployment actions retain their own approval gates. Do not loop unchanged
+  attempts; surface a blocker when progress needs a new decision or external change.
+- Use targeted source/spec sections and compact briefs. New specialists receive
+  fork_turns=none; do not request full chats or unrelated histories. Prefer a Sol
+  coordinator and Luna specialists; saved settings do not prove a live model change.
+- Persist every human-visible interaction batch: sanitized user request/approval,
+  agent roles and assignment, decisions, concise results, review findings, corrections,
+  actual checks and limitations. Subagents return concise messages; the coordinator
+  appends these as work progresses to one existing feature record under logs/.
+  Preserve existing teammate logs. Do not create a new file per exchange or task,
+  restore previously deleted histories, or record secrets/private reasoning.
+- All logs, interaction records and handoffs live under logs/. The current shared
+  handoff is logs/ExecutionRecord.md; AGENTS.md holds durable rules, not activity logs.
+  Product guides and PLAN retain their normal behavior/status responsibilities.
+- Preserve school evidence: approved specifications and acceptance tests; actual
+  specialized-agent work and reviews; AI threat boundaries/evaluations; SoC model
+  configuration, quotas and error handling; team contributions and quantified MP2
+  reuse; and separately managed deployment automation. Record executed evidence
+  honestly, with benchmark/release limitations. Definitions alone do not prove use.
 
 This file defines the repository-wide instructions that AI coding agents must follow when working on HotShop.
 
@@ -141,70 +162,6 @@ If an unrelated problem is discovered, report it separately rather than fixing i
 
 ---
 
-## Migration collaboration
-
-For configured worker names and coordinator startup, read
-[AgentConfiguration.md](docs/agents/AgentConfiguration.md). Files alone
-do not prove instruction loading or behavioural validation; use the recorded smoke-test evidence and remaining readiness gates. Record external test reports with their provenance and distinguish them from checks executed in this chat.
-
-For authorised task execution, use the aligned
-[implement-task skill](.agents/skills/implement-task/SKILL.md). It supports
-coordinator selection within approved scope and per-task blocker handling;
-completed entries remain immutable and corrective edits require explicit approval.
-For task decomposition, use the aligned
-[planning skill](.agents/skills/plan-implementation/SKILL.md) to record ownership,
-contract dependencies, review/integration gates, and separate readiness from approval.
-Use the aligned product/technical specification skills for inventory-first discovery
-and feature-level approval. Shared contracts require both area owners; unresolved
-shared foundations block dependent designs and implementation, not unrelated work.
-
-Before assigning frontend/backend migration work or approving corrections, read
-[the migration workflow](workflow/MIGRATION-WORKFLOW.md).
-Review and obtain approval of the complete feature inventory before detailing
-features individually; inventory approval alone does not authorise implementation.
-Inventory coverage was approved on 2026-10-17 for the 17 groups, feature list only.
-The migration source baseline is frozen at commit 1d812ef. Specify behaviour as it
-exists at that commit. If the JavaFX source changes later, propose a re-baseline with a
-diff and obtain explicit approval; do not specify or implement against newer source
-without it.
-Use .github/ISSUE_TEMPLATE/feature.md for feature issues and .github/ISSUE_TEMPLATE/task.md for linked frontend/backend/integration tasks. Task creation and assignment do not authorise implementation. Record unknowns and add tasks incrementally; require approved detail and prerequisites for the task about to start, without demanding exhaustive upfront decomposition.
-Use Backlog, Ready, In progress, Review, and Done for task stages. Keep Paused and Blocked as separate flags with reasons and resumption conditions; follow the migration workflow for transition gates.
-Track split frontend/backend tasks as separate GitHub issues linked to a parent feature; follow the migration workflow for ownership and parent completion gates.
-Use [the feature inventory](workflow/FEATURE-INVENTORY.md) to track guide-derived
-features and their evidence status. Consult workflow/FEATURE-EVIDENCE.md for the
-pinned source paths, representative assertions and unresolved source ambiguities.
-Static assertion inspection is not a passing-test result or inventory approval.
-Verify documented claims against code/tests
-before calling them implementation-verified; distinguish future work from parity.
-Assign human owners before implementation. Each owner approves correction plans
-within their area; shared-interface changes require both owners' explicit
-agreement before implementation. Record approvals against the affected contract
-and tasks. Existing correction limits and test ownership remain in force.
-Superseded on 2026-10-17: the web application has no reset feature and uses a hosted
-PostgreSQL database from the start. PostgreSQL is used in every environment including
-automated tests; each environment has its own database, and tests never run against the
-demo database. Dropping and recreating a development or test database is ordinary
-practice, not the reset the application excludes. Domain timestamps come from an
-injectable application clock, never from the database clock or a column default, or the
-meetup and dashboard time boundaries cannot be tested. Seeding is an idempotent
-provisioning step, not an application route. Reset was a local-disk concern of the JavaFX app and
-has no web equivalent. Data persists; seeding runs once at provisioning rather than on a
-schedule or on demand. Fresh demo data is still approved, so existing accounts, records
-and images are not imported. Preserve functional state and access rules; specify the
-seed content and the provisioning path before implementing storage-dependent tasks. Do
-not plan interim in-memory or ephemeral server state: on a serverless host it disappears
-between deployments and cold starts, which users experience as an uncontrolled reset.
-The web target supports concurrent multi-user access; the desktop single-logged-in-user
-constraint and its single-worker serialisation are not carried over, so database
-integrity constraints protect the marketplace invariants instead. The desktop minimum
-window size and fixed layout units are not target criteria. Platform and data
-foundations are tracked as INV-17 in the feature inventory. Do not reintroduce a
-superseded desktop constraint because a guide chapter still describes it; the affected
-User Guide wording changes with its feature.
-For migration features, follow the workflow's agreed unit/integration/Playwright
-testing policy and completion gates. These target-stack rules supplement the
-Java-source checks; executable Next.js commands remain to be established.
-
 ## Architecture and Design
 
 Follow the architecture already established in the repository.
@@ -300,12 +257,12 @@ When an existing user-facing feature changes, update its existing User Guide doc
 
 ### Feature completion record
 
-Before declaring a feature Done, update docs/UserGuide.md, docs/DeveloperGuide.md, AGENTS.md, and its feature-level SDD interaction summary. Follow docs/agents/SDDInteractionSummary.md and link supporting task logs. Intermediate task completion does not waive parent-feature documentation gates.
+Before feature completion, update relevant user/developer guidance and the existing
+feature record under logs/. AGENTS.md changes only when durable instructions change.
 
 ### Developer Documentation
 
-For every completed feature or change, update both `AGENTS.md` and
-`docs/DeveloperGuide.md` as part of the same task, before reporting completion.
+For every completed behavior change, update the Developer Guide. Update AGENTS.md only for durable instruction changes; put activity records in logs/.
 This includes changes to agent configuration, workflow, and documentation.
 
 - In `AGENTS.md`, maintain the relevant durable instructions, constraints, or a
@@ -415,11 +372,11 @@ Do not disable tests, Checkstyle, or other verification mechanisms merely to mak
 
 ## Logging Agent Interactions
 
-Follow the owner-approved "Minimal workflow records" rule above. Subagents return
-concise results in messages and do not write reporting Markdown. Coordinator keeps
-one current handoff and consolidates approvals/results into existing records after
-final review passes. Do not create per-task or per-agent logs. Old log deletion was explicitly authorised; do not include credentials, secrets, private reasoning or unrelated personal
-material. Product/setup documentation still reflects delivered behavior.
+Follow the owner-approved workflow above. Persist each interaction batch concisely
+in an existing feature record under logs/, with the current handoff in
+logs/ExecutionRecord.md. Preserve teammate records. Subagents report in messages;
+the coordinator records assignments, decisions, outcomes, defects and actual checks.
+No per-exchange files, activity logs in AGENTS.md, credentials or private reasoning.
 ## Handling Ambiguity
 When requirements are ambiguous:
 - inspect existing behaviour and documentation for evidence;
@@ -444,7 +401,7 @@ A task is complete only when all applicable conditions below are satisfied:
 - [ ] Checkstyle passes for modified Java code.
 - [ ] The project builds successfully.
 - [ ] User-facing changes are reflected in docs/UserGuide.md.
-- [ ] AGENTS.md and docs/DeveloperGuide.md are updated for the completed feature or change.
+- [ ] Developer documentation is updated; durable instruction changes go in AGENTS.md and activity records in logs/.
 - [ ] No credentials or sensitive information were introduced.
 - [ ] No temporary/debugging code remains.
 - [ ]The final diff has been inspected for unrelated changes.
@@ -508,73 +465,22 @@ docs/agents/triage-labels.md. Preserve concurrent feature-specification work.
 Tracking choice agreed 2026-10-17: use GitHub issues and labels; Projects is
 explicitly deferred. Follow docs/agents/issue-tracker.md for stage/flag updates.
 
-## Owner-approved delivery workflow (2026-10-19)
+## Delivery workflow
 
-This instruction supersedes earlier role, skill, client-configuration and plan wording
-that requires tester handoffs or independent reviews before implementation.
-
-Assign one implementer the entire approved implementation batch, including production
-code, tests, fixtures, build configuration, associated guides and its task evidence.
-The implementer may write and update tests against the approved requirements; it must
-preserve valid assertions and never weaken checks to obtain a pass. Use test-first
-evidence where practical and run relevant tests/styles during implementation.
-Normal initial implementation includes bringing the approved behavior to green;
-do not route every expected development failure through another agent.
-
-Keep that implementer through the batch. No separate tester or intermediate review
-handoffs by default. Prerequisites are working contracts and evidence, rather than
-acceptance by an intermediate reviewer. Pause for unresolved requirements, scope
-changes or a genuine blocker. Do not invent scope or relabel review corrections
-as initial work.
-
-After implementation, tests, documentation and required checks are complete, submit
-one stable candidate for the final specification/coverage and security reviews.
-Group findings from both into one report and, if needed, one explicitly approved
-correction pass followed by focused re-review. There is one shared correction budget,
-not one per reviewer. Stop and report unresolved findings after that pass.
-The coordinator retains shared records, plan status and final acceptance ownership.
-
-Existing completed entries, historical evidence and exhausted correction budgets
-remain unchanged. This workflow change grants no extra PG-CONVERSION correction cycle.
-The owner resumed PostgreSQL implementation on 2026-10-19; current execution status
-is recorded in workflow/PLAN.md and docs/InteractionRecord.md.
+Follow the owner-approved workflow at the top of this file: one implementer owns
+code/tests/guides; final independent reviews follow the completed batch.
 
 ## Retained Java PostgreSQL conversion
 
-The owner approved PG-T1, PG-P1 execution and recorded staged follow-ups; use
-workflow/PLAN.md for eligibility and logs/2026-10-19-feature-pg-conversion-sdd-summary.md
-for the current handoff. Fresh data, no SQLite import; separate schema provisioning,
-no startup migration; disposable local Docker PostgreSQL tests, never hosted test data.
-Use BIGINT for Java long epoch-millisecond timestamps/counters and BYTEA for credentials.
+Use PostgreSQL in every environment, separate migrateDatabase provisioning and
+read-only startup validation. Tests use disposable local PostgreSQL, never hosted
+data. Preserve directory-lock protection until separately approved integration.
+Current acceptance evidence lives under logs/ and in workflow/PLAN.md.
 
-Docker fixtures and narrow configuration/credential-aware connections are verified.
-The TLS query-key fix rejects noncanonical raw sslmode keys; canonical hosted URLs
-require verify-full before connection. Initial PostgreSQL storage engine passes49
-tests and both styles (PG018); PG019/PG020 engine readiness and standalone command
-focused checks are recorded. Consolidated runtime/service/test conversion is accepted locally2026-10-20.
-Final746-case suite, required wrapper checks and specification/security reviews pass; see current
-workflow/PLAN.md and the feature SDD summary rather than historical stage notes.
-Current batch PG-CONVERSION has an explicit owner exception for TLS correction cycle3;
-cycle3/3 is complete and independently verified; PG014 baseline is recorded. The default is now one correction cycle; historical PG-CONVERSION exhaustion is preserved.
-Further unexpected corrective edits require explicit owner direction.
+## Correction policy
 
-PostgreSQL does not establish JPro multi-user readiness. Preserve directory-lock/image
-recovery protection until separately approved integration supplies per-browser sessions
-and server-owned shared storage with coordinated cleanup. No hosted readiness claim.
-
-## Owner-approved correction limit (2026-10-19)
-
-Use one initial implementation pass and required initial reviews, then at most one
-shared correction pass and re-review per task/batch. Group findings into that pass.
-Corrections still require an explicitly approved plan. If findings remain, stop
-and report them; no further loop without explicit owner direction. Required initial
-readiness, coverage and security checkpoints remain. Avoid repeating unchanged checks.
-This owner instruction supersedes older two-cycle wording in saved skills and client
-configurations. Preserve historical counts: PG-CONVERSION remains exhausted at 3/3.
-Execution was resumed by the owner; no new correction budget is granted.
-
-Owner resumed the approved PostgreSQL batch on 2026-10-19 after adopting consolidated implementation ownership. Current execution status is in workflow/PLAN.md and docs/InteractionRecord.md; earlier pause entries are historical.
-
+Use one planned shared pass and the evidenced-error exception defined above.
+Historical experiment outcomes and completed correction counts remain unchanged.
 
 ## Targeted context and handoff rule — owner approved 2026-10-19
 
@@ -590,7 +496,7 @@ only changed/relevant sections. Expand reads only when needed to resolve a concr
 ambiguity or dependency. Keep current handoffs short and link supporting evidence.
 Already injected app conversation context cannot be selectively removed by agents;
 this rule controls requested history, file/tool reads and future agent handoffs.
-The ongoing approved PostgreSQL batch continues; this is not a pause request.
+
 
 ## Owner model preference — 2026-10-19
 
@@ -602,61 +508,3 @@ merely because configuration changed; the coordinator model is selected in the a
 Let an already-running verification finish rather than restart it solely for model
 selection. Final specialist reviews use Luna. Settings persistence is verified by
 file inspection; a new live session's actual model requires runtime confirmation.
-
-Old standalone interaction logs, full handoff histories and archive were deleted at
-the owner's explicit request2026-10-20. Historical filenames in completed plan entries
-are provenance references, not files to restore/read. Use the current short handoff
-and consolidated feature summary. Public CA certificate stays outside the repo.
-
-Active AI-search benchmark: see AI-P1/AI-T1 and BENCH-P1 in existing workflow specs/plan. Owner authorised sequential multiagent-search then singleagent-search from one frozen contract/test checkpoint. Runtime SoC/UI remains separate. Fixed tests/specs are read-only to measured implementation agents; do not share arm-specific results. Workers return messages, no Markdown logs.
-
-AI-search validator benchmark completed locally on multiagent-search and singleagent-search from b87d215. Both pass 76 cases, including 42 security-tagged cases, and Checkstyle. Read workflow/PLAN.md results and workflow/benchmark-results.csv for observations and limits; no task logs. One common setup correction (1/1) was approved; measured arms had no post-submission corrections. SoC/UI integration is pending. Do not infer a general workflow winner or runtime LLM safety from this paired validator case.
-
-For the proposed larger SoC benchmark, follow AI-T2/BENCH-P2: manual starting/ending credit readings, one measured workflow at a time, and explicit user readiness before starting each window. Preserve Task 1 branches/results. Resolve provider and seller shared-client contracts before measured implementation; never read keys into logs or use live SoC for automated tests.
-
-Friend's llm-feature snapshot 7d028e4 has unfinished transport/parser and still uses SQLite. Consult AI-T2 before reusing its LLM code; preserve PostgreSQL and resolve shared transport ownership rather than importing its build/workflow wholesale.
-
-Owner clarified scope: independently implement transport/parser plus buyer adapter for the larger benchmark; overlap with friend's work is accepted for later reconciliation. Do not edit/merge his branch or wait for its transport. Freeze one common contract/test baseline before both arms and require each manual starting credit reading/ready signal. Reconciliation is separate from measured work.
-
-SoC benchmark common setup is SOC-SETUP/AI-T2-C1 on multiagent-soc-search. A testing specialist owns new declarations/tests and Gson-only dependency addition; this is outside measured runs. Per-account/provider admission and UI wiring are excluded; do not claim 429 handling establishes quota compliance.
-
-SoC initial runs are complete: multi a47df93 and single 560ffcb pass the same 149 focused tests, 100 security-tagged cases and styles. Common source evaluation finds both fail AI-T2-C1 (4 multi/1 single attributable findings), excluding one shared test/spec encoding conflict as unscorable; see PLAN results and CSV for evidence/limits. Preserve both initial candidates. Owner approved SOC-FIX-1 on 2026-10-20: single-client readiness corrections on codex/soc-client-readiness, cycle 1/1; see the final PLAN task and current handoff. User revised multi ending to session28%/weekly42% (original30%/42% retained); single ends25%/41%. Percentages are coarse observations, not exact credits/tokens. No live SoC connection, UI, provider-wide quota or production readiness is established.
-
-SoC common evaluation packaging passes, PostgreSQL driver present and SQLite absent. Broad regression/build runs were interrupted after approximately14minutes, not passed; Testcontainers PostgreSQL was reachable despite missing Docker CLI. Full regression and contract repairs remain gates before actual feature acceptance.
-
-Current consolidated connection baseline is on codex/soc-client-readiness. AI-T2-C2 /
-SOC-CHAT-1 supersedes the historical Responses format: base /v1 plus /chat/completions,
-messages, reasoning_effort none, local documented model qwen3.5:9b. One live synthetic
-request accepted a validated proposal on2026-10-20; not proof of model quality/quota
-compliance. Never expose .env.local credentials or change benchmark snapshots/CSV.
-
-SOC-LIFECYCLE-1 owner-approved extension resolves the known close/scheduler exception
-race.159 focused tests/styles and remaining build/packaging pass; both final reviews
-accept the fix. See PLAN/DeveloperGuide for exact full-suite limits and evidence.
-Historical SOC-FIX-1 allowance1/1 is preserved; the explicit extension is consumed,
-total readiness repair passes2/2. No further corrective loop without owner direction.
-Shutdown cancels registered raced work; no stronger zero-transient-dispatch guarantee
-was specified. No UI/session redesign, provider-wide quota or deployment claim.
-
-UI benchmark is specified as AI-P3/AI-T3/BENCH-P3 in existing specs/PLAN: explicit
-button labelled exactly "AI Search" beside the existing search field (no new bar),
-preview/Apply, zero provider calls on ordinary search, stale/page/
-session guards and identical frozen fake-provider checks for both arms. Lifecycle
-foundation is fixed. Owner approved UI benchmark implementation on2026-10-20 and
-supplied pre-setup5-hour37%/weekly27%. UI-SETUP is authorised on
-codex/ai-search-ui-setup; setup is outside measured windows. UI-SETUP has one shared
-explicitly approved correction pass maximum; owner approved grouped tests/docs
-correction1/1 on2026-10-20, now accepted after focused re-review; historical client
-readiness2/2 stays consumed. Both measured UI runs and equal common source evaluation
-are now finished; preserve saved snapshots and initial results. No candidate repair
-or merge is authorised by evaluation completion. See PLAN/benchmark-results.csv.
-
-UI-SETUP is accepted: fixed UI21 baseline is3 pass/18 expected missing-feature assertion failures, zero errors/skips. Both saved candidates pass18/21; three shared preview fixtures violate blank-input preconditions and remain failed. Equal source review found no confirmed implementation/security defects; this does not establish full automated acceptance. Multi has four extra configuration/UI tests; single source-only evidence for those paths. Manual drops8/4 session points and2/1 weekly points are coarse; multi's0% endpoint may censor usage. Timing bounds overlap and single includes environment delay. No live provider calls or full-regression claims in timed runs.
-
-AI-search consolidation: delivery branch codex/ai-search-consolidated selects multi UI 3efbeb1 plus single search-guide wording and retains the repaired common SoC client. Preserve measured snapshots/results. See DeveloperGuide consolidation note; three blank-query fixture corrections require explicit approval before acceptance.
-
-Publication preparation (2026-10-21): presentation export/build folders removed at owner request. DeveloperGuide local AI Search section is the current environment/loading/provisioning reference; images remain local, Storage integration pending. Hosted operator provisioning succeeded, not hosted deployment acceptance. No Java checks need repeating solely for documentation/cleanup edits. Frozen UI fixture correction still awaits explicit approval.
-
-Docker packaging (owner authorised 2026-10-21): build the Linux JPro ZIP inside the JDK25 Docker build stage and copy it into JRE25; do not require a local build artifact. Keep local .env files, deployment certificates and runtime secrets out of image layers. See DeveloperGuide JPro and Docker packaging; image build does not migrate data or establish JPro multi-user acceptance.
-
-UI-CI-FIX-1 (2026-10-21): owner approved one grouped delivery test correction for six PR11 CI failures, correction1/1 used and final-reviewed. Linux full CI39568040457 on5f0c3ea passes; original benchmark snapshots/results are immutable. UI tests share JavaFxTestSupport toolkit initialization; preview/late-completion fixtures must prove a nonblank provider request started, and async assertions wait for observable completion. See DeveloperGuide UI CI fixture correction and PLAN for current verification; do not infer full acceptance from focused passes.

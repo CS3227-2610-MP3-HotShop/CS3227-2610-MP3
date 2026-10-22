@@ -6,6 +6,30 @@
 
 # HotShop Developer Guide
 
+## Agreed agent workflow and project evidence
+
+Use one implementer for code, tests and guides, then final independent specification/
+coverage and security reviews. Plan one shared correction pass. Further passes may
+fix confirmed errors within approved scope without another approval round; record
+the defect evidence, scoped change, pass count and affected checks. Changes to scope,
+requirements, live data or deployment still need the appropriate owner decision.
+Historical experiments and correction counts remain unchanged.
+
+Keep targeted context and compact briefs without full conversation inheritance.
+Prefer Sol for coordination and Luna for specialists. Persist every interaction batch
+concisely as work progresses: request/approval, agent assignment, decision, result,
+findings, corrections and actual verification. Subagents return messages; the
+coordinator appends one feature record rather than generating per-task files.
+Preserve existing teammate logs. All records and handoffs live in logs/; the current
+shared handoff is logs/ExecutionRecord.md. AGENTS.md contains durable guidance only.
+
+For school assessment, link specs and acceptance tests to implementation; record
+actual specialized-agent contributions/reviews, AI security controls/evaluations,
+SoC use and resource handling, each team member's contribution, quantified MP2 reuse,
+and separately managed deployment automation. Do not infer evidence from agent
+configuration files, green mocks or plans alone. This agreement supersedes older
+workflow/logging/correction wording below; retain historical outcomes as provenance.
+
 ---
 
 ## Introduction
@@ -191,9 +215,9 @@ dispatched only after prerequisite completion evidence is available.
 
 The skill permits minor local choices within approved behaviour and design.
 Material decisions go to the human owner; shared-interface changes require both
-owners' agreement. Testing agents own tests and implementers own production code.
-Failed-loop edits require an approved correction plan and share the two-cycle
-limit across all review stages.
+owners' agreement. One implementer owns production code, tests and guides. Plan one
+shared correction pass; further evidenced in-scope error fixes follow the current
+owner-approved workflow without repeated approval. Scope changes remain gated.
 
 Completed plan entries remain immutable; corrections to completed work require
 authorised follow-up tasks. Task completion requires actual acceptance evidence,
@@ -209,19 +233,16 @@ the coordinator. The user-supplied smoke-test report confirms all four custom ty
 validation is recorded in the exercise report. Models and permissions inherit from the
 parent; review instructions do not create a separate sandbox.
 
-Maintain one short [current handoff](InteractionRecord.md). Personal conversation records stay outside the repository; do not create per-task logs.
-
-Keep the current handoff limited to workspace/branch, completed and unverified work, blockers and next authorised step. Consolidate final approvals and outcomes once after reviews pass.
+Maintain the current handoff in logs/ExecutionRecord.md. Persist every interaction
+batch concisely in the existing feature record as work progresses: request/approval,
+assignment, decision, outcome, findings, fixes and actual checks. Preserve teammate
+logs; do not create a separate file per task/exchange or include private material.
 
 ### Documentation upkeep
 
-Every completed feature or change includes updates to both
-[AGENTS.md](../AGENTS.md) and this Developer Guide before completion is reported.
-AGENTS.md retains the instructions and documentation pointers future agents need;
-this guide explains the resulting behaviour, design, setup, and workflow, with
-relevant verification and limitations. Update the existing sections so they
-reflect the current implementation. Subagents return concise messages; no separate
-interaction history or task log is required.
+Update relevant developer/user guidance with delivered behavior. AGENTS.md changes
+only for durable instructions. The coordinator records each interaction batch under
+logs/; subagents return concise messages without separate reporting files.
 
 This applies to application changes, agent configuration, documentation changes,
 and newly agreed workflow rules. Explanatory conversations without a completed
@@ -400,7 +421,7 @@ The coordinator retains shared records, plan status and final acceptance ownersh
 Existing completed entries, historical evidence and exhausted correction budgets
 remain unchanged. This workflow change grants no extra PG-CONVERSION correction cycle.
 The owner resumed PostgreSQL implementation on 2026-10-19; current execution status
-is recorded in workflow/PLAN.md and docs/InteractionRecord.md.
+is recorded in workflow/PLAN.md and logs/ExecutionRecord.md.
 
 ## Retained Java PostgreSQL conversion
 
@@ -509,23 +530,18 @@ reused or adapted ideas, code, documentation, tools, and third-party libraries.
 
 The PostgreSQL conversion uses [PostgreSQL JDBC](https://jdbc.postgresql.org/) 42.7.14 and [Testcontainers for Java](https://java.testcontainers.org/) 2.0.5 for disposable database tests.
 
-## Owner-approved correction limit (2026-10-19)
+## Correction policy
 
-Use one initial implementation pass and required initial reviews, then at most one
-shared correction pass and re-review per task/batch. Group findings into that pass.
-Corrections still require an explicitly approved plan. If findings remain, stop
-and report them; no further loop without explicit owner direction. Required initial
-readiness, coverage and security checkpoints remain. Avoid repeating unchanged checks.
-This owner instruction supersedes older two-cycle wording in saved skills and client
-configurations. Preserve historical counts: PG-CONVERSION remains exhausted at 3/3.
-Execution was resumed by the owner; no new correction budget is granted.
+Follow the current agreed workflow: one planned pass plus evidenced in-scope error
+fixes, recorded by pass. New scope and unresolved decisions remain gated; historical
+experiment results and completed correction counts are unchanged.
 
 ## Targeted context and handoff rule — owner approved 2026-10-19
 
 Workflow reporting was reduced on 2026-10-20: subagents return concise messages
 without Markdown logs/summaries. The coordinator keeps one current handoff and
 consolidates approvals/results into existing records after final reviews pass.
-See AGENTS.md "Minimal workflow records"; older per-task log requirements are superseded.
+See the current AGENTS.md owner-approved workflow; persist each interaction batch as work progresses under logs/.
 
 Coordinators and workers must read only context needed for the current assignment.
 Search headings/symbols first; read bounded relevant sections or line ranges. Use the
