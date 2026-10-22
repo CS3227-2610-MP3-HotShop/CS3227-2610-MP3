@@ -38,7 +38,7 @@ local working folder is unavailable or another instance is using it. Startup can
 recover from either condition. If an operation asks you to retry after a concurrent
 change, refresh the relevant record and submit the action again.
 
-Hosted JPro multi-user readiness remains separate; the current single-runtime directory lock is retained. Stored photos persist across application restarts, while reads and writes require network access to Supabase.
+JPro browser runtimes have separate login and service state and lease one process-owned data-directory lock. Another independent process remains excluded. Hosted two-browser verification remains a release check. Stored photos persist across application restarts, while reads and writes require network access to Supabase.
 
 ## Optional AI Search
 

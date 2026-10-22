@@ -21,6 +21,7 @@ import javafx.stage.Stage;
  */
 public class Main extends Application {
     private static final System.Logger LOGGER = System.getLogger(Main.class.getName());
+    private static final ApplicationRuntimeDirectoryLocks DIRECTORY_LOCKS = new ApplicationRuntimeDirectoryLocks();
     private ApplicationRuntime runtime;
     private Exception startupFailure;
     private SocSearchClient aiSearchClient;
@@ -44,8 +45,9 @@ public class Main extends Application {
     public void init() {
         try {
             String defaultDirectory = Path.of(System.getProperty("user.home"), ".hotshop").toString();
-            runtime = ApplicationRuntime.open(Path.of(System.getProperty("hotshop.dataDir", defaultDirectory)),
-                    Clock.systemDefaultZone(), ServerDescriptions.OWNER);
+            runtime = ApplicationRuntime.openForApplication(
+                    Path.of(System.getProperty("hotshop.dataDir", defaultDirectory)),
+                    Clock.systemDefaultZone(), ServerDescriptions.OWNER, DIRECTORY_LOCKS);
         } catch (Exception exception) {
             startupFailure = exception;
             LOGGER.log(System.Logger.Level.ERROR, "Unable to initialize HotShop; check storage and database setup");

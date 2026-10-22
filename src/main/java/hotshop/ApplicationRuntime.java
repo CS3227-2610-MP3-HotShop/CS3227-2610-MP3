@@ -1,9 +1,6 @@
 package hotshop;
 
 import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -40,8 +37,7 @@ import javafx.application.Platform;
 public final class ApplicationRuntime implements AutoCloseable {
     private static final DescriptionRuntime OFFLINE_DESCRIPTIONS =
             new DescriptionRuntime(LlmConfiguration.load(null));
-    private final FileChannel lockChannel;
-    private final FileLock lock;
+    private final AutoCloseable directoryLease;
     private final ServiceWorker worker = new ServiceWorker();
     private final AccountService accounts;
     private final ListingService listings;
@@ -56,11 +52,10 @@ public final class ApplicationRuntime implements AutoCloseable {
     private final SupabaseImageObjectStore remoteImageStorage;
     private CompletableFuture<Void> closing;
 
-    private ApplicationRuntime(FileChannel lockChannel, FileLock lock, Database database, ImageStorage profileImages,
+    private ApplicationRuntime(AutoCloseable directoryLease, Database database, ImageStorage profileImages,
             ImageStorage listingImages, SupabaseImageObjectStore remoteImageStorage, Clock clock,
             DescriptionRuntime descriptionOwner) {
-        this.lockChannel = lockChannel;
-        this.lock = lock;
+        this.directoryLease = directoryLease;
         this.profileImages = profileImages;
         this.listingImages = listingImages;
         this.remoteImageStorage = remoteImageStorage;
@@ -215,6 +210,18 @@ public final class ApplicationRuntime implements AutoCloseable {
                 SupabaseStorageConfig.fromEnvironment(System.getenv()), descriptions);
     }
 
+    static ApplicationRuntime openForApplication(Path directory, Clock clock, DescriptionRuntime descriptions,
+            ApplicationRuntimeDirectoryLocks directoryLocks) throws IOException, SQLException {
+        return open(directory, clock, DatabaseConfig.fromEnvironment(System.getenv()),
+                SupabaseStorageConfig.fromEnvironment(System.getenv()), descriptions, directoryLocks);
+    }
+
+    static ApplicationRuntime openForApplication(Path directory, Clock clock, DatabaseConfig config,
+            DescriptionRuntime descriptions, ApplicationRuntimeDirectoryLocks directoryLocks)
+            throws IOException, SQLException {
+        return open(directory, clock, config, null, descriptions, directoryLocks);
+    }
+
     /**
      * Opens a runtime against an explicitly configured, already provisioned PostgreSQL database.
      *
@@ -246,20 +253,17 @@ public final class ApplicationRuntime implements AutoCloseable {
     private static ApplicationRuntime open(Path directory, Clock clock, DatabaseConfig config,
             SupabaseStorageConfig storageConfig, DescriptionRuntime descriptions)
             throws IOException, SQLException {
+        return open(directory, clock, config, storageConfig, descriptions, null);
+    }
+
+    private static ApplicationRuntime open(Path directory, Clock clock, DatabaseConfig config,
+            SupabaseStorageConfig storageConfig, DescriptionRuntime descriptions,
+            ApplicationRuntimeDirectoryLocks directoryLocks) throws IOException, SQLException {
         Files.createDirectories(directory);
-        FileChannel channel = FileChannel.open(directory.resolve("application.lock"),
-                StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        AutoCloseable lease = acquireDirectoryLease(directory, directoryLocks);
         SupabaseImageObjectStore remoteStorage = null;
+        boolean runtimeOwnsLease = false;
         try {
-            FileLock lock;
-            try {
-                lock = channel.tryLock();
-            } catch (OverlappingFileLockException exception) {
-                throw new IOException("HotShop is already using this data directory", exception);
-            }
-            if (lock == null) {
-                throw new IOException("HotShop is already using this data directory");
-            }
             Database database = new Database(config);
             try {
                 database.validateSchema();
@@ -281,8 +285,9 @@ public final class ApplicationRuntime implements AutoCloseable {
                 profileImages = new ImageStorage(remoteStorage, "profiles");
                 listingImages = new ImageStorage(remoteStorage, "listings");
             }
-            ApplicationRuntime runtime = new ApplicationRuntime(channel, lock, database, profileImages,
+            ApplicationRuntime runtime = new ApplicationRuntime(lease, database, profileImages,
                     listingImages, remoteStorage, clock, descriptions);
+            runtimeOwnsLease = true;
             try {
                 runtime.accounts.recoverImages().join();
                 runtime.listings.recoverImages().join();
@@ -295,13 +300,52 @@ public final class ApplicationRuntime implements AutoCloseable {
             if (remoteStorage != null) {
                 remoteStorage.close();
             }
+            if (!runtimeOwnsLease) {
+                closeLease(lease, failure);
+            }
+            throw failure;
+        }
+    }
+
+    private static AutoCloseable acquireDirectoryLease(Path directory,
+            ApplicationRuntimeDirectoryLocks directoryLocks) throws IOException {
+        if (directoryLocks != null) {
+            return directoryLocks.acquire(directory);
+        }
+        Path normalized = directory.toAbsolutePath().normalize();
+        var channel = java.nio.channels.FileChannel.open(normalized.resolve("application.lock"),
+                StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+        try {
+            var lock = channel.tryLock();
+            if (lock == null) {
+                throw new IOException("HotShop is already using this data directory");
+            }
+            return () -> {
+                try {
+                    lock.release();
+                } finally {
+                    channel.close();
+                }
+            };
+        } catch (java.nio.channels.OverlappingFileLockException failure) {
+            channel.close();
+            throw new IOException("HotShop is already using this data directory", failure);
+        } catch (IOException | RuntimeException failure) {
             channel.close();
             throw failure;
         }
     }
 
+    private static void closeLease(AutoCloseable lease, Exception failure) {
+        try {
+            lease.close();
+        } catch (Exception closeFailure) {
+            failure.addSuppressed(closeFailure);
+        }
+    }
+
     /**
-     * Drains accepted service work and releases the application lock; repeated calls are harmless.
+     * Drains accepted service work and releases this runtime's directory lease; repeated calls are harmless.
      * On JavaFX, starts asynchronous shutdown instead of waiting. Use closeAsync to observe its completion.
      *
      * @throws IOException if releasing the application lock or its channel fails
@@ -324,7 +368,7 @@ public final class ApplicationRuntime implements AutoCloseable {
 
     /**
      * Stops generation immediately, then drains accepted database work off the caller thread.
-     * The data-directory lock remains held until draining finishes. The shutdown thread is non-daemon
+     * The data-directory lease remains held until draining finishes. The shutdown thread is non-daemon
      * so JavaFX exit cannot terminate accepted work early. Repeated calls observe the same completion.
      *
      * @return completion of service draining and lock release
@@ -344,14 +388,10 @@ public final class ApplicationRuntime implements AutoCloseable {
                         remoteImageStorage.close();
                     }
                 } finally {
-                    try {
-                        lock.release();
-                    } finally {
-                        lockChannel.close();
-                    }
+                    directoryLease.close();
                 }
                 closing.complete(null);
-            } catch (IOException | RuntimeException failure) {
+            } catch (Exception failure) {
                 closing.completeExceptionally(failure);
             }
         });

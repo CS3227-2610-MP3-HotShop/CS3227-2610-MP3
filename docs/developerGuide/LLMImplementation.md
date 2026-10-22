@@ -120,6 +120,11 @@ SOCLAAS_BASE_URL=https://provider.invalid/v1
 deadline scheduler. `HttpLlmClient` adapts the seller Responses protocol and
 `SocSearchClient` adapts buyer Chat Completions; each keeps its own endpoint,
 request/response rules and error mapping while borrowing the same transport.
+The production transport also enforces one process-wide limit of 90 buyer and
+seller HTTP dispatches per rolling minute. This is an application safeguard; it
+does not represent the provider's per-key daily or monthly budget and does not
+coordinate separate processes or replicas. Standalone and injected transports
+retain their existing behavior unless a budget is supplied.
 Closing a buyer client cancels only its exchanges. The process owner closes the
 shared resources at shutdown, and closing an application session does not close
 that owner. Standalone clients created by tests or alternate hosts retain ownership

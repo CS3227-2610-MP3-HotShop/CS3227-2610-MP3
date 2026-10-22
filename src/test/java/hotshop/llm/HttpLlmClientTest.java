@@ -336,14 +336,39 @@ class HttpLlmClientTest {
         ScriptedHttpClient http = scripted(VALID);
         http.stalled = true;
         ManualDeadline deadline = new ManualDeadline();
+        CountDownLatch releaseSendAsync = new CountDownLatch(1);
+        http.beforeReturn = () -> awaitLatch(releaseSendAsync);
         try (HttpLlmClient client = client(ENDPOINT, http, deadline)) {
-            var pending = client.generate("Chair", Condition.GOOD);
-            http.awaitDispatch();
-            assertTrue(pending.cancel(true));
-            assertTrue(http.subscriptionCancelled.get());
+            try {
+                var pending = client.generate("Chair", Condition.GOOD);
+                http.awaitDispatch();
+                assertTrue(pending.cancel(true));
+                assertTrue(http.subscriptionCancelled.get());
+                assertTrue(deadline.cancelled.get());
+                releaseSendAsync.countDown();
+                http.lateBody(VALID.getBytes(StandardCharsets.UTF_8));
+                assertTrue(pending.isCancelled());
+            } finally {
+                releaseSendAsync.countDown();
+            }
+        }
+    }
+
+    @Test
+    void generate_closeDuringExchangeRegistration_cancelsLateExchange() throws Exception {
+        ScriptedHttpClient http = scripted(VALID);
+        http.stalled = true;
+        BlockingDeadline deadline = new BlockingDeadline();
+        try (HttpLlmClient client = new HttpLlmClient(configuration(ENDPOINT), http,
+                Executors.newSingleThreadExecutor(), deadline)) {
+            var pending = CompletableFuture.supplyAsync(() -> client.generate("Chair", Condition.GOOD).join());
+            assertTrue(deadline.scheduling.await(5, TimeUnit.SECONDS));
+            client.close();
+            deadline.release.countDown();
+            assertEquals(new LlmClient.Failed(LlmClient.Failure.CLOSED), pending.get(5, TimeUnit.SECONDS));
             assertTrue(deadline.cancelled.get());
-            http.lateBody(VALID.getBytes(StandardCharsets.UTF_8));
-            assertTrue(pending.isCancelled());
+        } finally {
+            deadline.release.countDown();
         }
     }
 
@@ -557,6 +582,15 @@ class HttpLlmClientTest {
                 .map(entry -> entry.getValue().getFirst()).findFirst().orElseThrow();
     }
 
+    private static void awaitLatch(CountDownLatch latch) {
+        try {
+            assertTrue(latch.await(5, TimeUnit.SECONDS), "Timed out waiting for the test gate");
+        } catch (InterruptedException failure) {
+            Thread.currentThread().interrupt();
+            throw new AssertionError("Interrupted while waiting for the test gate", failure);
+        }
+    }
+
     private static final class ManualDeadline implements HttpLlmClient.DeadlineScheduler {
         private final CountDownLatch scheduled = new CountDownLatch(1);
         private final AtomicBoolean cancelled = new AtomicBoolean();
@@ -588,6 +622,19 @@ class HttpLlmClientTest {
 
         public void close() {
             closed.set(true);
+        }
+    }
+
+    private static final class BlockingDeadline implements HttpLlmClient.DeadlineScheduler {
+        private final CountDownLatch scheduling = new CountDownLatch(1);
+        private final CountDownLatch release = new CountDownLatch(1);
+        private final AtomicBoolean cancelled = new AtomicBoolean();
+
+        @Override
+        public HttpLlmClient.Cancellable schedule(Runnable callback, Duration delay) {
+            scheduling.countDown();
+            awaitLatch(release);
+            return () -> cancelled.set(true);
         }
     }
 

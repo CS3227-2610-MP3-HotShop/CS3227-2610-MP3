@@ -417,6 +417,9 @@ public final class SocSearchClient implements AutoCloseable {
         if (failure instanceof LlmHttpTransport.TransportClosedException) {
             return Failure.CLOSED;
         }
+        if (failure instanceof LlmHttpTransport.ApplicationBudgetException) {
+            return Failure.PROVIDER_BUSY;
+        }
         return Failure.NETWORK;
     }
 

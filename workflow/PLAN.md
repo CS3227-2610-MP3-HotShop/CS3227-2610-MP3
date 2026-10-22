@@ -1658,3 +1658,31 @@ cancellation isolation coverage. Shared correction pass1 assigned for focused te
 and re-review, no production defect established. Linux CI pending; Completed remains No.
 
 ST-MERGE-1/AI-DEDUPE-1 local acceptance: correction1 test-only coverage gap resolved by independent re-review. Both final source reviews accept;577 unique targeted cases/styles/check/build/shadowJar pass. Prepare publication and final-source Linux CI; no live cutover or hosted readiness inferred. Completed remains No pending Linux CI.
+
+## BROWSER-READY-1 / AI-CI-FIX-2 — final PR12 readiness batch
+Owner Jonat explicitly requests all necessary Storage/browser/two-session work and
+keeping CI fixes running until green,2026-10-23. Source: final technical amendment.
+Preserve completed histories; confirmed CI cleanup defects use authorized extra
+correction2 after integration correction1. New browser/quota work is initial scope.
+One general Luna worker owns production/tests/topic guides. Coordinator owns root
+guides/specs/PLAN/records/operator checks. Reassignment was necessary because the
+configured specialist's higher-level role conflicted with combined test ownership;
+no split tester handoff or simultaneous production owners.
+Tasks: preserve synchronous cancellation cleanup; canonical same-process directory
+leases with per-runtime identity; shared90/minute application dispatch budget; affected
+unit/style/package checks; focused Linux reproduction; final independent reviews;
+commit/push one stable batch and obtain final-source full Linux CI.
+Operator work: user confirms rotated replacement key in local/Render; read-only
+verification finds both private buckets and active bindings. No import needed for
+zero current photo refs. Coordinator configured10MiB listing/5MiB profile bucket
+limits. Linux Docker app built and started locally, HTTP200 observed; UI not verified.
+Browser automation approval is pending after automatic review rejected unrestricted
+host Node execution bypassing sandbox localhost restriction. Continue unaffected
+code/tests; no workaround or UI success claim. Hosted Render branch is still buyer
+branch, not Storage candidate; no deployment performed. Reflection prompt remains
+unavailable; do not fabricate personal experience or submission requirements.
+Completed: No. Focused fixes underway; final Linux CI and browser gates remain open.
+
+Readiness candidate reviewed:281 affected Windows cases/styles pass; final96/styles pass after cleanup hardening; check/build/shadowJar with tests excluded passes. Independent specification/coverage and security reviews accept the changed candidate above0f363d9 without findings. Linux JPro release build passes. Focused Linux transport verification and final-source full CI remain pending; browser approval remains separately blocked. Completed remains No.
+
+Focused Linux transport/preparation/budget/coexistence wrapper tests PASS (23s), isolated build-stage image with no production credentials. Full GitHub CI pending publication.

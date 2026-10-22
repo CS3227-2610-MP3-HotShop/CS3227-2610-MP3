@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -104,6 +105,55 @@ class AiClientConfigurationCoexistenceTest {
                 assertEquals(Condition.GOOD.name(), sellerInput.get("condition").getAsString());
                 assertFalse(sellerInputText.contains(BUYER_TEXT));
                 assertEquals(2, server.requestCount());
+            }
+        }
+    }
+
+    @Test
+    void sharedBudget_buyerAndSellerRequests_shareApplicationLimits() throws Exception {
+        try (ControlledHttpsServer server = new ControlledHttpsServer()) {
+            URI buyerBase = server.uri("/buyer/v1");
+            URI sellerEndpoint = server.uri("/seller/responses");
+            LlmConfiguration sellerConfiguration = LlmConfiguration.loadFromEnvironment(null, () -> Map.of(
+                    "SOCLAAS_DESCRIPTION_URL", sellerEndpoint.toString(),
+                    "SOCLAAS_API_KEY", API_KEY,
+                    "SOCLAAS_MODEL", MODEL));
+            server.respondForRequests(request -> request.uri().getPath().equals("/buyer/v1/chat/completions")
+                    ? jsonResponse(chatCompletion("{\"titleText\":\"bicycle\"}"))
+                    : jsonResponse("{\"status\":\"completed\",\"output_text\":"
+                            + new Gson().toJson(DESCRIPTION) + "}"));
+            AtomicLong clock = new AtomicLong();
+            LlmRequestBudget budget = new LlmRequestBudget(clock::get);
+            try (var worker = Executors.newVirtualThreadPerTaskExecutor();
+                    LlmHttpTransport transport = new LlmHttpTransport(server.trustedClient(), worker,
+                            noDeadline(), true, budget);
+                    SocSearchClient buyer = new SocSearchClient(buyerBase, API_KEY, MODEL, transport);
+                    HttpLlmClient seller = new HttpLlmClient(sellerConfiguration, transport)) {
+                var prepared = seller.prepare(SELLER_TITLE, Condition.GOOD).get(5, TimeUnit.SECONDS);
+                var rejected = prepared.dispatch(() -> {
+                    throw new IllegalStateException("synthetic local rejection");
+                });
+                assertEquals(new LlmClient.Failed(LlmClient.Failure.UNAVAILABLE),
+                        rejected.result().get(5, TimeUnit.SECONDS));
+                assertFalse(rejected.wasDispatched());
+                assertEquals(0, server.requestCount());
+
+                for (int index = 0; index < LlmRequestBudget.PRODUCTION_MINUTE_LIMIT; index++) {
+                    if (index % 2 == 0) {
+                        assertInstanceOf(SocSearchClient.Proposed.class,
+                                buyer.propose(BUYER_TEXT).get(5, TimeUnit.SECONDS));
+                    } else {
+                        assertEquals(new LlmClient.Generated(DESCRIPTION),
+                                seller.generate(SELLER_TITLE, Condition.GOOD).get(5, TimeUnit.SECONDS));
+                    }
+                }
+                assertEquals(new SocSearchClient.Failed(SocSearchClient.Failure.PROVIDER_BUSY),
+                        buyer.propose(BUYER_TEXT).get(5, TimeUnit.SECONDS));
+                assertEquals(LlmRequestBudget.PRODUCTION_MINUTE_LIMIT, server.requestCount());
+                clock.addAndGet(TimeUnit.MINUTES.toNanos(1));
+                assertEquals(new LlmClient.Generated(DESCRIPTION),
+                        seller.generate(SELLER_TITLE, Condition.GOOD).get(5, TimeUnit.SECONDS));
+                assertEquals(LlmRequestBudget.PRODUCTION_MINUTE_LIMIT + 1, server.requestCount());
             }
         }
     }

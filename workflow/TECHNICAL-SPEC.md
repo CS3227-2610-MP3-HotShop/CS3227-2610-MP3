@@ -694,3 +694,31 @@ Acceptance adds shared-resource evidence and cross-adapter/per-session cancellat
 isolation, joint protocol routing, bounded bodies/deadlines and safe owner shutdown.
 Preserve existing negative/security assertions; add observable regressions where
 sharing introduces new state/ownership partitions. Use no live endpoint or hosted DB.
+
+### BROWSER-READY-1 / AI-CI-FIX-2 — operator and browser readiness, 2026-10-23
+Owner explicitly requests completing Storage/browser/two-session gates and continuing
+PR12 CI fixes until green while offline. Assignment/design evidence is in the concise
+execution record; these amendments capture the already agreed implementation contracts.
+CI39827937755 ran1544 cases and failed2 HttpLlmClient caller-cancellation cleanup
+assertions on Linux. Preserve those assertions. An exchange may be cancelled while
+sendAsync is still returning its future: cancel known subscription/deadline immediately,
+outside lifecycle locks, and cancel the future when registered. Cover this window
+with a deterministic response-future return gate; no sleep-based assertion weakening.
+Main/JPro uses a process-owned canonical-directory registry with reference-counted
+leases, one OS application.lock per real directory and independent runtime sessions/
+workers/services. Public standalone open remains exclusive. Keep other owner/process
+exclusion; release physical lock only after the final runtime's asynchronous drain.
+PostgreSQL image lifecycle fencing, authorization and per-editor staging stay intact.
+Real two-browser identity/persistence acceptance is a distinct gate from unit evidence.
+Owner supplies SoC defaults:90 requests/minute,80,000,000 microdollars/day,
+800,000,000/month;429 on limit exhaustion. Add process-owned shared LlmRequestBudget
+90/minute across production buyer/seller dispatches. Existing seller5/minute,30/hour/
+account and one-in-flight policy remains unchanged. Standalone transport constructors
+have no hidden application budget. Reserve atomically after request preparation and
+before admission callback, rollback proven pre-send failures, timestamp/charge at
+sendAsync invocation. Invoked requests remain charged on synchronous throw or later
+failure; never estimate monetary costs. Injectable monotonic time, boundary/concurrency/
+mixed-feature/refund tests and existing safe PROVIDER_BUSY feedback, no auto retries.
+This per-process ceiling is not a multi-replica/key-wide guarantee; monetary budgets
+remain provider-enforced. Key-specific budget endpoint queries returned404 and no
+specific remaining balance was independently established by the coordinator.

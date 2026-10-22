@@ -67,14 +67,20 @@ repositories; production startup requires both configured Storage buckets.
 
 ### Runtime initialization and shutdown
 
-`ApplicationRuntime.open` acquires the runtime-directory lock, validates the
-provisioned database and Storage configuration, creates separate profile/listing
-image stores, and constructs the repositories
+`Main` owns a process-local directory-lock registry. JPro browser instances that
+resolve to the same normalized data directory receive separate runtime leases over
+one operating-system lock. Each runtime still creates its own repositories,
+services, worker and authenticated session. The physical lock remains held until
+the last lease has drained and closed. Direct `ApplicationRuntime.open` calls
+retain exclusive directory locking, and a separate owner or process is still
+rejected while the lock is held. Runtime initialization validates the provisioned
+database and Storage configuration, creates separate profile/listing image stores,
+and constructs the repositories
 and six services. All services share one `Database`, `ServiceWorker`, and
 `AuthenticatedSession`; time-dependent services share the supplied clock. Startup
 recovers managed images before returning. Closing the runtime drains accepted
-worker operations, closes Storage resources and releases the lock. The session is in memory and starts
-logged out on each launch.
+worker operations, closes Storage resources and releases its lease. The session is
+in memory and starts logged out for each browser instance.
 
 The production overload taking a description owner supplies environment-derived
 database and private Storage configuration. The explicit database-configuration

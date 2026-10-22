@@ -54,6 +54,10 @@ and .github/workflows/gradle.yml. Missing old migration artifacts do not mean th
 retained agent workflow is absent; create task-specific specifications and plans
 through the existing skills rather than restoring abandoned migration scope.
 Never run automated tests against hosted/demo data or read credentials into logs.
+JPro runtimes lease one process-owned data-directory lock while retaining separate
+authentication and service state. See the Architecture Overview for lifecycle ownership
+and LLM Implementation for the shared production AI dispatch ceiling; retain standalone
+client ownership and seller account quotas when changing transport code.
 
 HotShop is a Java-based e-commerce application.
 

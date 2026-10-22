@@ -22,6 +22,7 @@ public final class LlmHttpTransport implements AutoCloseable {
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private final Set<Exchange> exchanges = new HashSet<>();
     private final boolean ownsHttpClient;
+    private final LlmRequestBudget requestBudget;
     private HttpClient client;
     private ExecutorService worker;
     private DeadlineScheduler scheduler;
@@ -29,7 +30,13 @@ public final class LlmHttpTransport implements AutoCloseable {
 
     /** Creates an idle transport; its threads and HTTP client are initialized on first use. */
     public LlmHttpTransport() {
+        this(null);
+    }
+
+    /** Creates a transport with an optional shared application admission budget. */
+    public LlmHttpTransport(LlmRequestBudget requestBudget) {
         ownsHttpClient = true;
+        this.requestBudget = requestBudget;
     }
 
     LlmHttpTransport(HttpClient client, ExecutorService worker, DeadlineScheduler scheduler) {
@@ -38,10 +45,16 @@ public final class LlmHttpTransport implements AutoCloseable {
 
     LlmHttpTransport(HttpClient client, ExecutorService worker, DeadlineScheduler scheduler,
             boolean ownsHttpClient) {
+        this(client, worker, scheduler, ownsHttpClient, null);
+    }
+
+    LlmHttpTransport(HttpClient client, ExecutorService worker, DeadlineScheduler scheduler,
+            boolean ownsHttpClient, LlmRequestBudget requestBudget) {
         this.client = Objects.requireNonNull(client);
         this.worker = Objects.requireNonNull(worker);
         this.scheduler = Objects.requireNonNull(scheduler);
         this.ownsHttpClient = ownsHttpClient;
+        this.requestBudget = requestBudget;
     }
 
     static HttpClient createHttpClient(Executor executor) {
@@ -197,6 +210,8 @@ public final class LlmHttpTransport implements AutoCloseable {
         private boolean dispatched;
         private Throwable deferredFailure;
         private boolean ownerClosePending;
+        private LlmRequestBudget.Reservation budgetReservation;
+        private boolean budgetCommitted;
 
         private Exchange(LlmHttpTransport owner, HttpRequest request, Runnable beforeSend,
                 HttpResponse.BodyHandler<byte[]> bodyHandler) {
@@ -234,6 +249,18 @@ public final class LlmHttpTransport implements AutoCloseable {
                     return;
                 }
             }
+            LlmRequestBudget.Reservation reservation = owner.reserveBudget();
+            if (owner.requestBudget != null && reservation == null) {
+                finishExceptionally(new ApplicationBudgetException());
+                return;
+            }
+            synchronized (this) {
+                if (terminal || owner.isClosed()) {
+                    owner.rollbackBudget(reservation);
+                    return;
+                }
+                budgetReservation = reservation;
+            }
             try {
                 beforeSend.run();
             } catch (RuntimeException failure) {
@@ -246,6 +273,13 @@ public final class LlmHttpTransport implements AutoCloseable {
                     return;
                 }
                 sending = true;
+                if (!owner.commitBudget(budgetReservation)) {
+                    sending = false;
+                    budgetReservation = null;
+                    finishExceptionally(new AdmissionException());
+                    return;
+                }
+                budgetCommitted = reservation != null;
                 dispatched = true;
             }
             try {
@@ -267,6 +301,7 @@ public final class LlmHttpTransport implements AutoCloseable {
             synchronized (this) {
                 pending = sent;
                 sending = false;
+                dispatched = true;
                 deferred = deferredFailure;
             }
             if (deferred != null) {
@@ -292,11 +327,14 @@ public final class LlmHttpTransport implements AutoCloseable {
                 return cancelledBody();
             }
             if (incoming instanceof BoundedLlmBodySubscriber bounded) {
+                boolean cancel;
                 synchronized (this) {
                     subscriber = bounded;
-                    if (terminal) {
-                        bounded.cancel();
-                    }
+                    dispatched = true;
+                    cancel = terminal;
+                }
+                if (cancel) {
+                    bounded.cancel();
                 }
             }
             return incoming;
@@ -321,6 +359,9 @@ public final class LlmHttpTransport implements AutoCloseable {
         }
 
         void finishExceptionally(Throwable failure) {
+            Cancellable currentDeadline = null;
+            BoundedLlmBodySubscriber currentSubscriber = null;
+            boolean deferCompletion = false;
             synchronized (this) {
                 if (terminal) {
                     return;
@@ -331,19 +372,40 @@ public final class LlmHttpTransport implements AutoCloseable {
                 terminal = true;
                 if (sending && pending == null) {
                     deferredFailure = failure;
-                    return;
+                    currentDeadline = deadline;
+                    currentSubscriber = subscriber;
+                    deferCompletion = true;
                 }
+            }
+            if (deferCompletion) {
+                cancelKnownResources(currentDeadline, currentSubscriber);
+                owner.remove(this);
+                return;
             }
             completeExceptionally(failure);
         }
 
-        private synchronized void markOwnerClosed() {
-            if (terminal) {
-                return;
+        private void markOwnerClosed() {
+            Cancellable currentDeadline = null;
+            BoundedLlmBodySubscriber currentSubscriber = null;
+            boolean deferCompletion;
+            synchronized (this) {
+                if (terminal) {
+                    return;
+                }
+                terminal = true;
+                deferredFailure = new TransportClosedException();
+                ownerClosePending = true;
+                deferCompletion = sending && pending == null;
+                if (deferCompletion) {
+                    currentDeadline = deadline;
+                    currentSubscriber = subscriber;
+                }
             }
-            terminal = true;
-            deferredFailure = new TransportClosedException();
-            ownerClosePending = true;
+            if (deferCompletion) {
+                cancelKnownResources(currentDeadline, currentSubscriber);
+                owner.remove(this);
+            }
         }
 
         private void completeOwnerClosed() {
@@ -374,26 +436,52 @@ public final class LlmHttpTransport implements AutoCloseable {
             CompletableFuture<HttpResponse<byte[]>> currentPending;
             BoundedLlmBodySubscriber currentSubscriber;
             Cancellable currentDeadline;
+            LlmRequestBudget.Reservation currentReservation;
+            boolean committed;
             synchronized (this) {
                 currentPending = pending;
                 currentSubscriber = subscriber;
                 currentDeadline = deadline;
+                currentReservation = budgetReservation;
+                committed = budgetCommitted;
             }
+            cancelKnownResources(currentDeadline, currentSubscriber);
+            if (currentPending != null && !currentPending.isDone()) {
+                currentPending.cancel(true);
+            }
+            if (!committed) {
+                owner.rollbackBudget(currentReservation);
+            }
+            owner.remove(this);
+        }
+
+        private static void cancelKnownResources(Cancellable currentDeadline,
+                BoundedLlmBodySubscriber currentSubscriber) {
             if (currentDeadline != null) {
                 currentDeadline.cancel();
             }
             if (currentSubscriber != null) {
                 currentSubscriber.cancel();
             }
-            if (currentPending != null && !currentPending.isDone()) {
-                currentPending.cancel(true);
-            }
-            owner.remove(this);
         }
     }
 
     private synchronized boolean isClosed() {
         return closed;
+    }
+
+    private LlmRequestBudget.Reservation reserveBudget() {
+        return requestBudget == null ? null : requestBudget.reserve();
+    }
+
+    private boolean commitBudget(LlmRequestBudget.Reservation reservation) {
+        return requestBudget == null || requestBudget.commit(reservation);
+    }
+
+    private void rollbackBudget(LlmRequestBudget.Reservation reservation) {
+        if (requestBudget != null) {
+            requestBudget.rollback(reservation);
+        }
     }
 
     private synchronized HttpClient client() {
@@ -448,6 +536,14 @@ public final class LlmHttpTransport implements AutoCloseable {
 
         AdmissionException() {
             super("AI request admission failed");
+        }
+    }
+
+    static final class ApplicationBudgetException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        ApplicationBudgetException() {
+            super("Application AI request budget reached");
         }
     }
 }

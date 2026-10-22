@@ -47,3 +47,5 @@ For PostgreSQL configuration, provisioning and schema details, read
 [Account Service and PostgreSQL Persistence](developerGuide/AccountServiceAndLocalPersistence.html).
 
 See [Private image storage setup and import](developerGuide/AccountServiceAndLocalPersistence.html#private-image-storage-setup-and-import) for bucket configuration, separate activation, preservation and rollback.
+
+See [Architecture Overview](developerGuide/ArchitectureOverview.html) for process-owned directory leases and isolated browser runtimes, and [LLM Implementation](developerGuide/LLMImplementation.html) for the shared AI request ceiling and cancellation lifecycle.

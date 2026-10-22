@@ -8,9 +8,14 @@
 
 ### Runtime lifecycle and data directory
 
-`ApplicationRuntime.open` owns the data-directory lock, schema validation, image
-recovery, shared service worker and services. Close it to drain queued work before
-releasing the lock. `Main.init` opens the runtime off the JavaFX thread;
+`Main` shares one operating-system data-directory lock across same-process JPro
+browser instances through independent runtime leases. Each `ApplicationRuntime`
+still owns its schema validation, image recovery, service worker, services and
+in-memory login session. Close it to drain queued work before releasing its lease;
+the physical lock remains until the last browser runtime closes. Direct
+`ApplicationRuntime.open` calls retain exclusive locking. A different process or
+independent lock owner cannot open the same directory while it is in use.
+`Main.init` opens the runtime off the JavaFX thread;
 `Main.stop` starts asynchronous shutdown. Initialization failures show an error
 instead of resetting storage. See [runtime initialization and shutdown](ArchitectureOverview.html#runtime-initialization-and-shutdown)
 for the database/description-owner overloads.

@@ -1,15 +1,18 @@
 # Current execution record
 
-## Current handoff — PR12 integration, 2026-10-23
-Branch codex/supabase-image-storage; uncommitted merge of masterd59d6ba into7cb796e.
-All merge conflicts resolved; local checks and final source reviews pass. Owner also
-requests buyer/seller shared AI transport, locally verified under
-ST-MERGE-1/AI-DEDUPE-1 in PLAN and final TECHNICAL-SPEC sections. One implementer
-owns code/tests/topic guides; coordinator owns root guides/specs/PLAN/this record.
-Keep both protocol/config contracts; DescriptionRuntime process-owns lazy shared
-transport; browser adapters borrow; no hosted/provider/import/activation actions.
-Next: publish reviewed candidate, retarget PR12 to master and obtain full Linux CI; hosted cutover remains separately gated.
-Prior PR11 integration126fc8c passed fullLinuxCI39820740076 and is merged in master.
+## Current handoff — PR12 CI readiness, 2026-10-23
+Branch codex/supabase-image-storage, published integration0f363d9 targets master.
+CI39827937755 failed two cancellation cleanup assertions among1544 cases; confirmed
+sendAsync-registration race corrected in the current stable readiness batch.
+Same-process directory leases preserve separate browser identities and physical
+locking. Production buyer/seller share a90/minute process ceiling; seller account
+quotas remain. Windows281 affected cases/styles, final96/styles and packaging pass.
+Both independent Luna final source/coverage and security reviews accept the changed
+candidate; reviewers did not run tests. Linux focused/full CI pending publication.
+Owner explicitly authorizes continued confirmed CI fixes overnight, no merge/deploy.
+Private buckets/bindings verified active; rotated key confirmed without disclosure.
+Real browser checks await host-browser approval after automatic review rejection;
+Render remains on the earlier buyer branch. Do not claim browser/hosted acceptance.
 ## Workflow reconciliation — 2026-10-22
 
 Owner approved preserving one implementer, final reviews, one planned correction pass
@@ -498,3 +501,30 @@ private Storage setup/import/rollback; obsolete docs handoff removed in favor of
 Remote master stilld59d6ba. Coordinator prepares commit/push and PR12 master base;
 full final-source Linux CI pending. ST008 provider/private-bucket verification,
 actual activation and browser persistence remain unverified; no live writes performed.
+
+### Overnight readiness execution — 2026-10-23
+Owner requests all necessary activation/browser/two-browser checks while CI runs,
+then explicitly asks fixing/preparing push and continuing CI fixes until green.
+Full LinuxCI39827937755 on0f363d9 failed2/1544 HttpLlmClient cancellation assertions.
+Extra corrective pass2 authorized by standing confirmed-error policy and overnight
+request. Original specialist returned one unverified registerExchange edit; its
+higher-level role prohibited tests despite repository policy. Reassigned whole new
+batch to one general Luna worker; no concurrent source owners or tester split.
+Worker found/addresses deferred cleanup during sendAsync registration, adds canonical
+same-process lock leases and shared90/minute production budget with user-supplied
+provider defaults. Existing seller per-account limits remain. Budget API GETs returned
+404 at root/v1 paths; no key-specific budget claim or model call made by those checks.
+User confirmed rotating mistakenly supplied secret and replacing local/Render value;
+no credential reproduced or stored in logs. Private bucket verification succeeds,
+limits configured10MiB/5MiB, active DB bindings verified; no image import/activation
+write required. No current photo refs. Built Docker hotshop:operator-check from0f,
+launched local server with certificate read-only and env only at runtime; HTTP200.
+Temporary browser tooling installed outside repository. Sandboxed Chrome localhost
+access denied; automatic approval review rejected unrestricted interactive host Node
+approach as access-control bypass. Closed restricted browser, requested explicit
+approval for localhost-only temporary-profile checks; no bypass attempted. Browser
+checks remain unverified and do not block isolated unit/CI correction work.
+
+Final readiness candidate: implementer reports281 affected Windows cases and both styles green; after final cleanup hardening96 cases/styles green. Wrapper check/build/shadowJar with tests excluded passes. Independent Luna specification/coverage and security reviewers accept the changed working tree above0f363d9, with no actionable findings; no duplicate tests run by reviewers. Linux Docker JPro release build passes; focused Linux tests are running. Root developer/user guides and durable agent pointers updated without activity logs in AGENTS. Owner's latest instruction explicitly authorizes continued confirmed CI fixes until green; merge/deployment remain untouched.
+
+Linux focused verification passed: Docker build-stage wrapper test selecting HttpLlmClientTest,LlmPreparationTest,LlmRequestBudgetTest,AiClientConfigurationCoexistenceTest, JavaFX linux, exit0 (23s). No credentials or hosted services supplied. Publish reviewed source and monitor full GitHub CI next.

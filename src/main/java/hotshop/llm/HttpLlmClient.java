@@ -241,8 +241,10 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
                         .header("Content-Type", "application/json").header("Accept", "application/json")
                         .header("Accept-Encoding", "identity").timeout(REQUEST_TIMEOUT)
                         .POST(HttpRequest.BodyPublishers.ofByteArray(request)).build();
-                exchange = transport.send(post, REQUEST_TIMEOUT, beforeSend, this::handleBody);
-                exchange.result().whenComplete((response, failure) -> {
+                LlmHttpTransport.Exchange started = transport.send(post, REQUEST_TIMEOUT, beforeSend,
+                        this::handleBody);
+                registerExchange(started);
+                started.result().whenComplete((response, failure) -> {
                     if (failure != null) {
                         finish(new Failed(mapFailure(failure)));
                     } else {
@@ -255,6 +257,19 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
                 });
             } catch (RuntimeException failure) {
                 finish(new Failed(Failure.NETWORK));
+            }
+        }
+
+        private void registerExchange(LlmHttpTransport.Exchange started) {
+            boolean cancel;
+            synchronized (this) {
+                cancel = terminal;
+                if (!cancel) {
+                    exchange = started;
+                }
+            }
+            if (cancel) {
+                started.cancel();
             }
         }
 
@@ -310,6 +325,9 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
         }
         if (failure instanceof LlmHttpTransport.AdmissionException) {
             return Failure.UNAVAILABLE;
+        }
+        if (failure instanceof LlmHttpTransport.ApplicationBudgetException) {
+            return Failure.PROVIDER_BUSY;
         }
         return failure instanceof BoundedLlmBodySubscriber.InvalidBodyException
                 ? Failure.INVALID_RESPONSE : Failure.NETWORK;

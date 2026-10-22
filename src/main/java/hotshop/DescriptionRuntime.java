@@ -9,6 +9,7 @@ import hotshop.llm.HttpLlmClient;
 import hotshop.llm.LlmClient;
 import hotshop.llm.LlmConfiguration;
 import hotshop.llm.LlmHttpTransport;
+import hotshop.llm.LlmRequestBudget;
 import hotshop.llm.SocSearchClient;
 import hotshop.service.AuthenticatedSession;
 import hotshop.service.DescriptionQuota;
@@ -41,7 +42,7 @@ public final class DescriptionRuntime implements AutoCloseable {
 
     /** Creates a shared transport from an immutable startup snapshot without making a network call. */
     public DescriptionRuntime(LlmConfiguration configuration) {
-        this(configuration, new LlmHttpTransport());
+        this(configuration, new LlmHttpTransport(new LlmRequestBudget()));
     }
 
     private DescriptionRuntime(LlmConfiguration configuration, LlmHttpTransport transport) {
