@@ -1,19 +1,40 @@
 # AGENTS.md
 
-## Minimal workflow records — owner approved 2026-10-20
+## Owner-approved workflow — 2026-10-22
 
-Subagents return concise results in messages; they do not create or maintain task logs,
-interaction summaries, approval records or other reporting Markdown files. Reports
-include changed files, actual check results and unresolved findings, without transcripts.
-The coordinator maintains one short current handoff in docs/InteractionRecord.md.
-Keep approvals in the chat until final review passes, then consolidate decisions,
-approvals and verification into the existing feature summary and decision record once.
-Do not create a separate log per task, agent, discussion or workflow adjustment.
-Required product/setup documentation still changes with behavior. On 2026-10-20
-the owner explicitly requested deletion of old interaction logs and verbose histories;
-retain only the current handoff and consolidated final summary. This rule supersedes older per-agent/per-task logging and
-every-decision documentation requirements in skills, role briefs and templates.
+This agreement takes precedence over conflicting older skills, role briefs, agent
+configuration and workflow text. It changes future execution, not historical results
+or completed benchmark/correction records.
 
+- One implementer owns the approved batch: production code, tests, fixtures, build
+  configuration and associated guides. It may write/update tests, preserving valid
+  assertions. No separate tester or intermediate review handoffs by default.
+- After implementation and checks, independent specification/coverage and security
+  reviewers inspect one stable candidate. The coordinator consolidates their findings.
+- Plan one shared correction pass. Additional passes are permitted only for confirmed
+  errors or mistakes within approved scope, supported by failing checks, a contract
+  violation or concrete execution-path evidence. Record the defect, scoped fix,
+  pass number and affected verification; proceed without repeated approval requests.
+  New features, requirement changes, speculative improvements, unresolved decisions
+  and live/deployment actions retain their own approval gates. Do not loop unchanged
+  attempts; surface a blocker when progress needs a new decision or external change.
+- Use targeted source/spec sections and compact briefs. New specialists receive
+  fork_turns=none; do not request full chats or unrelated histories. Prefer a Sol
+  coordinator and Luna specialists; saved settings do not prove a live model change.
+- Persist every human-visible interaction batch: sanitized user request/approval,
+  agent roles and assignment, decisions, concise results, review findings, corrections,
+  actual checks and limitations. Subagents return concise messages; the coordinator
+  appends these as work progresses to one existing feature record under logs/.
+  Preserve existing teammate logs. Do not create a new file per exchange or task,
+  restore previously deleted histories, or record secrets/private reasoning.
+- All logs, interaction records and handoffs live under logs/. The current shared
+  handoff is logs/ExecutionRecord.md; AGENTS.md holds durable rules, not activity logs.
+  Product guides and PLAN retain their normal behavior/status responsibilities.
+- Preserve school evidence: approved specifications and acceptance tests; actual
+  specialized-agent work and reviews; AI threat boundaries/evaluations; SoC model
+  configuration, quotas and error handling; team contributions and quantified MP2
+  reuse; and separately managed deployment automation. Record executed evidence
+  honestly, with benchmark/release limitations. Definitions alone do not prove use.
 
 This file defines the repository-wide instructions that AI coding agents must follow when working on HotShop.
 
@@ -309,71 +330,6 @@ Determine whether the implementation or the test is incorrect before making chan
 
 ---
 
-## Autonomous Multi-Agent Orchestration
-
-The main Codex agent is the project orchestrator.
-
-When receiving a development request:
-
-1. Analyze the request and inspect relevant project files.
-2. Break the task into logical subtasks.
-3. Determine which specialized agents are appropriate.
-4. Delegate independent subtasks automatically.
-5. Coordinate dependencies between agents.
-6. Integrate the completed work.
-7. Run appropriate tests and request reviews.
-8. Resolve important issues before finishing.
-
-### Available Specialists
-
-- javafx_developer:
-  JavaFX layouts, controls, events, navigation, bindings, service integration,
-  styling, accessibility, threading, and lifecycle. Use the existing programmatic
-  UI; introduce FXML only when requested. This replaces javafx_view_designer and
-  controller_developer. Coordinate specialized CSS work with css_specialist and
-  tests with testing_agent; assign one writer per shared UI file.
-
-- app_architect:
-  Business logic, services, models, repositories.
-
-- testing_agent:
-  Unit tests, integration tests, regression checks.
-
-- css_specialist:
-  JavaFX CSS, styling, themes, accessibility.
-
-- code_reviewer:
-  Code quality, threading, architecture, correctness.
-
-### Delegation Policy
-
-- Choose agents based on the task requirements.
-- Do not require the user to name agents.
-- Delegate complex, independent work automatically.
-- Run independent tasks in parallel when beneficial.
-- Establish shared contracts before parallel implementation.
-- Never assign overlapping file edits concurrently.
-- Keep small, straightforward tasks with the main agent.
-- Avoid unnecessary delegation overhead.
-- Use the testing agent when behavior changes.
-- Use the reviewer for substantial or risky changes.
-
-### Main Agent Responsibilities
-
-The main agent remains responsible for:
-- Overall implementation quality.
-- Cross-agent coordination.
-- Integration of changes.
-- Resolving conflicting implementations.
-- Final build and test verification.
-- Reporting results to the user.
-
-Do not ask the user to choose agents unless the
-delegation decision requires a significant
-architectural or product decision.
-
----
-
 ## Build and Verification
 
 The Gradle requirements in this section apply to Java implementation tasks.
@@ -411,64 +367,11 @@ Do not disable tests, Checkstyle, or other verification mechanisms merely to mak
 
 ## Logging Agent Interactions
 
-At the end of every workflow task performed by the LLM, create a new Markdown file under:
-```
-logs/
-```
-Do not overwrite previous task logs.
-
-Use a descriptive filename that allows logs to be distinguished from one
-another. Prefer:
-```
-YYYY-MM-DD-<short-task-description>.md
-```
-If multiple tasks with the same description occur on the same date, add a numeric suffix.
-
-Each log must contain:
-```
-# Agent Interaction Log
-
-## User Prompt
-
-Record the user's original task prompt.
-
-## Steps Taken
-
-Summarize the significant steps performed by the LLM.
-
-## Reasoning Summary
-
-Explain the engineering rationale behind significant decisions.
-
-Do not include hidden chain-of-thought or private internal reasoning.
-Record concise, user-facing engineering justifications instead.
-
-## Changes Made
-
-List the important files created, modified, or deleted and explain why.
-
-## Verification
-
-Record the commands or checks actually performed and their outcomes.
-
-## Final Output and Conclusion
-
-Summarize the final result, including any unresolved issues.
-
-```
-Logs must accurately reflect what occured.
-
-Do not claim that commands, tests, or manual checks were performed when they were not.
-
-Do not include passwords, tokens, credentials, personal data, or other secrets in logs
-
----
-
-Follow the owner-approved "Minimal workflow records" rule above. Subagents return
-concise results in messages and do not write reporting Markdown. Coordinator keeps
-one current handoff and consolidates approvals/results into existing records after
-final review passes. Do not create per-task or per-agent logs. Old log deletion was explicitly authorised; do not include credentials, secrets, private reasoning or unrelated personal
-material. Product/setup documentation still reflects delivered behavior.
+Follow the owner-approved workflow above. Persist each interaction batch concisely
+in an existing feature record under logs/, with the current handoff in
+logs/ExecutionRecord.md. Preserve teammate records. Subagents report in messages;
+the coordinator records assignments, decisions, outcomes, defects and actual checks.
+No per-exchange files, activity logs in AGENTS.md, credentials or private reasoning.
 ## Handling Ambiguity
 When requirements are ambiguous:
 - inspect existing behaviour and documentation for evidence;

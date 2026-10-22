@@ -1,44 +1,20 @@
 # HotShop agent workflow specifications
 
-> Owner override (2026-10-20): follow AGENTS.md "Minimal workflow records".
-> Subagents report in messages only; no task logs, interaction summaries or approval
-> Markdown. Coordinator keeps one short current handoff and consolidates final
-> records after reviews pass. Older logging duties below are superseded.
+Current policy: follow AGENTS.md "Owner-approved workflow — 2026-10-22" over
+conflicting legacy text below. One implementer owns code/tests/guides; final
+independent reviews follow. Use one planned correction pass plus documented,
+evidenced in-scope error fixes without repeated approval. Persist each interaction
+batch through the coordinator under logs/; no subagent reporting files.
 
 Version: 0.9, 2026-10-17 (SGT)
 
 Status: role decisions agreed and worker configurations written; discovery/launch passed in the user-supplied smoke-test report; generic-dispatch behaviour was exercised as documented in docs/agents/WorkflowExercise.md; native loading after instruction edits and unexercised paths remain unverified. Reading this document does not authorise implementation or agent spawning.
 
-## Owner-approved delivery workflow (2026-10-19)
+## Delivery workflow
 
-This instruction supersedes earlier role, skill, client-configuration and plan wording
-that requires tester handoffs or independent reviews before implementation.
-
-Assign one implementer the entire approved implementation batch, including production
-code, tests, fixtures, build configuration, associated guides and its task evidence.
-The implementer may write and update tests against the approved requirements; it must
-preserve valid assertions and never weaken checks to obtain a pass. Use test-first
-evidence where practical and run relevant tests/styles during implementation.
-Normal initial implementation includes bringing the approved behavior to green;
-do not route every expected development failure through another agent.
-
-Keep that implementer through the batch. No separate tester or intermediate review
-handoffs by default. Prerequisites are working contracts and evidence, rather than
-acceptance by an intermediate reviewer. Pause for unresolved requirements, scope
-changes or a genuine blocker. Do not invent scope or relabel review corrections
-as initial work.
-
-After implementation, tests, documentation and required checks are complete, submit
-one stable candidate for the final specification/coverage and security reviews.
-Group findings from both into one report and, if needed, one explicitly approved
-correction pass followed by focused re-review. There is one shared correction budget,
-not one per reviewer. Stop and report unresolved findings after that pass.
-The coordinator retains shared records, plan status and final acceptance ownership.
-
-Existing completed entries, historical evidence and exhausted correction budgets
-remain unchanged. This workflow change grants no extra PG-CONVERSION correction cycle.
-The owner resumed PostgreSQL implementation on 2026-10-19; current execution status
-is recorded in workflow/PLAN.md and docs/InteractionRecord.md.
+The current owner-approved policy above governs ownership, final reviews, evidenced
+correction passes and persistent interaction batches. Historical exercises and
+results elsewhere in this document remain provenance, not current restrictions.
 
 ## Assignment inputs
 
@@ -54,7 +30,7 @@ Supply each worker this contract, its role brief, and relevant feature artifacts
 - [Specification and coverage reviewer](agents/specification-reviewer.md): assesses test readiness, then implementation and coverage.
 - [Security reviewer](agents/security-reviewer.md): assesses the stable final candidate.
 
-All failed-loop code/test edits require an explicitly approved correction plan. All stages share one correction cycle for the same task/batch; new tasks, stages, or agent invocations do not reset the count. At exhaustion, ask the human how to proceed. Every reviewer disagreement goes to the human with both positions and evidence. Initial expected TDD red is part of approved initial work.
+Use the current correction policy above: one planned pass and additional evidenced in-scope error fixes, with each pass recorded. Unresolved requirement or reviewer disagreements requiring a product decision go to the human with evidence. Initial expected TDD red is approved initial work.
 
 See [configuration and startup](AgentConfiguration.md) and the [consistency check](WorkflowConsistencyCheck.md).
 
@@ -151,7 +127,7 @@ The [synthetic exercise report](WorkflowExercise.md) records the executed prereq
 | docs/DeveloperGuide.md | Implementer for design/setup; coordinator for workflow | Specification/coverage reviewer |
 | AGENTS.md | Coordinator consolidates durable instruction changes | Specification/coverage reviewer checks consistency |
 | Feature SDD interaction summary | Coordinator, using worker evidence and human decisions | Specification/coverage reviewer checks traceability and missing evidence |
-| docs/InteractionRecord.md | Coordinator records decisions and current handoff | Specification/coverage reviewer checks relevant feature decisions |
+| logs/ExecutionRecord.md | Coordinator records decisions and current handoff | Specification/coverage reviewer checks relevant feature decisions |
 | Final consolidated records | Coordinator updates existing records after final reviews pass; workers report in messages only | Coordinator verifies results and provenance |
 | workflow/PLAN.md completion/progress fields | Coordinator only, based on worker evidence and required gates | Coordinator checks task acceptance and reviewer evidence before releasing dependents |
 
@@ -213,19 +189,13 @@ for any changed task scope, preserving completed entries. Do not perform unneces
 production edits solely to obtain a red-green sequence.
 
 Expected initial behavioural red is normal approved TDD work, not a correction
-cycle. Unexpected review/verification defects requiring code/test edits retain
-the existing explicit correction-plan approval and shared one-cycle limit.
+cycle. Further review/verification defects use the evidenced in-scope error exception in the current policy, with each pass recorded.
 
-## Owner-approved correction limit (2026-10-19)
+## Correction policy
 
-Use one initial implementation pass and required initial reviews, then at most one
-shared correction pass and re-review per task/batch. Group findings into that pass.
-Corrections still require an explicitly approved plan. If findings remain, stop
-and report them; no further loop without explicit owner direction. Required initial
-readiness, coverage and security checkpoints remain. Avoid repeating unchanged checks.
-This owner instruction supersedes older two-cycle wording in saved skills and client
-configurations. Preserve historical counts: PG-CONVERSION remains exhausted at 3/3.
-Execution was resumed by the owner; no new correction budget is granted.
+Follow the current AGENTS.md policy: one planned pass plus documented, evidenced
+in-scope error fixes. No repeated approval is needed for those fixes; scope changes
+and unresolved requirement decisions remain gated. Preserve historical outcomes.
 
 ## Targeted context and handoff rule — owner approved 2026-10-19
 

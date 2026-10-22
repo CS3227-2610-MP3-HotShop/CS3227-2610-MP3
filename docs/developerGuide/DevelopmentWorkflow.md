@@ -4,6 +4,30 @@
   pageNav: 3
 ---
 
+## Agreed agent workflow and project evidence
+
+Use one implementer for code, tests and guides, then final independent specification/
+coverage and security reviews. Plan one shared correction pass. Further passes may
+fix confirmed errors within approved scope without another approval round; record
+the defect evidence, scoped change, pass count and affected checks. Changes to scope,
+requirements, live data or deployment still need the appropriate owner decision.
+Historical experiments and correction counts remain unchanged.
+
+Keep targeted context and compact briefs without full conversation inheritance.
+Prefer Sol for coordination and Luna for specialists. Persist every interaction batch
+concisely as work progresses: request/approval, agent assignment, decision, result,
+findings, corrections and actual verification. Subagents return messages; the
+coordinator appends one feature record rather than generating per-task files.
+Preserve existing teammate logs. All records and handoffs live in logs/; the current
+shared handoff is logs/ExecutionRecord.md. AGENTS.md contains durable guidance only.
+
+For school assessment, link specs and acceptance tests to implementation; record
+actual specialized-agent contributions/reviews, AI security controls/evaluations,
+SoC use and resource handling, each team member's contribution, quantified MP2 reuse,
+and separately managed deployment automation. Do not infer evidence from agent
+configuration files, green mocks or plans alone. This agreement supersedes older
+workflow/logging/correction wording below; retain historical outcomes as provenance.
+
 ## Setup
 
 Use JDK 25 and the included Gradle 9.1.0 Wrapper. Set JAVA_HOME to your JDK if
@@ -328,9 +352,9 @@ dispatched only after prerequisite completion evidence is available.
 
 The skill permits minor local choices within approved behaviour and design.
 Material decisions go to the human owner; shared-interface changes require both
-owners' agreement. Testing agents own tests and implementers own production code.
-Failed-loop edits require an approved correction plan and share the two-cycle
-limit across all review stages.
+owners' agreement. One implementer owns production code, tests and guides. Plan one
+shared correction pass; further evidenced in-scope error fixes follow the current
+owner-approved workflow without repeated approval. Scope changes remain gated.
 
 Completed plan entries remain immutable; corrections to completed work require
 authorised follow-up tasks. Task completion requires actual acceptance evidence,
@@ -346,9 +370,9 @@ the coordinator. The user-supplied smoke-test report confirms all four custom ty
 validation is recorded in the exercise report. Models and permissions inherit from the
 parent; review instructions do not create a separate sandbox.
 
-Maintain project decisions in feature summaries and task logs under `logs/`. Repository records contain project-relevant decisions and outcomes; personal conversation records stay outside the repository.
+Persist every interaction batch concisely in existing feature records under `logs/`. Preserve existing teammate logs; omit secrets and private reasoning. Do not create a separate file per exchange or task.
 
-Keep current feature handoffs in their summaries, with completed and unverified work, blockers and the next authorised step. Preserve earlier decisions and explicitly mark replacements.
+Keep the current shared handoff in `logs/ExecutionRecord.md`, with completed/unverified work, blockers and the next authorized step. Preserve prior decisions and explicitly mark replacements.
 
 ### Documentation upkeep
 
@@ -359,7 +383,7 @@ pointers for future agents; update it when those instructions change.
 The guide explains the resulting behaviour, design, setup, and workflow, with
 relevant verification and limitations. Update the existing sections so they
 reflect the current implementation. Record detailed interaction history in a
-separate task log under `logs/`.
+concise interaction batch in the existing feature record under `logs/`.
 
 This applies to application changes, agent configuration, documentation changes,
 and newly agreed workflow rules. Explanatory conversations without a completed
@@ -395,7 +419,7 @@ Stage, flag and triage labels are now configured. GitHub Projects is explicitly 
 A feature is Done only after the User Guide, this Developer Guide, AGENTS.md, and
 its [SDD interaction summary](../agents/SDDInteractionSummary.md) are updated, alongside
 required acceptance and review evidence. The summary links specifications, decisions,
-plan tasks, human approvals, corrections, verification and per-task logs. Maintain one
+plan tasks, human approvals, corrections, verification and recorded interaction batches. Maintain one
 summary per feature under logs/; keep the running decision record for cross-task handoff.
 
 The [PR template](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/blob/main/.github/PULL_REQUEST_TEMPLATE.md) asks for those links and separates
@@ -407,16 +431,15 @@ outstanding documentation owner/task rather than asserting complete feature deli
 The [common role contract](../agents/AgentSpecifications.md#documentation-ownership)
 assigns document writers and reviewers. Implementers update usage/design/setup
 guidance; the coordinator consolidates instructions, workflow and SDD/decision records.
-The coordinator serialises shared-file writes and checks task-log completeness.
+The coordinator serialises shared-file writes and checks interaction-batch completeness.
 The specification reviewer independently assesses final guides, instructions and
 SDD traceability, including coordinator-authored content, before feature completion.
-Workers may write only their assigned logs/reports beyond normal role scope;
-explicitly read-only work returns report content without writing files.
+Workers return concise evidence to the coordinator; read-only reviewers do not write files.
 
 The coordinator alone maintains shared plan completion/progress fields from worker
 reports and required acceptance/review evidence. Workers return evidence without
 editing plan status. Feature issues explicitly collect both guide updates, AGENTS.md,
-the SDD summary, task logs and independent documentation-review evidence before closure.
+the SDD summary, recorded interaction batches and documentation-review evidence before closure.
 
 ### Test-first evidence and existing behaviour
 
