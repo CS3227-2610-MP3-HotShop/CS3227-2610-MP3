@@ -26,3 +26,8 @@ to 8,193 bytes and must never be used with real tokens.
 The certificate store, CA certificate and controlled HTTPS server were reused from
 the `origin/llm-feature` snapshot `7d028e4`, then adapted for this common benchmark
 fixture. These are synthetic test credentials only.
+
+`FakeMonotonicClock`, `DeterministicScheduler`, `CapturingLlmClient` and
+`CompletionGate` provide explicit time, deadline, transport completion and UI
+delivery control. The gate accepts `Platform::runLater` in JavaFX tests; its own
+self-test uses a queued executor and starts no extra JavaFX toolkit.

@@ -182,13 +182,13 @@ class SocSearchClientTest {
             byte[] baseline;
             try (var client = new SocSearchClient(server.uri("/v1"), TOKEN, "x", transport,
                     Duration.ofSeconds(5))) {
-                await(client.propose("query"));
+                assertInstanceOf(SocSearchClient.Proposed.class, await(client.propose("query")));
                 baseline = server.takeRequest().body();
             }
             String boundaryModel = "x".repeat(1 + 8_192 - baseline.length);
             try (var client = new SocSearchClient(server.uri("/v1"), TOKEN, boundaryModel, transport,
                     Duration.ofSeconds(5))) {
-                await(client.propose("query"));
+                assertInstanceOf(SocSearchClient.Proposed.class, await(client.propose("query")));
                 assertEquals(8_192, server.takeRequest().body().length);
             }
         }

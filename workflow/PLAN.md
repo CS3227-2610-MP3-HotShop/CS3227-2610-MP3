@@ -1577,3 +1577,84 @@ approval; historical PG/SoC/UI correction budgets are unchanged and not reused.
 
 Execution approval granted for ST-001..ST-007 only. ST-008 live writes and cutover
 remain separately gated on a concrete inventory and explicit operator approval.
+
+## AI-MERGE-1 — integrate current master into buyer AI Search
+
+Authority: Jonat requested resolving PR11 merge conflicts on2026-10-22. Baselines:
+PR11 de7f765; master6ce4ca7 (seller PR18 merged). This is new integration work;
+completed feature/benchmark entries and results remain immutable.
+
+Sources: buyer AI-T2-C2 / AI-T3 and AI-UI-01..06; seller LLM feature FR/NFR/TC
+contracts; current owner-approved workflow. Preserve PostgreSQL, both AI features,
+manual fallback, seller session/quota ownership and buyer preview/apply behavior.
+
+Ownership: one Luna implementer owns production code, tests/fixtures and affected
+user/setup topic guides. Coordinator owns AGENTS.md, root DeveloperGuide landing,
+PLAN, technical integration notes and logs/ExecutionRecord.md. No overlapping edits.
+
+Resolve Main.java, ControlledHttpsServer, MarketplaceUiTest and HTTPS-FIXTURES.md
+conflicts and inspect automatically merged runtime/UI/build paths. Preserve valid
+assertions from both arms, test-fixture TLS verification and one Gson dependency.
+Preserve both clients by default; full transport deduplication is separate unless
+owner selects it. Resolve/document endpoint configuration coexistence deliberately;
+never read keys, modify private env files or make live provider/database calls.
+Keep the seller's guide organization and the owner's agreed workflow on our branch.
+
+Acceptance: no conflict markers/unmerged entries; focused buyer/seller/session/UI
+and shared-fixture checks plus styles pass; aggregate build/packaging checks pass;
+full final-candidate Linux CI passes; final specification/security reviews have no
+unresolved blocker. Publish to PR11 and retarget to master only after integration
+is concrete. No PR merge, deployment, Storage integration or benchmark rewrites.
+Use one planned correction pass plus evidenced in-scope error fixes under current
+policy. Record interaction batches and actual checks concisely in the existing log.
+Completed: Yes,2026-10-23. Integration126fc8c passes full LinuxCI39820740076 and both final reviews; focused835 cases/styles/package pass. Coverage correction1 completed. PR11 merged into masterd59d6ba. The subsequent checkpoint notes below preserve historical progress states.
+
+AI-MERGE-1 checkpoint: testing stopped at owner request. All conflict index entries
+resolved; merge remains uncommitted. New URL-isolation regressions are not compiled
+or verified. Resume from those checks only when owner authorizes testing. See
+logs/ExecutionRecord.md; Completed remains No.
+
+AI-MERGE-1 resumption 2026-10-23: owner authorized verification again. Existing implementer resumes preserved changes and new URL-isolation regressions; prior testing pause lifted. Acceptance remains incomplete pending actual checks and final reviews.
+
+AI-MERGE-1 paused again 2026-10-23 at owner request. Confirmed integration test worker stopped; no further checks authorized until resumption. Preserve current work and obtain implementer checkpoint. Completed remains No.
+
+AI-MERGE-1 resumption after second pause 2026-10-23: owner authorizes tests again; implementer resumes preserved integration candidate. Completed remains No pending checks and reviews.
+
+AI-MERGE-1 final review: security no confirmed blocker; specification F-1 requires joint synthetic-dispatch URL coexistence coverage. Shared correction pass1 assigned to existing implementer for focused regression, affected checks and re-review under current owner policy. Full Linux CI still pending; Completed remains No.
+
+AI-MERGE-1 local verification complete 2026-10-23:835 distinct targeted tests pass (646+188+1), zero failures/errors/skips; both styles and check/build/shadowJar packaging pass. Correction pass1 test-only F-1 resolved by independent focused re-review; security no confirmed introduced finding. Full final-candidate Linux CI remains pending. Merge and changes preserved uncommitted; Completed remains No until all acceptance gates pass.
+
+## ST-MERGE-1 / AI-DEDUPE-1 — PR12 integration and AI connection consolidation
+Authority: owner Jonat requests conflicts/deduplication and explicitly includes both
+AI connection clients,2026-10-23. Source: technical amendment with these IDs.
+One existing Luna implementer owns application/tests/build/topic guides; coordinator
+owns root guides, AGENTS, specs/PLAN and logs. Human approver Jonat. Preserve completed
+ST001..007 and prior correction2/2 histories; this is newly authorized integration/refactor.
+- ST-MERGE-1: resolve masterd59d6ba into Storage7cb796e, preserve runtime/editor/UI
+  ownership and Storage behavior, remove duplicate integration/guide code. Ready now.
+- AI-DEDUPE-1: inventory shared transport differences and propose smallest common
+  connection component, then record concrete design before modifying production.
+  Depends on resolved source contracts; readiness pending mechanism/ownership evidence.
+- Verification: test observable preserved behavior with relevant local HTTPS/DockerPG
+  regressions, both styles, check/build/shadowJar; no weakened valid assertions.
+  One stable final candidate receives spec/coverage and security reviews, one grouped
+  correction pass with current owner policy for confirmed in-scope mistakes.
+- Publication/merge acceptance requires final-source Linux CI. ST008 live cutover and
+  hosted/browser readiness remain distinct gates; never infer them from source tests.
+Completed: No. Local master merge started; two application conflicts delegated.
+
+AI-DEDUPE-1 design readiness: initial source inventory found duplicated connections,
+workers/timers/exchange tracking and bounded reads. Concrete shared transport contract
+recorded in TECHNICAL-SPEC; coordinator accepts one process-owned request/response-policy
+transport with protocol adapters and explicit borrowing/owning lifecycle. Existing
+implementer may proceed within owner-authorized consolidation. Verify connection reuse,
+per-client/session close isolation and common-owner shutdown alongside all existing
+protocol/error/bounds/race tests. Ready for initial implementation; Completed remains No.
+
+ST-MERGE-1/AI-DEDUPE-1 initial implementation: 575 unique focused cases pass across
+recorded green runs, both styles and aggregate check/build/shadowJar pass. Independent
+security review no confirmed finding. Spec AI-DEDUPE-1-COV-1 requires pending borrower
+cancellation isolation coverage. Shared correction pass1 assigned for focused tests
+and re-review, no production defect established. Linux CI pending; Completed remains No.
+
+ST-MERGE-1/AI-DEDUPE-1 local acceptance: correction1 test-only coverage gap resolved by independent re-review. Both final source reviews accept;577 unique targeted cases/styles/check/build/shadowJar pass. Prepare publication and final-source Linux CI; no live cutover or hosted readiness inferred. Completed remains No pending Linux CI.

@@ -26,30 +26,35 @@ shown with an outline.
 
 Before launch, ask the operator to configure HOTSHOP_DB_URL, HOTSHOP_DB_USER and
 HOTSHOP_DB_PASSWORD and run the separate migrateDatabase setup command. See the
-[PostgreSQL setup guide](../DeveloperGuide.html#postgresql-operator-setup). The first
+[PostgreSQL setup guide](../developerGuide/AccountServiceAndLocalPersistence.html#postgresql-operator-setup). The first
 provisioning creates an empty marketplace; it does not import older SQLite files.
 Startup validates the schema and never upgrades, seeds or resets it automatically.
 
-For optional AI Search, the operator also supplies SOCLAAS_BASE_URL, SOCLAAS_API_KEY
-and SOCLAAS_MODEL. The app reads process settings; it does not automatically load
-.env.local. Follow the Developer Guide local AI Search setup to load that file
-before launching. You can use ordinary search when AI is unavailable.
+For optional AI Search, the operator supplies SOCLAAS_BASE_URL as the API base
+(normally ending in /v1), SOCLAAS_API_KEY and SOCLAAS_MODEL. For seller description
+generation, set SOCLAAS_DESCRIPTION_URL to the complete HTTPS Responses endpoint;
+the same API key and model are used. The app reads process settings and does not
+automatically load `.env.local`. Follow the Developer Guide local AI Search setup
+to load that file before launching. Ordinary search and manual listing descriptions
+remain available if either AI feature is unavailable.
 
-Marketplace records persist in PostgreSQL. Images and the application lock remain
-in the local .hotshop directory under your home folder. Only one runtime may use
-that image folder at a time. Back up the database and matching image files together;
-deleting the image folder does not reset the PostgreSQL database and loses images.
+Marketplace records persist in PostgreSQL. Production profile and listing images
+are private objects in the configured Supabase Storage buckets. The local
+`.hotshop` directory contains the process lock; only one HotShop process may use
+that directory at a time. Back up PostgreSQL and the matching private image storage
+together. Deleting `.hotshop` does not reset database records or remote images.
 
 If startup reports a database problem, check connection settings/network access and
-ask the operator to run compatible provisioning. Folder errors require a writable
-image folder and no competing instance. Close HotShop before backing up its images.
+ask the operator to run compatible provisioning. Storage setup and migration steps
+are in the [private image storage guide](../developerGuide/AccountServiceAndLocalPersistence.html#private-image-storage-setup-and-import).
+Directory errors require a writable data directory and no competing HotShop process.
 
 ## Run the packaged application
 
 ### Download a prebuilt JAR
 
 Prebuilt JARs for 64-bit Windows and Linux are attached to the
-[latest release](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/releases/latest),
+[latest release](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/releases/latest),
 and are also in the repository's `release/` folder:
 
 - `HotShop-windows.jar` for Windows

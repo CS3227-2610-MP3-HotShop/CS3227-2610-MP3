@@ -14,6 +14,8 @@ class MainAiSearchConfigurationTest {
         assertNull(Main.createAiSearchClient(Map.of()));
         assertNull(Main.createAiSearchClient(Map.of("SOCLAAS_BASE_URL", "https://example.test",
                 "SOCLAAS_API_KEY", "test-key")));
+        assertNull(Main.createAiSearchClient(Map.of("SOCLAAS_DESCRIPTION_URL", "https://example.test/responses",
+                "SOCLAAS_API_KEY", "test-key", "SOCLAAS_MODEL", "test-model")));
     }
 
     @Test
@@ -27,6 +29,7 @@ class MainAiSearchConfigurationTest {
     @Test
     void createAiSearchClient_validSettings_constructsOwnedClient() {
         var client = Main.createAiSearchClient(Map.of("SOCLAAS_BASE_URL", "https://example.test/v1",
+                "SOCLAAS_DESCRIPTION_URL", "https://example.test/responses",
                 "SOCLAAS_API_KEY", "test-key", "SOCLAAS_MODEL", "test-model"));
         assertNotNull(client);
         client.close();

@@ -1,21 +1,40 @@
 # AGENTS.md
 
-## Minimal workflow records
+## Owner-approved workflow — 2026-10-22
 
-AGENTS.md contains durable instructions, constraints and short documentation pointers
-only. Do not append task progress, approval history, test counts, CI runs, commit/PR
-publication updates or other activity logs here. Put execution records under logs/.
-The coordinator consolidates them in logs/ExecutionRecord.md or an existing feature
-summary; do not create one log per task, agent or discussion. Subagents return concise
-messages, not reporting Markdown. Keep approvals in chat until final review, then
-consolidate them once in the relevant logs/ record. Never include secrets/transcripts.
+This agreement takes precedence over conflicting older skills, role briefs, agent
+configuration and workflow text. It changes future execution, not historical results
+or completed benchmark/correction records.
 
-Keep docs/InteractionRecord.md as a short pointer to the current logs/ record, rather
-than a second execution history. PLAN retains task definitions/status and benchmark
-results retain measured evidence. Product/setup guides describe delivered behavior.
-Update AGENTS.md only when durable guidance changes, not merely because a task ran
-or completed. This overrides older per-task logging and every-task AGENTS.md update
-requirements in this file, skills and role templates. Do not restore deleted logs.
+- One implementer owns the approved batch: production code, tests, fixtures, build
+  configuration and associated guides. It may write/update tests, preserving valid
+  assertions. No separate tester or intermediate review handoffs by default.
+- After implementation and checks, independent specification/coverage and security
+  reviewers inspect one stable candidate. The coordinator consolidates their findings.
+- Plan one shared correction pass. Additional passes are permitted only for confirmed
+  errors or mistakes within approved scope, supported by failing checks, a contract
+  violation or concrete execution-path evidence. Record the defect, scoped fix,
+  pass number and affected verification; proceed without repeated approval requests.
+  New features, requirement changes, speculative improvements, unresolved decisions
+  and live/deployment actions retain their own approval gates. Do not loop unchanged
+  attempts; surface a blocker when progress needs a new decision or external change.
+- Use targeted source/spec sections and compact briefs. New specialists receive
+  fork_turns=none; do not request full chats or unrelated histories. Prefer a Sol
+  coordinator and Luna specialists; saved settings do not prove a live model change.
+- Persist every human-visible interaction batch: sanitized user request/approval,
+  agent roles and assignment, decisions, concise results, review findings, corrections,
+  actual checks and limitations. Subagents return concise messages; the coordinator
+  appends these as work progresses to one existing feature record under logs/.
+  Preserve existing teammate logs. Do not create a new file per exchange or task,
+  restore previously deleted histories, or record secrets/private reasoning.
+- All logs, interaction records and handoffs live under logs/. The current shared
+  handoff is logs/ExecutionRecord.md; AGENTS.md holds durable rules, not activity logs.
+  Product guides and PLAN retain their normal behavior/status responsibilities.
+- Preserve school evidence: approved specifications and acceptance tests; actual
+  specialized-agent work and reviews; AI threat boundaries/evaluations; SoC model
+  configuration, quotas and error handling; team contributions and quantified MP2
+  reuse; and separately managed deployment automation. Record executed evidence
+  honestly, with benchmark/release limitations. Definitions alone do not prove use.
 
 This file defines the repository-wide instructions that AI coding agents must follow when working on HotShop.
 
@@ -143,70 +162,6 @@ If an unrelated problem is discovered, report it separately rather than fixing i
 
 ---
 
-## Migration collaboration
-
-For configured worker names and coordinator startup, read
-[AgentConfiguration.md](docs/agents/AgentConfiguration.md). Files alone
-do not prove instruction loading or behavioural validation; use the recorded smoke-test evidence and remaining readiness gates. Record external test reports with their provenance and distinguish them from checks executed in this chat.
-
-For authorised task execution, use the aligned
-[implement-task skill](.agents/skills/implement-task/SKILL.md). It supports
-coordinator selection within approved scope and per-task blocker handling;
-completed entries remain immutable and corrective edits require explicit approval.
-For task decomposition, use the aligned
-[planning skill](.agents/skills/plan-implementation/SKILL.md) to record ownership,
-contract dependencies, review/integration gates, and separate readiness from approval.
-Use the aligned product/technical specification skills for inventory-first discovery
-and feature-level approval. Shared contracts require both area owners; unresolved
-shared foundations block dependent designs and implementation, not unrelated work.
-
-Before assigning frontend/backend migration work or approving corrections, read
-[the migration workflow](workflow/MIGRATION-WORKFLOW.md).
-Review and obtain approval of the complete feature inventory before detailing
-features individually; inventory approval alone does not authorise implementation.
-Inventory coverage was approved on 2026-10-17 for the 17 groups, feature list only.
-The migration source baseline is frozen at commit 1d812ef. Specify behaviour as it
-exists at that commit. If the JavaFX source changes later, propose a re-baseline with a
-diff and obtain explicit approval; do not specify or implement against newer source
-without it.
-Use .github/ISSUE_TEMPLATE/feature.md for feature issues and .github/ISSUE_TEMPLATE/task.md for linked frontend/backend/integration tasks. Task creation and assignment do not authorise implementation. Record unknowns and add tasks incrementally; require approved detail and prerequisites for the task about to start, without demanding exhaustive upfront decomposition.
-Use Backlog, Ready, In progress, Review, and Done for task stages. Keep Paused and Blocked as separate flags with reasons and resumption conditions; follow the migration workflow for transition gates.
-Track split frontend/backend tasks as separate GitHub issues linked to a parent feature; follow the migration workflow for ownership and parent completion gates.
-Use [the feature inventory](workflow/FEATURE-INVENTORY.md) to track guide-derived
-features and their evidence status. Consult workflow/FEATURE-EVIDENCE.md for the
-pinned source paths, representative assertions and unresolved source ambiguities.
-Static assertion inspection is not a passing-test result or inventory approval.
-Verify documented claims against code/tests
-before calling them implementation-verified; distinguish future work from parity.
-Assign human owners before implementation. Each owner approves correction plans
-within their area; shared-interface changes require both owners' explicit
-agreement before implementation. Record approvals against the affected contract
-and tasks. Existing correction limits and test ownership remain in force.
-Superseded on 2026-10-17: the web application has no reset feature and uses a hosted
-PostgreSQL database from the start. PostgreSQL is used in every environment including
-automated tests; each environment has its own database, and tests never run against the
-demo database. Dropping and recreating a development or test database is ordinary
-practice, not the reset the application excludes. Domain timestamps come from an
-injectable application clock, never from the database clock or a column default, or the
-meetup and dashboard time boundaries cannot be tested. Seeding is an idempotent
-provisioning step, not an application route. Reset was a local-disk concern of the JavaFX app and
-has no web equivalent. Data persists; seeding runs once at provisioning rather than on a
-schedule or on demand. Fresh demo data is still approved, so existing accounts, records
-and images are not imported. Preserve functional state and access rules; specify the
-seed content and the provisioning path before implementing storage-dependent tasks. Do
-not plan interim in-memory or ephemeral server state: on a serverless host it disappears
-between deployments and cold starts, which users experience as an uncontrolled reset.
-The web target supports concurrent multi-user access; the desktop single-logged-in-user
-constraint and its single-worker serialisation are not carried over, so database
-integrity constraints protect the marketplace invariants instead. The desktop minimum
-window size and fixed layout units are not target criteria. Platform and data
-foundations are tracked as INV-17 in the feature inventory. Do not reintroduce a
-superseded desktop constraint because a guide chapter still describes it; the affected
-User Guide wording changes with its feature.
-For migration features, follow the workflow's agreed unit/integration/Playwright
-testing policy and completion gates. These target-stack rules supplement the
-Java-source checks; executable Next.js commands remain to be established.
-
 ## Architecture and Design
 
 Follow the architecture already established in the repository.
@@ -277,6 +232,8 @@ Any significant new dependency should be mentioned in the final task summary.
 
 ## Documentation
 
+Use plain language in human-facing documentation, with concrete examples where helpful.
+
 ### User Documentation
 All user-facing features added to this application must be documented in:
 ```
@@ -302,13 +259,13 @@ When an existing user-facing feature changes, update its existing User Guide doc
 
 ### Feature completion record
 
-Before declaring a feature Done, update the applicable user/developer guides and existing feature summary under logs/. Update AGENTS.md only if durable instructions or constraints change. Follow docs/agents/SDDInteractionSummary.md subject to Minimal workflow records; reuse consolidated logs rather than creating task logs. Intermediate task completion does not waive parent-feature documentation gates.
+Before feature completion, update relevant user/developer guidance and the existing
+feature record under logs/. AGENTS.md changes only when durable instructions change.
 
 ### Developer Documentation
 
-Update `docs/DeveloperGuide.md` when behavior, setup or workflow changes. Update
-`AGENTS.md` only when durable instructions or constraints change; routine activity
-and verification belong under `logs/`, not in agent instructions.
+For every completed behavior change, update the Developer Guide. Update AGENTS.md only for durable instruction changes; put activity records in logs/.
+This includes changes to agent configuration, workflow, and documentation.
 
 - In `AGENTS.md`, maintain the relevant durable instructions, constraints, or a
   concise pointer to the updated developer documentation for future agents.
@@ -316,7 +273,7 @@ and verification belong under `logs/`, not in agent instructions.
   workflow and relevant verification or limitations. For a small change, use a
   brief note in the relevant section.
 - Update existing guidance in place and remove superseded statements. Keep
-  concise execution evidence in the existing consolidated `logs/` record.
+  detailed interaction history and command output in the task's `logs/` file.
 - Explanatory conversations that complete no change do not require edits to
   these two documents. Newly agreed standing rules count as workflow changes.
 
@@ -417,11 +374,11 @@ Do not disable tests, Checkstyle, or other verification mechanisms merely to mak
 
 ## Logging Agent Interactions
 
-Follow Minimal workflow records above. Execution logs, approvals and verification
-belong under logs/; AGENTS.md contains only durable guidance. Subagents report in
-messages and the coordinator maintains existing consolidated records. No per-task
-or per-agent logs, secrets, transcripts or restored deleted histories.
-
+Follow the owner-approved workflow above. Persist each interaction batch concisely
+in an existing feature record under logs/, with the current handoff in
+logs/ExecutionRecord.md. Preserve teammate records. Subagents report in messages;
+the coordinator records assignments, decisions, outcomes, defects and actual checks.
+No per-exchange files, activity logs in AGENTS.md, credentials or private reasoning.
 ## Handling Ambiguity
 When requirements are ambiguous:
 - inspect existing behaviour and documentation for evidence;
@@ -446,7 +403,7 @@ A task is complete only when all applicable conditions below are satisfied:
 - [ ] Checkstyle passes for modified Java code.
 - [ ] The project builds successfully.
 - [ ] User-facing changes are reflected in docs/UserGuide.md.
-- [ ] Applicable developer guidance is current; AGENTS.md changes only for durable instructions, and execution evidence is recorded under logs/.
+- [ ] Developer documentation is updated; durable instruction changes go in AGENTS.md and activity records in logs/.
 - [ ] No credentials or sensitive information were introduced.
 - [ ] No temporary/debugging code remains.
 - [ ]The final diff has been inspected for unrelated changes.
@@ -471,7 +428,9 @@ When completing a task, provide a concise summary containing:
 
 Never report a test, build, Checkstyle check, application run, or other verification as successful unless it was actually executed successfully.
 
-## Documentation assignment
+## Documentation
+
+Use plain language in human-facing documentation, with concrete examples where helpful. assignment
 
 For role-based work, follow the documentation ownership table in
 docs/agents/AgentSpecifications.md. Assign one writer per shared file at a time.
@@ -510,62 +469,22 @@ docs/agents/triage-labels.md. Preserve concurrent feature-specification work.
 Tracking choice agreed 2026-10-17: use GitHub issues and labels; Projects is
 explicitly deferred. Follow docs/agents/issue-tracker.md for stage/flag updates.
 
-## Owner-approved delivery workflow (2026-10-19)
+## Delivery workflow
 
-This instruction supersedes earlier role, skill, client-configuration and plan wording
-that requires tester handoffs or independent reviews before implementation.
+Follow the owner-approved workflow at the top of this file: one implementer owns
+code/tests/guides; final independent reviews follow the completed batch.
 
-Assign one implementer the entire approved implementation batch, including production
-code, tests, fixtures, build configuration, associated guides and its task evidence.
-The implementer may write and update tests against the approved requirements; it must
-preserve valid assertions and never weaken checks to obtain a pass. Use test-first
-evidence where practical and run relevant tests/styles during implementation.
-Normal initial implementation includes bringing the approved behavior to green;
-do not route every expected development failure through another agent.
+## Retained Java PostgreSQL conversion
 
-Keep that implementer through the batch. No separate tester or intermediate review
-handoffs by default. Prerequisites are working contracts and evidence, rather than
-acceptance by an intermediate reviewer. Pause for unresolved requirements, scope
-changes or a genuine blocker. Do not invent scope or relabel review corrections
-as initial work.
+Use PostgreSQL in every environment, separate migrateDatabase provisioning and
+read-only startup validation. Tests use disposable local PostgreSQL, never hosted
+data. Preserve directory-lock protection until separately approved integration.
+Current acceptance evidence lives under logs/ and in workflow/PLAN.md.
 
-After implementation, tests, documentation and required checks are complete, submit
-one stable candidate for the final specification/coverage and security reviews.
-Group findings from both into one report and, if needed, one explicitly approved
-correction pass followed by focused re-review. There is one shared correction budget,
-not one per reviewer. Stop and report unresolved findings after that pass.
-The coordinator retains shared records, plan status and final acceptance ownership.
+## Correction policy
 
-Existing completed entries, historical evidence and exhausted correction budgets
-remain unchanged. This workflow change grants no extra PG-CONVERSION correction cycle.
-See workflow/PLAN.md for task eligibility and logs/ExecutionRecord.md for execution status.
-
-## Retained Java PostgreSQL constraints
-
-Use PostgreSQL in every environment, fresh data without SQLite import, and separate
-schema provisioning; normal startup does not migrate. Tests use disposable local
-Docker PostgreSQL, never hosted/demo data. Use BIGINT for Java long epoch-millisecond
-timestamps/counters and BYTEA for credentials. Hosted database URLs require canonical
-sslmode=verify-full and appropriate external certificate trust.
-
-Preserve directory-lock/image recovery protection until separately approved JPro
-session/shared-storage integration supplies coordinated ownership and cleanup.
-Database readiness does not prove hosted multi-user readiness. See the current
-specifications and Developer Guide for setup; execution evidence belongs in logs/.
-
-## Owner-approved correction limit (2026-10-19)
-
-Use one initial implementation pass and required initial reviews, then at most one
-shared correction pass and re-review per task/batch. Group findings into that pass.
-Corrections still require an explicitly approved plan. If findings remain, stop
-and report them; no further loop without explicit owner direction. Required initial
-readiness, coverage and security checkpoints remain. Avoid repeating unchanged checks.
-This owner instruction supersedes older two-cycle wording in saved skills and client
-configurations. Preserve historical counts: PG-CONVERSION remains exhausted at 3/3.
-Execution was resumed by the owner; no new correction budget is granted.
-
-Execution status belongs in workflow/PLAN.md and logs/ExecutionRecord.md; historical approvals do not grant additional correction passes.
-
+Use one planned shared pass and the evidenced-error exception defined above.
+Historical experiment outcomes and completed correction counts remain unchanged.
 
 ## Targeted context and handoff rule — owner approved 2026-10-19
 
@@ -581,7 +500,7 @@ only changed/relevant sections. Expand reads only when needed to resolve a concr
 ambiguity or dependency. Keep current handoffs short and link supporting evidence.
 Already injected app conversation context cannot be selectively removed by agents;
 this rule controls requested history, file/tool reads and future agent handoffs.
-The ongoing approved PostgreSQL batch continues; this is not a pause request.
+
 
 ## Owner model preference — 2026-10-19
 
@@ -594,21 +513,6 @@ Let an already-running verification finish rather than restart it solely for mod
 selection. Final specialist reviews use Luna. Settings persistence is verified by
 file inspection; a new live session's actual model requires runtime confirmation.
 
-## AI Search and packaging constraints
+## Private image storage integration constraints
 
-Use current AI specifications and PLAN for requirements. Preserve original measured
-benchmark commits/results; delivery corrections must not rewrite experimental data.
-Run measured arms sequentially from a frozen shared baseline with explicit readiness
-and manual usage readings; do not share one arm's implementation with the other.
-Percent dashboard changes are not exact token/credit totals. Never use live provider
-calls for automated tests or claim error handling alone establishes quota compliance.
-
-The SoC client reads process settings and uses /v1 plus /chat/completions; model choice
-is configurable. Keep keys and deployment CA files outside the repository/image.
-UI tests share JavaFxTestSupport; preview/late-completion fixtures must start a real
-nonblank request and observe asynchronous completion before asserting results.
-
-Docker builds the Linux JPro ZIP in a JDK25 stage and copies it into JRE25. A fresh
-checkout must not depend on host build output. See DeveloperGuide packaging/setup.
-Image builds do not provision databases or establish deployment/multi-user readiness.
-Execution status, test counts, reviews and correction history belong in logs/.
+Use private listingImages/profileImages REST buckets and the existing storage seam. Preserve authorized reads, create-only writes, bounded staging/recovery, durable tombstones and lifecycle fencing. Provision schema separately and verify/import photos before jointly activating bindings; normal startup validates them. Keep local originals, server keys and deployment certificates outside source control. Automated tests use local fixtures/disposable PostgreSQL; hosted import/activation and browser persistence are separate operator actions. See the Developer Guide storage setup topic for current commands and limits.

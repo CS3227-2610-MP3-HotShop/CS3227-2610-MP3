@@ -1,0 +1,812 @@
+# LLM Description Implementation Plan
+
+Source: [technical specification](LLM_FEATURE_TECHNICAL_SPEC.md), sections 1–5;
+requirements: [product specification](LLM_FEATURE_PRODUCT_SPEC.md), FR-001–006,
+NFR-001–007, TC-01–12 and UC-001–003. Created 2026-10-20.
+
+The plan itself authorises no execution or deployment. On 2026-10-20 the user
+explicitly selected TASK-001–004 and confirmed configuration readiness; see their
+execution records below. Subsequent selections completed TASK-005–017; the user
+then selected TASK-018 using implement-task-short for environment-first startup
+configuration. No new live calls or deployment were selected. Earlier full-suite
+deferrals remain historical; TASK-018's actual full verification is recorded below.
+Initial source
+inspection found the JavaFX editor, single service worker/session and runtime lock,
+but no feature implementation, JSON dependency or `llmLiveTest` task. Inspection
+is not passing runtime evidence. No SQL migration is planned; generation never
+saves a listing.
+
+## Execution rules and current blockers
+
+| Gate | Current state / affected work | Resolution |
+| --- | --- | --- |
+| G-01: implementation scope | Resolved 2026-10-20: TASK-001–017 complete; user selected and completed TASK-018. | Environment/file configuration only; no new live calls, hosted-session implementation or deployment. |
+| G-02: deferred tests | Resolved 2026-10-20: user explicitly confirmed endpoints and API key are ready. No secrets inspected. | Offline verification authorised; live calls still require separate explicit authorisation. |
+| G-03: provider tools | Provider-side tools cannot be confirmed disabled. Blocks full end-to-end no-tool security acceptance in TASK-015/017, not independent local-boundary implementation after G-01/02. | Obtain provider capability assurance/configuration evidence, or explicit product-spec revision accepting a narrower guarantee. Prompt instructions or passing samples alone do not close this gate. |
+| G-04: hosted identity | Independent concurrent JPro client identity/session isolation is not established in current code. Multi-user hosted acceptance in TASK-017 remains blocked. | Separately approved lifecycle/session integration review/work; do not add an authentication rewrite to this plan. Local/isolated runtime acceptance can be recorded separately. |
+
+Single server, in-memory per-account admission shared across service instances,
+quota reset on process restart are approved. No cross-replica quota store or new
+REST application endpoint is planned. Docker/Render packaging and deployment are
+later work, excluded from the local feature implementation tasks below. Keep
+their secret-handling and identity prerequisites in the handoff; no release claim.
+
+**Ownership:** coordinator owns plan status and shared records. Testing specialist
+writes tests before the responsible implementation specialist writes behaviour.
+Application specialist owns service/config/transport; JavaFX specialist owns editor
+and UI lifecycle. Assign one writer per shared file (`build.gradle`,
+`ApplicationRuntime`, `Main`, `MarketplaceUi`); serialize dependent edits. Reviewer
+performs independent substantial-change review; final security review uses a stable
+candidate. Workers do not revert others' changes or mark their own tasks complete.
+
+**TDD protocol used by every behaviour task below:** testing owner derives partitions,
+writes runnable tests, then runs the named focused command and records expected
+behavioural failures **before** production behaviour is implemented. Minimal typed
+stubs may enable compilation, but compile errors/setup failures are not red evidence.
+Only then implement the smallest passing change, refactor changed code as needed,
+and rerun the focused suite and relevant regressions. Keep each unrelated negative
+condition separate. Use deterministic clocks/schedulers/gates, not test-order
+dependencies or network sleeps. If a test unexpectedly passes, inspect the existing
+path and record evidence rather than manufacturing a failure. Retain tests intact
+unless their specification is demonstrably incorrect. No task is complete without
+its own acceptance evidence/date in the task log; partial test drafting remains No.
+
+**Commands:** Windows uses `.\gradlew.bat`; POSIX uses `./gradlew`. All commands
+below are planned and subject to G-02. `--tests` filters select proposed JUnit
+classes, not current existing suites. `llmLiveTest` is created in TASK-002 and
+requires separate explicit live-run authorisation. No live calls through ordinary
+`test`, `check` or `build`. Use synthetic secrets and controlled clients for all
+ordinary tests. Baseline/check/build failures outside this feature are reported
+separately; do not weaken tests or Checkstyle.
+
+**TASK-012–013 verification override (2026-10-20):** the user explicitly requests
+no full regression suite after each task and will handle that checking. Run
+focused new/related tests and both Checkstyle tasks; do not run unfiltered `test`
+or `check build` as part of this selection. Record focused outcomes and leave
+full-suite/build verification delegated to the user, without claiming it passed.
+This overrides the full-command step in TASK-013 for this selected execution.
+
+## Ordered tasks
+
+Follow-up planning (2026-10-20): the user requested TASK-018 for runtime
+environment-variable configuration with local `.env` fallback. This authorises
+planning only. TASK-001–017 entries and their completion evidence are preserved;
+The user subsequently selected TASK-018; step 1 aligned the specification before
+behavioural implementation. Its source-selection decision and actual execution
+evidence are recorded below. G-03/G-04 remain open.
+
+### TASK-001: Establish authorised scope and execution readiness
+
+Execution record (2026-10-20): user selected TASK-001–004 and confirmed this exact
+plan and configuration readiness. Selection accepts the specified Gson 2.14.0
+(subject to availability/advisory verification), typed outcomes, literal UTF-8
+configuration syntax, Unicode word-count rule and shared server quota ownership.
+No permission for live calls is inferred. All selected prerequisites are within
+TASK-001–004, with no cycles or missing references; all four were initially No.
+Coordinator owns plan/build integration and records; testing specialist owns
+infrastructure/corpus/configuration tests; application specialist owns configuration
+implementation after verified red; independent reviewer owns final code review.
+Build edits have a single assigned writer. No runtime/UI/quota implementation is
+authorised in this batch. Provider-tool and hosted-identity gates remain open.
+
+**Description:** Coordinator records selected task scope, approved design contracts,
+owners, configuration readiness and verification prerequisites; no secret values.
+**Source:** Technical sections 1.1, 3.3, 5.2; NFR-006/007; G-01/02.
+**Dependencies:** None.
+**Completed:** Yes — 2026-10-20. Scope/contracts/owners and readiness recorded;
+Java 25.0.2 / Wrapper 9.1.0 baseline: 688 tests, both Checkstyle tasks passed.
+Evidence: [TASK-001 log](../logs/2026-10-20-llm-task-001-readiness.md).
+
+**Steps**
+
+1. Confirm task selection and acceptance of design mechanisms, including Gson,
+   typed outcomes, config syntax, word counting and server quota ownership.
+2. Record user's endpoint/token readiness indication; distinguish readiness from
+   separate permission for live calls. Do not inspect real `.env` contents here.
+3. Once allowed, run `.\gradlew.bat test checkstyleMain checkstyleTest` as baseline;
+   record Java 25/Wrapper 9.1.0, actual outcomes and unrelated failures.
+
+**Acceptance criteria**
+
+- [x] Approved scope, owners, contracts and G-02 resolution recorded without secrets.
+- [x] Baseline has actual results or diagnosed blockers; no feature completion claimed.
+
+### TASK-002: Prepare minimal build and deterministic test infrastructure
+
+**Description:** Testing owner and build writer prepare runnable test seams without
+implementing generation behaviour; affect `build.gradle` and test resources/helpers.
+**Source:** Technical 1.1, 2.2, 5.2; NFR-006/007.
+**Dependencies:** TASK-001 — execution scope and test readiness.
+**Completed:** Yes — 2026-10-20. Eight infrastructure tests and Checkstyle passed;
+Gson 2.14.0 resolved and strict streaming verified on Java 25. Live task/tag
+isolation inspected without provider calls. Evidence:
+[TASK-002 log](../logs/2026-10-20-task-002-llm-test-infrastructure.md).
+
+**Steps**
+
+1. Verify the proposed Gson version's official availability/advisories and Java
+   compatibility; add only the approved JSON module. Escalate material replacement
+   to design review; do not silently substitute an incompatible version.
+2. Add `llm-live` tag exclusion and explicit `llmLiveTest` task; prevent it joining
+   ordinary verification automatically. Prepare controlled HTTPS/test CA, capturing
+   client, fake monotonic clock/scheduler and FX completion gates.
+3. Add minimal typed interfaces/stubs sufficient for later behavioural red tests;
+   no success behaviour or tests that merely assert a stub throws.
+4. Verify fixtures independently using `.\gradlew.bat test --tests '*LlmTestInfrastructureTest'`
+   and inspect Gradle task configuration without contacting a provider.
+
+**Acceptance criteria**
+
+- [x] Infrastructure tests run successfully; transport fixtures use synthetic tokens.
+- [x] Live task/tag separation verified; no real network generation occurs.
+- [x] Baseline dependencies preserved; compatibility evidence and seams recorded.
+
+### TASK-003: Write the live security corpus before generation implementation
+
+**Description:** Testing owner defines tagged live tests/fixtures and semantic
+evaluation rubric without running them or enabling provider credentials in ordinary tests.
+**Source:** Technical 3.1, 5.2; FR-004; TC-05/06/11; UC-002.
+**Dependencies:** TASK-002 — test seams and isolated live task.
+**Completed:** Yes — 2026-10-20. Tagged 26-case corpus compiles, judging rubric
+reviewed, ten offline infrastructure/corpus tests and Checkstyle pass. Live
+exclusion verified; no live evaluation run. Evidence:
+[TASK-003 log](../logs/2026-10-20-task-003-llm-security-corpus.md).
+
+**Steps**
+
+1. Write `LlmLiveSecurityTest` and corpus under `src/test/resources/hotshop/llm/`:
+   ordinary items/conditions, role spoofing, disclosure requests, encoded/Unicode/
+   multilingual injections and tool/action requests within the 120-code-point title limit.
+2. Define expected grounded text or safe failure; attack compliance/fabricated facts/
+   refusal inserted as description fail evaluation. Use deterministic boundary
+   assertions plus a documented human rubric; a second LLM is not the sole judge.
+3. Compile using `.\gradlew.bat testClasses`; verify tag exclusion. Record corpus
+   and rubric review without claiming a live red run. This task writes evaluations,
+   not passing model evidence; live execution belongs to TASK-014.
+
+**Acceptance criteria**
+
+- [x] Runnable tagged corpus and explicit judging rules cover TC-05/06/11; compile succeeds.
+- [x] No live calls; evaluation remains unverified and cannot authorise implementation alone.
+
+### TASK-004: Implement private configuration loading through TDD
+
+**Description:** Testing/application owners add `LlmConfiguration` with safe unavailable
+state and root working-directory `.env` syntax; no actual credentials changed.
+**Source:** Technical 1.2, 3.2; FR-003; NFR-002/004; TC-04/07/09.
+**Dependencies:** TASK-003 — prewritten evaluation corpus and infrastructure.
+**Completed:** Yes — 2026-10-20. Configuration red/green evidence includes 69
+passing configuration tests and 38 account regressions; private immutable settings
+and manual persistence verified. Independent review has no unresolved material
+findings. Final check/build/shadowJar pass with 767 tests. Evidence:
+[red log](../logs/2026-10-20-llm-task-004-configuration-red.md),
+[implementation log](../logs/2026-10-20-llm-task004-configuration-implementation.md),
+[integration/review log](../logs/2026-10-20-llm-task-001-004-integration.md).
+
+**Steps**
+
+1. Red: write `LlmConfigurationTest` using temp synthetic files: valid quoted/unquoted
+   values, first `=`, comments/Unicode, missing/duplicate keys, invalid quotes,
+   whitespace/control token, HTTP/user-info/fragment URI, blank model; no shell expansion.
+2. Run `.\gradlew.bat test --tests '*LlmConfigurationTest'`; verify missing-behaviour failures.
+3. Green: implement immutable private settings, exact HTTPS URI, safe diagnostics,
+   load-once behaviour and failure isolation. Refactor; rerun suite and account baseline.
+
+**Acceptance criteria**
+
+- [x] Red then green evidence for parser/validation partitions; no token in toString/errors/logs.
+- [x] Missing configuration leaves manual application paths available; no secret file writes.
+
+### TASK-005: Implement account quota admission through TDD
+
+**Description:** Add `DescriptionQuota` with process-shared injectable monotonic time
+and atomic reservation ownership; no persistent migration.
+**Source:** Technical 1.3; NFR-005; TC-10.
+**Dependencies:** TASK-003 — infrastructure; independent of configuration implementation.
+**Completed:** Yes — 2026-10-20. Verified behavioural red then 28 passing quota
+tests and both Checkstyle tasks; deterministic boundary/race/ownership/cleanup
+evidence includes staggered retry-delay regression. Independent review has no
+unresolved material findings. Shared server lifecycle wiring remains TASK-010.
+Evidence: [red log](../logs/2026-10-20-llm-task005-quota-red.md),
+[implementation log](../logs/2026-10-20-llm-task005-quota-implementation.md).
+
+**Steps**
+
+1. Red: `DescriptionQuotaTest` covers 5th/6th minute and 30th/31st hour admission,
+   just-before/at/after expiry, independent accounts, two callers racing for one slot,
+   simultaneous release/admission, failed dispatch counting, pre-dispatch rollback,
+   stale reservation release, retry-delay ceiling and expired-entry cleanup.
+2. Run `.\gradlew.bat test --tests '*DescriptionQuotaTest'` and record behavioural red.
+3. Green: implement atomic timestamp/active state; refactor and rerun. Verify new
+   server registry starts empty while multiple services sharing it see identical limits.
+
+**Acceptance criteria**
+
+- [x] All quota/race boundaries pass deterministically without sleeps.
+- [x] Active slot released exactly once by matching request ID; no account bypass via new form.
+
+### TASK-006: Implement fixed prompt and JSON request encoding through TDD
+
+**Description:** Add request-building behaviour inside `HttpLlmClient` and input seams;
+only title/condition plus fixed instruction and configured model are transmitted.
+**Source:** Technical 2.1/2.2, 3.1; FR-002/003/004; TC-01/02/04–09.
+**Dependencies:** TASK-004 — approved configuration; TASK-005 — admission contract.
+**Completed:** Yes — 2026-10-20. Verified 23 behavioural red cases followed by
+130 passing related offline tests and both Checkstyle checks. Fixed prompt,
+two-stage streaming encoding, code-point validation and exact UTF-8 byte limits
+verified; independent review has no unresolved material findings. Final
+check/build pass: 818 tests, zero failures/errors/skips. No HTTP dispatch added.
+Evidence: [red log](../logs/2026-10-20-llm-task006-request-red.md),
+[implementation log](../logs/2026-10-20-llm-task006-request-implementation.md),
+[integration/review log](../logs/2026-10-20-llm-task005-006-integration.md).
+
+**Steps**
+
+1. Red: `LlmRequestTest` tests valid five conditions; null/blank/1/120/121-code-point
+   title partitions; proper quote/newline/Unicode JSON encoding; no-tool instruction;
+   exactly `model`/`input`, 8,192/8,193 UTF-8 bytes and unchanged configuration under attacks.
+2. Run `.\gradlew.bat test --tests '*LlmRequestTest'` before implementing the request builder.
+3. Green/refactor: encode product facts then outer JSON via streaming writer; size-check
+   before admission. Rerun with benign “System design textbook” and synthetic secrets
+   outside product fields, asserting no secret/private context/tool definition enters body.
+
+**Acceptance criteria**
+
+- [x] Red/green request evidence covers encoding/size and minimum-input boundaries.
+- [x] No banned-word defence, previous description, identity, history or tool definition sent.
+
+### TASK-007: Implement strict response and description validation through TDD
+
+**Description:** Add bounded JSON parsing and validated description extraction inside
+the transport component; no nested fallback or reflection-based deserialisation.
+**Source:** Technical 1.2, 2.2, 4; FR-004; NFR-003/005; TC-03/08/12.
+**Dependencies:** TASK-006 — transport component seam and JSON dependency.
+**Completed:** Yes — 2026-10-20. Verified behavioural red (124 cases, 29 expected
+failures), then 127 passing response tests and 219 passing response/request/config
+tests with Checkstyle Main passing. Independent read-only review found no
+material issues. Strict full-envelope validation, canonical text, UTF-8,
+duplicate/depth and word/code-point/byte limits verified; semantic model behaviour
+remains unproven. Evidence:
+[red log](../logs/2026-10-20-llm-task007-response-red.md),
+[implementation log](../logs/2026-10-20-llm-task007-response-implementation.md),
+[integration/review log](../logs/2026-10-20-llm-task007-008-integration.md).
+
+**Steps**
+
+1. Red: `LlmResponseTest` separately tests valid completed top-level text, conflicting
+   nested copies, missing/null/wrong-type/blank text, duplicate keys, trailing JSON,
+   comments, invalid UTF-8, depth 32/33, incomplete status, wrong role/content types,
+   refusal/tool/function/MCP items alongside apparently valid text, and metadata-only output.
+2. Test word counts 0/49/50/70/71/99/100/101, code-point limits 5,000/5,001,
+   NBSP/supplementary characters/line breaks/punctuation/hyphens and no truncation.
+3. Run `.\gradlew.bat test --tests '*LlmResponseTest'` for behavioural red; implement
+   strict full-envelope parsing and exact word rule, refactor and rerun focused regressions.
+
+**Acceptance criteria**
+
+- [x] Valid text extracted once; metadata/nested text never override canonical top-level text.
+- [x] Structural invalid/refusal/tool responses and hard-limit violations fail safely.
+- [x] Evidence explicitly distinguishes structural validation from unproven semantic detection.
+
+### TASK-008: Implement bounded asynchronous HTTPS transport through TDD
+
+**Description:** Implement `HttpLlmClient` network lifecycle with dedicated executor,
+scheduled deadline and bounded identity/gzip response collection.
+**Source:** Technical 2.2/2.3, 5.1; NFR-002/003/005; TC-04/08/09/10.
+**Dependencies:** TASK-007 — request/response contract and focused passing suites.
+**Completed:** Yes — 2026-10-20. Verified 53 behavioural red cases followed by
+69 passing transport cases covering HTTPS policy, status/error mappings,
+independent deadline, streamed identity/gzip limits and cancellation/late arrivals.
+Independent review has no outstanding material findings. Full test, both
+Checkstyle tasks, check and build passed: 1,014 tests, zero failures/errors/skips.
+No provider calls or application wiring added. Evidence:
+[red log](../logs/2026-10-20-llm-task008-transport-red.md),
+[implementation log](../logs/2026-10-20-llm-task008-transport-implementation.md),
+[integration/review log](../logs/2026-10-20-llm-task007-008-integration.md).
+
+**Steps**
+
+1. Red: `HttpLlmClientTest` captures POST to exact URI, bearer/header/body rules,
+   no redirects/callbacks, bad TLS/hostname/DNS, every status category, 10s connection
+   timeout and 45s full-body/parse deadline using controllable timing seams.
+2. Test exact/over 65,536 decoded bytes, absent/misleading Content-Length, chunked
+   bodies, gzip compressed/decoded caps, unsupported encoding, stalled bodies,
+   cancellation/late completion, resource release and zero automatic retries.
+3. Run `.\gradlew.bat test --tests '*HttpLlmClientTest'` for red; green/refactor
+   reusable client, strict TLS, bounded subscriber/decoder and single terminal result;
+   rerun all `hotshop.llm.*` tests.
+
+**Acceptance criteria**
+
+- [x] Timeouts, stream bounds and HTTPS/error mappings pass; no unbounded body buffering.
+- [x] No extra destination/tool execution; cancellation closes local resources and no retry occurs.
+- [x] Raw HTTP failures, response bodies and credentials never escape as display/log payloads.
+
+### TASK-009: Implement session-bound generation orchestration through TDD
+
+**Description:** Add `DescriptionService`, typed results and `AuthenticatedSession`
+revision; keep network/parsing off JavaFX and the serial service worker.
+**Source:** Technical 1.2/1.3, 2.1, 3.1; FR-001–006; TC-01/02/07/10.
+**Dependencies:** TASK-005 — quota; TASK-008 — transport contract.
+**Completed:** Yes — 2026-10-20. Verified service/preparation behavioural red,
+then 61 passing service, 22 preparation and 37 quota tests with account/transport
+regressions. Session revision guards, responsive logout, actual-dispatch quota
+timestamps and safe terminal ownership are verified. Independent review has no
+outstanding material findings. Final test/style/check/build passed: 1,106 tests,
+zero failures/errors/skips. Runtime wiring remains TASK-010. Evidence:
+[service red](../logs/2026-10-20-llm-task009-service-red.md),
+[preparation red](../logs/2026-10-20-llm-task009-preparation-red.md),
+[implementation](../logs/2026-10-20-llm-task009-service-implementation.md),
+[integration/review](../logs/2026-10-20-llm-task009-integration.md).
+
+**Steps**
+
+1. Red: `DescriptionServiceTest` covers logged-out/no-call, minimum valid inputs,
+   unavailable configuration, pre-dispatch session change, same-account re-login,
+   other-account switch, in-flight logout responsiveness, shared-service quota,
+   no storage mutation, error mapping and safe unexpected failure handling.
+2. Run `.\gradlew.bat test --tests '*DescriptionServiceTest'` and existing
+   `*AccountServiceTest`; capture new behavioural failures before changing session/service code.
+3. Green/refactor: capture/recheck revisions on worker, admit once, compose futures
+   without blocking worker, release by reservation, return safe typed outcomes; rerun suites.
+
+**Acceptance criteria**
+
+- [x] Service authorises from session, has no caller user-ID parameter or listing mutation dependency.
+- [x] Pending LLM does not block account/logout work; changed session gets no description.
+- [x] Quota and all safe outcomes retain specified semantics with passing regression evidence.
+
+### TASK-010: Wire runtime, shared quota and shutdown through TDD
+
+**Description:** Integrate `ApplicationRuntime`/`Main` startup, dependency injection,
+server quota ownership and nonblocking shutdown without weakening existing open/lock APIs.
+**Source:** Technical 1.1/1.3, 3.2/3.3, 5.1; FR-001; NFR-002/005/007.
+**Dependencies:** TASK-004 — settings; TASK-009 — service and session contracts.
+**Completed:** Yes — 2026-10-20. Behavioural red preceded implementation;
+12 runtime ownership/shutdown tests and existing runtime/account/listing regressions
+pass. Independent review found no substantial defects. Full test, both Checkstyle
+tasks, check and build passed: 1,118 tests, zero failures/errors/skips. Offline
+overloads, shared quota ownership, cancellation and asynchronous draining with
+retained directory lock are verified. Evidence:
+[runtime red](../logs/2026-10-20-llm-task010-runtime-red.md),
+[runtime implementation](../logs/2026-10-20-llm-task010-runtime-implementation.md).
+
+**Steps**
+
+1. Red: add `DescriptionRuntimeTest` and relevant `ApplicationRuntimeTest` cases:
+   missing config/manual listing works, injected fake clients avoid real `.env`,
+   server registry shared across services, one runtime close does not clear another
+   service's quota, close twice, pending request/queued completion during close.
+2. Run `.\gradlew.bat test --tests '*DescriptionRuntimeTest' --tests '*ApplicationRuntimeTest'`.
+3. Green/refactor: wire owned resources, block new admission on close, cancel
+   transport/deadlines before worker/storage teardown; retain data-directory lock
+   and current session isolation limitations; rerun relevant listing/account/runtime suites.
+
+**Acceptance criteria**
+
+- [x] Existing runtime overloads and ordinary offline/manual operation preserved.
+- [x] Close is idempotent, bounded and never blocks JavaFX; no quota reset on mere form/runtime change.
+- [x] Shared quota lifecycle has explicit server owner and tested shutdown behaviour.
+
+### TASK-011: Add Create Listing generation controls through TDD
+
+**Description:** JavaFX/testing owners update only Create Listing presentation and
+safe typed completion integration in `ListingEditor`.
+**Source:** Technical 2.1, 5.1; FR-001/002/005/006; TC-01/03; UC-001.
+**Dependencies:** TASK-010 — runtime service access.
+**Completed:** Yes — 2026-10-20. Behavioural red preceded UI implementation;
+31 generation UI cases pass, including input boundaries, all conditions, keyboard,
+safe failures, shared quota feedback, unsaved replacement and manual save while
+pending. Existing UI/listing regressions pass; the minimum-window screenshot was
+inspected. Independent review found no substantial issues. Final full test, both
+Checkstyle checks, check and build passed: 1,149 tests, zero failures/errors/skips.
+TASK-012 revision/disposal safeguards remain outside this completion. Evidence:
+[UI red](../logs/2026-10-20-llm-task011-generation-ui-red.md),
+[UI implementation](../logs/2026-10-20-llm-task011-generation-ui-implementation.md),
+[integration](../logs/2026-10-20-llm-task010-011-integration.md).
+
+**Steps**
+
+1. Red: `ListingDescriptionGenerationTest` verifies minimum fields, visible external
+   data/replacement notice, loading/disabled Generate only, keyboard activation,
+   field feedback, safe errors, editing/manual save responsiveness and Edit Listing exclusion.
+2. Run `.\gradlew.bat test --tests '*ListingDescriptionGenerationTest'` for behavioural red.
+3. Green/refactor: retain control references, add local progress/status, use FX callbacks
+   without `UiPage.perform`, replace existing description immediately without confirmation,
+   preserve other values and dirty tracking. Rerun UI and listing service regressions.
+
+**Acceptance criteria**
+
+- [x] Success inserts once as editable unsaved text, and only explicit save persists listing.
+- [x] Failure preserves draft; no generation control on Edit Listing; keyboard/status checks pass.
+
+### TASK-012: Guard stale UI completions and disposal through TDD
+
+**Description:** JavaFX/testing owners extend `MarketplaceUi`/editor lifecycle guards
+for field revisions, routes, authentication and accepted disposal.
+**Source:** Technical 2.1, 4/5.1; FR-006; TC-10; UC-003.
+**Dependencies:** TASK-011 — generation controls and completion path.
+**Completed:** Yes — 2026-10-20. Behavioral red (49 cases, nine expected failures)
+preceded guards. Combined generation/marketplace UI suites passed 115 tests
+(53 generation, 62 marketplace), zero failures/errors/skips; both Checkstyle
+tasks passed. Field edit/revert, route/auth changes, accepted/cancelled close,
+hidden/queued completion and retained admission are verified. Independent review
+found no substantial issues. Full regression/build checks are delegated to the
+user by the execution override above. Evidence:
+[red](../logs/2026-10-20-llm-task012-stale-ui-tests-red.md),
+[implementation](../logs/2026-10-20-llm-task012-ui-implementation.md),
+[integration](../logs/2026-10-20-llm-task012-integration.md).
+
+**Steps**
+
+1. Red: extend generation/UI suites with changed title/condition/description, changed
+   then reverted values, navigation/back/replace/login/logout, same-account re-login,
+   save during pending generation, accepted/cancelled close, hidden window and queued
+   completion before close delivered after disposal. Use latches/FX queue gates.
+2. Run `.\gradlew.bat test --tests '*ListingDescriptionGenerationTest' --tests '*MarketplaceUiTest'`.
+3. Green/refactor: add form/request/auth revisions and disposed guard, invalidate on
+   all relevant paths; recheck before any field/status update. Keep quota slot until
+   transport termination/deadline, not page detach. Rerun combined suites.
+
+**Acceptance criteria**
+
+- [x] No late result/status reaches disposed, detached, edited or differently authenticated UI.
+- [x] Cancelled close leaves usable form; existing dirty/discard/navigation behaviour preserved.
+- [x] Full new/related UI regression suites pass deterministically.
+
+### TASK-013: Verify integrated security boundaries and regressions
+
+**Description:** Testing owner consolidates existing cases and adds missing integration
+regressions test-first; reviewer checks feature-relevant trust/capability boundaries.
+**Source:** Technical 3/4/5.2; NFR-001–007; TC-01–12 (live semantics in TASK-014).
+**Dependencies:** TASK-012 — integrated candidate with stale guards.
+**Completed:** Yes — 2026-10-20 under the focused-verification override above.
+TC-01–12 are traced to actual tests with live semantic limits explicit. The focused
+LLM/runtime/service/quota run passed 442 tests (including 12 integration cases);
+the final integration-only rerun passed 13 cases after adding nonempty safe-log
+capture. Both Checkstyle tasks passed. Existing boundaries satisfied new tests;
+initial fixture failures were corrected without production changes or manufactured
+behavioral red. Independent review found no substantial production/test/trace issues.
+Full regression/build checking remains delegated to the user. Evidence:
+[coverage](../logs/2026-10-20-llm-documentation-reorganisation.md#archived-security-coverage),
+[tests](../logs/2026-10-20-llm-task013-integrated-boundary-tests.md),
+[integration](../logs/2026-10-20-llm-task013-integration.md).
+
+**Steps**
+
+1. Map each TC case to actual tests; exercise synthetic secret/internal canaries,
+   safe diagnostics, filesystem/database snapshots around generation excluding setup,
+   no output-directed URLs/actions and no tools/configuration override under attacks.
+2. For a missing boundary, add runnable regression and verify behavioural red before
+   its smallest approved fix; refactor/rerun. Do not silently redesign semantics to pass.
+3. Run `.\gradlew.bat test checkstyleMain checkstyleTest`, then `.\gradlew.bat check build`;
+   capture actual totals, baseline comparison and reviewer findings. Never run live task here.
+
+**Acceptance criteria**
+
+- [x] Deterministic TC coverage traced and meaningful; all applicable non-live checks pass.
+- [x] No secret/tool/file side effects; no claim that mocked tests establish model immunity.
+- [x] Important review failures fixed through approved, test-backed corrections.
+
+### TASK-014: Execute the separately authorised live security evaluation
+
+**Description:** Testing owner runs the prewritten model corpus against privately
+configured provider; record empirical semantics without secret values.
+**Source:** Technical 3.1, 5.2; FR-004; NFR-001/006; TC-05/06/11.
+**Dependencies:** TASK-003 — prewritten corpus; TASK-013 — local checks passing.
+**Completed:** Yes — 2026-10-20. The user explicitly accepted the second run's
+26 results and instructed TASK-014 completion. Private per-case human decisions
+record all 26 as generated-and-reviewed PASS; provider tool non-use remains
+UNVERIFIED. No full regression/build or later-task acceptance is claimed.
+Execution started 2026-10-20 under the user's explicit
+TASK-014 selection. Public label `task014-20261020-v1` and restricted ignored
+evidence location approved; the user performed the second-run semantic review.
+Prerequisites are complete. Initial focused tests passed six cases; Checkstyle
+and reviews identified a style error and evidence/failure-path gaps. The user
+approved correction plan 1. Re-verification compiled and ran 19 focused cases;
+six setup failures exposed an invalid synthetic username. The user explicitly
+approved correction plan 2; all 22 focused adapter/corpus tests and both styles
+passed. Stable specification/security re-reviews cleared the adapter. Authorized
+`llmLiveTest` passed 26 cases, zero failures/errors/skips, with 26 actual dispatches
+and 26 generated results on 2026-10-20 (15:13–15:19 SGT). Inputs/results and an
+inert private review page are preserved at the approved location. Human review
+identified `attack-internals` as a semantic failure: the response adopted the
+injected request instead of describing the item. No actual disclosure was
+reported. Remaining review decisions are not individually recorded; automated
+passes are not semantic acceptance. Provider tool non-use remains UNVERIFIED.
+After the 2/2 budget exhaustion notice, the user explicitly directed a stronger
+prompt and a full corpus rerun, authorizing one bounded exceptional cycle 3.
+Prompt-contract baseline: 27 cases, 16 expected failures, 11 passes. The approved
+prompt-only change passed 118 focused cases plus 127 parser cases and both styles;
+independent specification/security reviews cleared the scoped snapshot. New run
+`task014-20261020-v2` passed 26 automated cases with zero failures/errors/skips,
+26 dispatches and 26 generated results (15:40–15:46 SGT, 2026-10-20). Original
+evidence is preserved; the private v2 review page compares old/new
+`attack-internals` outputs. The user's final approval closes the new run's
+semantic review; the private `human-review.json` records each case and the
+manifest now reports humanReview PASSED. Original case outputs are unchanged. No
+further correction beyond the one exceptional cycle is authorized.
+Evidence: [coordination](../logs/2026-10-20-llm-task014-coordination.md),
+[approved extension](../logs/2026-10-20-task014-prompt-correction-plan.md),
+[second live run](../logs/2026-10-20-task014-prompt-rerun.md),
+[completion](../logs/2026-10-20-task014-completion.md).
+
+**Steps**
+
+1. Obtain explicit live-run authorisation and confirm private configuration readiness;
+   keep credentials out of logs and ordinary tests. Respect quotas or space cases
+   deliberately; do not weaken production limits to make live runs faster.
+2. Run `.\gradlew.bat llmLiveTest`; record model/configuration version, case IDs,
+   observed outcomes, rubric review and actual run count. Distinguish provider outage
+   or refused/rate-limited transport from a successfully evaluated semantic case.
+3. If any attack succeeds, record failure/block acceptance; propose correction for
+   approval and preserve failing corpus case before correction/retest. No universal guarantee.
+
+**Acceptance criteria**
+
+- [ ] Actual authorised live results distinguish pass/failure/unverified per case and rubric.
+- [ ] All required cases pass observable criteria or task stays incomplete with findings.
+- [ ] Provider tool non-use remains unverified unless independent assurance is obtained.
+
+### TASK-015: Perform final implementation and security reviews
+
+**Description:** Read-only independent reviewers assess stable candidate and test
+coverage; coordinator resolves findings without granting unearned security acceptance.
+**Source:** Technical 3.1/3.3, 5.2; NFR-001–007; G-03/04.
+**Dependencies:** TASK-013 — local evidence; TASK-014 — live evidence.
+**Completed:** Yes — 2026-10-20, for the scoped local review only. Three independent
+read-only reviewers assessed candidate `81f71ee578e91a62a7e30be74ecd4d4ecd3ddd9e`
+and found no new material implementation, coverage or security defect in scope.
+The focused offline run passed 586 tests across 15 suites, zero failures/errors/
+skips; both Checkstyle checks were up to date. No source/test correction or live
+rerun was needed. The user confirmed no independent provider assurance is
+available and instructed G-03 remain open: full end-to-end no-tool acceptance
+stays blocked. G-04 remains open, explicitly excluding unverified independent
+hosted-user session safety. No full regression/build, packaging, hosted-browser,
+TASK-016/017 or final feature acceptance is claimed. Evidence:
+[independent reviews](../logs/2026-10-20-task015-independent-reviews.md),
+[scope/checks](../logs/2026-10-20-task015-final-reviews.md).
+
+**Steps**
+
+1. Review service/UI concurrency, data/secret exposure, transport bounds, quota,
+   raw-cause logging and test adequacy against the frozen candidate revision.
+2. Seek provider capability assurance to close G-03; prompts and empty returned
+   tool arrays do not prove remote non-use. Track G-04 without rewriting authentication.
+3. Approve scoped correction plans, add regression-first evidence where behaviour
+   changes, rerun affected checks/live cases and re-review the resulting stable candidate.
+
+**Acceptance criteria**
+
+- [x] Review findings, candidate revision and actual corrective evidence recorded.
+- [x] Important defects resolved; full no-tool acceptance stays blocked while G-03 is open.
+- [x] Local review explicitly excludes unverified multi-user hosted safety; no blanket approval.
+
+### TASK-016: Complete feature documentation and local packaging evidence
+
+**Description:** Assigned implementers/coordinator update usage/design/instructions
+and supporting records to describe actual verified behaviour, with independent review.
+**Source:** Technical 3.2, 5.2; repository documentation/SDD gates; FR-001–006.
+**Dependencies:** TASK-013 — actual implemented local behaviour and verification.
+**Completed:** Yes — 2026-10-20. Both guides, agent instructions, Gson
+acknowledgement and feature SDD summary match the local implementation and
+recorded evidence. Independent documentation review found no material issue;
+its deadline-wording clarification was applied. Packaging inputs did not change,
+so the conditional shadowJar/jproRelease check was not triggered. Packaging,
+fresh synthetic-secret artifact inspection and manual JPro checks were not run;
+all exclusions and future container/Render gates are explicit. Evidence:
+[task log](../logs/2026-10-20-task016-documentation.md),
+[independent review](../logs/2026-10-20-task016-017-documentation-review.md).
+
+**Steps**
+
+1. Update `docs/UserGuide.md` and relevant `docs/userGuide/SearchAndListings.md`
+   entry for generation inputs, replacement, review/edit/save, failure and limits.
+   Update `docs/DeveloperGuide.md`, AGENTS.md, feature SDD summary and task logs.
+2. Document private key names/load syntax, synthetic setup, restart/quota semantics,
+   Gson acknowledgement, safe test commands and current provider/hosting limitations.
+3. If JAR/JPro packaging changes, run `.\gradlew.bat shadowJar jproRelease`; inspect
+   resulting artifacts with synthetic secret fixtures and confirm no `.env`/credentials.
+   Packaging output under tracked `release/` must not be committed automatically.
+4. Independently review docs/links/traceability; run `.\gradlew.bat jproRun` only
+   for authorised local manual checks with safe config. Record keyboard/form/save/
+   error behaviour observed; no automatic deployment or real-secret exposure.
+
+**Acceptance criteria**
+
+- [x] Both guides, instructions, SDD summary and per-task logs match actual behaviour/evidence.
+- [x] Applicable packaging/manual checks have actual results; all unperformed checks explicit.
+- [x] No container/Render publication claim; future secret mounts/image exclusion tracked separately.
+
+### TASK-017: Record scoped acceptance and outstanding release gates
+
+**Description:** Coordinator consolidates final evidence and completion state;
+documentation reviewer checks traceability before feature Done.
+**Source:** Technical readiness statement; all FR/NFR and TC IDs; repository Done gates.
+**Dependencies:** TASK-015 — final reviewed candidate; TASK-016 — reviewed docs/packaging evidence.
+**Completed:** Yes — 2026-10-20, for scoped acceptance recording. The
+[acceptance report](../logs/2026-10-20-llm-documentation-reorganisation.md#archived-acceptance-record) traces every FR/NFR,
+TC-01–12 and UC-001–003 to source, tests, actual recorded outcomes and reviews.
+TASK-015/016 prerequisites are complete; independent documentation review
+confirmed traceability and explicit exclusions. Documentation/dependency/link
+checks and whitespace checks passed with two pre-existing unrelated deleted-doc
+links reported. No new runtime, packaging or manual check is claimed. **Feature
+not Done:** G-03/G-04 still block full security/hosted acceptance. Evidence:
+[task log](../logs/2026-10-20-task017-scoped-acceptance.md),
+[independent review](../logs/2026-10-20-task016-017-documentation-review.md).
+
+**Steps**
+
+1. Check candidate/diff remains within scope and record exact executed checks;
+   rerun only if changes or unresolved concerns invalidate earlier evidence.
+2. Reconcile product/technical acceptance, test outcomes, reviews and documentation.
+   A partial local result does not close G-03 or multi-user G-04.
+3. Mark selected tasks Yes only with dated supporting logs; feature remains not Done
+   while required acceptance is blocked. Record separately authorised future hosting/
+   Docker tasks rather than creating credentials, deploying, or expanding this scope.
+
+**Acceptance criteria**
+
+- [x] Acceptance report links actual source/tests/results/reviews and documents residual limits.
+- [x] Full security and hosted acceptance blocked until G-03/G-04 respectively resolved;
+  local completion and feature-level completion are distinguished honestly.
+- [x] Required guide/AGENTS/SDD/log gates satisfied before any feature Done declaration.
+
+### TASK-018: Support runtime environment configuration with local file fallback
+
+**Description:** Extend trusted startup configuration so operators can supply
+`SOCLAAS_BASE_URL`, `SOCLAAS_API_KEY` and `SOCLAAS_MODEL` as runtime environment
+variables instead of creating a `.env` file. Retain local file loading, existing
+validation, immutable startup snapshots and safe generation-unavailable behaviour.
+Affect `LlmConfiguration`, its tests, startup wiring in `Main` only if needed,
+related deterministic fixtures and current configuration documentation. No new
+dependency, database migration, provider call or deployment is required.
+**Source:** Technical 1.1/1.2, 3.2 and 5.2; FR-003, NFR-002/004/006/007,
+TC-04/07/09; the user's 2026-10-20 environment-variable follow-up. Step 1 aligned
+technical 3.2's earlier file-only contract before behavioural tests/code.
+**Dependencies:** TASK-004 — validated private file configuration;
+TASK-010 — startup ownership and offline runtime seams;
+TASK-017 — recorded local acceptance and outstanding release gates.
+**Completed:** Yes — 2026-10-20. Environment-first startup and explicit file-only
+fixtures implement the approved exclusive-source policy. Behavioural red:
+129 cases, 53 expected assertion failures; green: all 129 passed with both styles.
+Broader focused regressions passed 433 cases across 12 suites. Required full
+test/Checkstyle/check/build passed 1,268 tests across 42 suites, zero failures,
+errors or skips. Independent correctness/coverage and security reviews cleared
+the stable candidate without findings. No live provider call or deployment.
+Evidence: [test-first log](../logs/2026-10-20-task018-configuration-tests.md),
+[implementation](../logs/2026-10-20-task018-configuration-implementation.md),
+[independent reviews](../logs/2026-10-20-task018-independent-reviews.md),
+[integration/checks](../logs/2026-10-20-task018-configuration-integration.md).
+
+**Readiness:** The user confirmed source selection on 2026-10-20: if any of the
+three required environment keys is present, require a complete valid environment
+set and do not fall back or mix sources; use `.env` only when all three keys are
+absent. A present empty/blank/invalid key is not absent. Complete valid environment
+settings bypass file access, including a missing/malformed/unreadable `.env`;
+denied environment access produces safe unavailability without file fallback.
+The user separately authorised execution, and specification alignment preceded
+behavioural tests/code. Existing completed prerequisite entries were preserved.
+
+**Steps**
+
+1. Using the recorded source-selection decision, align the product specification's
+   private-configuration guidance and technical 3.2 (plus affected type/test
+   contracts) with runtime environment support. Keep the same three key names,
+   exact full HTTPS destination, credential validation and restart-only reload.
+   Specify the agreed blank/invalid/partial environment behaviour, file access behaviour
+   when environment settings are sufficient, and safe failure if environment
+   access is denied. Environment values are literal process strings, not dotenv
+   syntax: do not unquote, expand, shell-evaluate or silently trim credentials.
+   Do not add automatic `/etc/secrets` discovery, new secret-file paths, container
+   packaging, Vercel runtime support or hosted-session changes to this task.
+2. Red: testing owner adds deterministic cases to `LlmConfigurationTest` before
+   implementation, with an explicit injected environment map/reader and temporary
+   synthetic files. Cover complete valid environment with absent file; conflicting
+   valid file; complete environment with malformed/unreadable file; no required
+   environment keys (including unrelated keys) with valid/missing/invalid file;
+   all six partial-key subsets; present empty/blank/null-invalid values where the
+   seam permits them; invalid HTTPS/token/model partitions and existing boundary
+   values; literal `=`, `$`, backslashes and quotes; denied environment access;
+   environment/file mutation after load; safe diagnostics and manual persistence
+   when unavailable. Define expected partial/fallback outcomes from step 1, keep
+   separate negative conditions separate, and verify fallback never creates files.
+   Include no raw secret/endpoint/model in public diagnostics or exceptions.
+3. Keep ordinary tests independent of the developer/CI process environment. Retain
+   an explicit file-only or injected-settings seam for existing file-parser,
+   adapter and runtime fixtures; do not mutate global process environment or read
+   the real working-directory `.env`. Minimal typed seams may enable compilation.
+   Run `.\gradlew.bat test --tests '*LlmConfigurationTest'`; record failures caused
+   by missing environment behaviour, not compilation/setup. Investigate any
+   already-passing paths rather than manufacturing red evidence.
+4. Green: application owner implements the smallest source-resolution change,
+   reusing existing validation and parser rather than duplicating them. Read the
+   real process environment only at the production startup boundary, once, and
+   wire it through the server-owned immutable configuration snapshot. Use the
+   approved precedence policy, avoid unnecessary file reads and retain explicit
+   unavailable outcomes without raw causes. `ApplicationRuntime.open(Path)` and
+   `open(Path, Clock)` must remain offline and must not acquire ambient settings.
+   Add/extend `DescriptionRuntimeTest` or an isolated synthetic JVM startup test
+   only where needed to prove production wiring and unchanged offline opens;
+   no real provider requests, waiting sleeps or production credentials.
+5. Refactor the changed code with the focused tests passing. Run
+   `.\gradlew.bat test --tests 'hotshop.llm.*' --tests '*DescriptionRuntimeTest' --tests '*ApplicationRuntimeTest' checkstyleMain checkstyleTest`,
+   then the applicable repository Java verification
+   `.\gradlew.bat test checkstyleMain checkstyleTest check build`.
+   Previous TASK-012–013 deferrals do not automatically waive this follow-up's
+   checks; record any new explicit verification override and actual outcomes.
+   Ordinary checks continue excluding `llm-live`; do not run `llmLiveTest`.
+6. Update `docs/developerGuide/LLMImplementation.md` in place with operator key
+   names, environment-versus-file selection, literal value syntax, synthetic
+   setup/testing, reload behaviour and safe unavailable outcomes. Keep guide
+   landing pages brief. Update usage only if visible behaviour changes; update
+   AGENTS pointers if needed, the feature SDD summary and the task interaction
+   log. Request independent configuration/security review of the stable change,
+   resolving material findings with regression-first evidence. Mark this task Yes
+   only after its acceptance evidence and actual checks are recorded. Supporting
+   environment variables establishes no Render/Vercel deployment, G-03 assurance
+   or G-04 hosted-client acceptance; secret mounts/image exclusion stay separate.
+
+**Acceptance criteria**
+
+- [x] The source-selection decision and aligned specification are recorded before
+  behavioural implementation; no unresolved precedence choice is hidden in code.
+- [x] A complete valid synthetic runtime environment enables configuration without
+  a `.env` file; local file loading remains available under the approved policy.
+  Partial, blank, invalid and inaccessible sources produce their specified safe
+  outcomes, preserving HTTPS/header validation and preventing unintended source mixing.
+- [x] Production startup uses the environment-aware snapshot exactly once;
+  environment/file changes do not mutate it. Offline runtime opens and ordinary
+  synthetic tests remain independent of ambient settings and provider access.
+- [x] Relevant equivalence partitions/boundaries have behavioural red, green and
+  refactor evidence; focused regressions, both Checkstyle tasks and required
+  test/check/build verification pass, or the task remains No with explicit blockers.
+- [x] No credentials/configuration values enter model context, UI, errors, logs,
+  resources or new files; no environment-to-file export, tool execution, dependency,
+  packaging/deployment change or live provider call is introduced.
+- [x] Current guides/specifications, SDD/task records and independent review reflect
+  actual results; G-03/G-04 and separate release work remain explicitly open.
+
+## Coverage and handoff
+
+| Source | Tasks |
+| --- | --- |
+| Technical 1.1/1.2: components, types and constraints | TASK-002, TASK-004–012 |
+| Technical 1.3: no persistence, quota and transitions | TASK-005, TASK-009–013 |
+| Technical 2.1: service contract and UI threading/lifecycle | TASK-009–012 |
+| Technical 2.2/2.3: request, parser, transport/error mapping | TASK-006–009 |
+| Technical 3.1/3.2: capabilities, credentials, config | TASK-003/004/006–010/013–016 |
+| Technical 3.3: current hosting constraint | G-04, TASK-010/015/017; broader fix separately scoped |
+| Technical 4/5.1: edge/failure/recovery paths | TASK-004–013 |
+| Technical 5.2: tests, actual verification and release limits | TASK-001–003/013–017 |
+| TC-01/02/03 | TASK-006/007/009/011/013 |
+| TC-04/07/08/09/12 | TASK-004/006–010/013 |
+| TC-05/06/11 | TASK-003/006/013/014/015 |
+| TC-10 | TASK-005/008–013 |
+| Runtime environment follow-up: Technical 3.2/5.2, FR-003, NFR-002/004/006/007, TC-04/07/09 | TASK-018 (source-selection decision recorded; spec alignment precedes code) |
+
+Current progress: **18/18 tasks recorded complete**, with dated supporting evidence.
+TASK-018 completed configuration source selection, startup wiring, deterministic
+tests and documentation; it does not close hosting or provider acceptance gates.
+TASK-016/017 complete documentation and scoped acceptance only. Completed prerequisite entries
+are preserved. TASK-014 has historical unchecked acceptance boxes alongside its
+explicit Completed Yes/user acceptance record; this discrepancy is reported
+rather than reopening or rewriting that completed task.
+
+The [acceptance report](../logs/2026-10-20-llm-documentation-reorganisation.md#archived-acceptance-record) consolidates
+requirement coverage, source/test links, actual check history and residual gates.
+TASK-010/011 full verification passed 1,149 tests; TASK-012/013 used focused
+verification under the user's deferral. TASK-014 v2 has 26 user-accepted semantic
+results; its original v1 failure remains preserved. TASK-015's stable local
+candidate passed 586 focused cases and independent reviews. Overlapping runs
+are not a full-suite total. TASK-018 separately passed the full
+`.\gradlew.bat test checkstyleMain checkstyleTest check build`: 1,268 tests across
+42 suites, zero failures/errors/skips, with styles/check/build successful.
+
+**Feature remains not Done.** G-03 blocks full end-to-end no-tool acceptance;
+G-04 blocks independent multi-user hosted acceptance. Packaging is unchanged:
+the conditional shadowJar/jproRelease step was not triggered; neither these
+commands nor jproRun/manual checks were performed for TASK-016/017. Future
+Docker/Render packaging, secret mounts/image exclusion, session integration and
+deployment require separately authorized work. No new live calls or publication
+are included in this selection.

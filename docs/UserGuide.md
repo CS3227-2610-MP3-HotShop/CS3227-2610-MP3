@@ -25,21 +25,20 @@ topic in detail.
 
 ## PostgreSQL setup and persistence
 
-The operator must configure PostgreSQL and private Supabase image storage, provision
-the schema, and verify/import existing photos before launching HotShop; see the
-[Developer Guide](DeveloperGuide.html#postgresql-operator-setup). Marketplace records
-and photos persist across application restarts. The local data directory holds the
-application lock; saved photos are served through the app from private storage.
+The operator must configure the PostgreSQL connection and run the separate schema
+setup command before launching HotShop; see [PostgreSQL setup](developerGuide/AccountServiceAndLocalPersistence.html#postgresql-operator-setup).
+An internet or local network connection to that database is required. Marketplace
+records persist across application restarts. New installations start empty; old SQLite
+files are not imported or reset. Listing and profile photos use private Supabase buckets. Your local data directory retains the
+application lock and temporary browser staging. The operator must verify/import existing photos and activate both bucket bindings after schema setup; see [private image storage setup](developerGuide/AccountServiceAndLocalPersistence.html#private-image-storage-setup-and-import).
 
 If startup reports a database setup/connectivity problem, ask the operator to check
-connection settings and run compatible provisioning. A lock error means another
-instance is using the same local data directory. Data is not reset to recover from
-either condition. If an operation asks you to retry after a concurrent
+connection settings and run compatible provisioning. A folder/lock error means the
+local working folder is unavailable or another instance is using it. Startup can also fail when private image storage settings or bindings are missing; the operator must verify configuration and activation. Data is not reset to
+recover from either condition. If an operation asks you to retry after a concurrent
 change, refresh the relevant record and submit the action again.
 
-The app checks the configured private storage bindings at startup. Ask the operator
-for help if photos are unavailable; this does not remove marketplace records or
-saved photo references.
+Hosted JPro multi-user readiness remains separate; the current single-runtime directory lock is retained. Stored photos persist across application restarts, while reads and writes require network access to Supabase.
 
 ## Optional AI Search
 
@@ -54,7 +53,7 @@ the page shows a fixed status message; ordinary search remains available.
 For example, enter **used bicycle under S$200**, choose **AI Search**, and review
 the proposed filters before applying them. Ordinary **Search** and Enter do not
 call the AI service. Leaving Search or logging out discards the pending proposal.
-AI Search does not access or change profile or listing photos.
+Images remain local; no Supabase Storage bucket is needed to use AI Search.
 
 ## Purpose of this Guide
 

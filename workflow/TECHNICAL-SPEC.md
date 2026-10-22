@@ -629,3 +629,68 @@ References: [Supabase API keys](https://supabase.com/docs/guides/getting-started
 [private buckets](https://supabase.com/docs/guides/storage/buckets/fundamentals),
 [Storage API](https://supabase.github.io/storage/),
 [JPro documentation](https://github.com/JPro-one/JPro-Documentation).
+
+### AI-MERGE-1 — seller/buyer configuration coexistence,2026-10-22
+
+Owner requested PR11 conflict integration after seller PR18 merged, then selected
+integration only; transport deduplication is deferred. Preserve buyer AI-T2-C2 /
+AI-T3 and seller LLM generation protocols and application behavior.
+
+Configuration amendment: SOCLAAS_BASE_URL retains buyer API-base semantics (/v1;
+SocSearchClient appends /chat/completions). Seller LlmConfiguration now selects
+SOCLAAS_DESCRIPTION_URL as the exact complete HTTPS generation endpoint; no path
+is inferred/appended and it must not fall back to the buyer base. API key and model
+may be shared via SOCLAAS_API_KEY / SOCLAAS_MODEL. Seller file/environment source
+precedence, validation, safe failures and startup snapshots remain; missing seller
+settings disable only seller generation. Update current setup and synthetic fixtures
+for the distinct key; do not rewrite historical evaluations or modify private files.
+
+Main borrows the shared seller DescriptionRuntime and owns its buyer client; preserve
+session/quota checks, stale UI guards and nonblocking runtime close. Merge shared TLS
+fixture capabilities and JavaFX toolkit initialization without weakening assertions.
+Keep one Gson dependency and PostgreSQL-only isolated tests. No shared transport
+refactor, Storage import, live calls, deployment or public behavior redesign.
+
+Verify distinct URLs can coexist, misconfiguration stays isolated, ordinary manual
+flows invoke no AI, buyer preview/Apply and seller replace-before-save retain their
+contracts, and session/disposal/resource ownership survives the merge. Use focused
+fixtures then full final-source CI and final independent reviews.
+
+### ST-MERGE-1 / AI-DEDUPE-1 — Storage integration and shared AI connection code, 2026-10-23
+Owner Jonat requests PR12 conflicts/deduplication and explicitly includes buyer/seller
+AI connection consolidation. Baselines: Storage HEAD7cb796e/source4099056, masterd59d6ba
+(includes PR11 integration126fc8c). Preserve ST-T1/ST-P1 plus buyer/seller AI contracts.
+No externally visible behavior, provider protocol, endpoint setting, quota, response
+validation, authorization or cancellation semantics may change merely for reuse.
+Resolve runtime/editor merges preserving shared description-runtime ownership and
+Storage lifecycle/async/browser behavior. Preserve master guide organization and
+owner2026-10-22 workflow; relocate Storage setup guidance into existing topic guides.
+Consolidate only demonstrably shared connection handling; keep Chat Completions and
+Responses encoding/parsing and their public result contracts in their adapters.
+Keep strict TLS/no redirects, request/response byte bounds, whole-response deadlines,
+resource cleanup and shutdown-race protections. No hosted/provider calls, migrations,
+import/activation, deployment, benchmark rewrites or dependency additions.
+Shared transport mechanism and ownership are pending bounded source inventory before
+AI-DEDUPE-1 production edits; conflict resolution can proceed independently.
+
+#### AI-DEDUPE-1 shared transport contract
+Bounded source inventory confirms duplicate client/worker/timer/exchange ownership.
+Use one shared `LlmHttpTransport` in hotshop.llm (new), with asynchronous request
+execution, explicit per-request response policy and cancellable exchange handles.
+Reuse the existing bounded subscriber where applicable; policy preserves buyer
+identity-only encoding and seller bounded identity/gzip,64KiB wire and decoded caps.
+Protocol adapters retain endpoint formation,8KiB request guards, encoding/parsing,
+status/content-type validation and their public failure/result contracts. Preserve
+seller preparation/single-use requests and exact quota/onDispatch admission timing.
+Production transport is process-owned, preferably through existing DescriptionRuntime;
+Main/browser clients borrow it and close only their own exchanges. No new singleton
+or global owner. Standalone clients retain owned transport behavior and existing
+injected test seams. Resource allocation is lazy; owner close is idempotent and
+nonblocking, cancels all exchanges, and finalizes workers/timers/body resources.
+Close-versus-registration races must yield safe CLOSED results; never leak rejected
+scheduling, wait for network, or invoke arbitrary callbacks under a lifecycle lock.
+No requirement to collapse protocol adapters, configuration keys or credential scope.
+Acceptance adds shared-resource evidence and cross-adapter/per-session cancellation
+isolation, joint protocol routing, bounded bodies/deadlines and safe owner shutdown.
+Preserve existing negative/security assertions; add observable regressions where
+sharing introduces new state/ownership partitions. Use no live endpoint or hosted DB.

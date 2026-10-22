@@ -47,8 +47,9 @@ implementation.
 
 [![HotShop architecture: JavaFX UI, services, repositories, SQLite, and image storage](../diagrams/architecture_uml.png)](../diagrams/architecture_uml.png)
 
-The diagram above is historical: its SQLite node is replaced by PostgreSQL/JDBC;
-images remain local pending separate storage integration.
+The diagram above is historical: its SQLite node is replaced by PostgreSQL/JDBC.
+Production profile and listing photos use private Supabase Storage buckets, while
+the local runtime directory holds the process lock.
 
 ### Layers and responsibilities
 
@@ -59,18 +60,28 @@ images remain local pending separate storage integration.
 | Repository | `UserRepository`, `ListingRepository`, `OfferRepository`, `TransactionRepository`, `MeetupRepository`, `ChatRepository` | Execute SQL using a supplied connection and map records to models. |
 | Database | `Database`, PostgreSQL JDBC, `DatabaseConfig` | Serializable transactions, explicit provisioning and schema validation. |
 
-Services also use Java models to enforce domain invariants. `ImageStorage` manages
-files separately from PostgreSQL; profile and listing image helpers coordinate file
-imports and cleanup with saved references. UI image-path resolution goes through
-the runtime rather than repositories.
+Services also use Java models to enforce domain invariants. Profile and listing
+image services coordinate private object uploads, authorized reads and cleanup with
+saved database references. UI image resolution goes through the runtime rather than
+repositories; production startup requires both configured Storage buckets.
 
 ### Runtime initialization and shutdown
 
-`ApplicationRuntime.open` acquires the image-directory lock, validates the provisioned database,
-creates separate profile/listing image stores, and constructs the repositories
+`ApplicationRuntime.open` acquires the runtime-directory lock, validates the
+provisioned database and Storage configuration, creates separate profile/listing
+image stores, and constructs the repositories
 and six services. All services share one `Database`, `ServiceWorker`, and
 `AuthenticatedSession`; time-dependent services share the supplied clock. Startup
 recovers managed images before returning. Closing the runtime drains accepted
-worker operations before releasing the lock. The session is in memory and starts
+worker operations, closes Storage resources and releases the lock. The session is in memory and starts
 logged out on each launch.
+
+The production overload taking a description owner supplies environment-derived
+database and private Storage configuration. The explicit database-configuration
+overloads can select local image fixtures; the overload also taking a Storage
+configuration uses the remote object store. Without an explicit description owner,
+those overloads use the offline seller-generation owner. The two-argument overload
+supplies database defaults, and the one-argument overload also supplies the system
+clock. Runtime directories select the process lock; PostgreSQL and Storage settings
+are supplied separately.
 

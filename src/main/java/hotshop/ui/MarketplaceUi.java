@@ -21,6 +21,7 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 /** Application shell and guarded navigation. Business operations belong to the runtime services. */
 public final class MarketplaceUi {
@@ -45,6 +46,10 @@ public final class MarketplaceUi {
     private UUID userId;
     private ScrollPane content;
     private Button conversationsLink;
+    private long authenticationRevision;
+    private boolean disposed;
+    private boolean confirmingLeave;
+    private final Deque<Runnable> deferredGenerationCompletions = new ArrayDeque<>();
 
     /**
      * Installs the initial logged-out scene; the caller owns showing and closing the runtime.
@@ -79,8 +84,11 @@ public final class MarketplaceUi {
         stage.setOnCloseRequest(event -> {
             if (!canLeave()) {
                 event.consume();
+            } else {
+                dispose();
             }
         });
+        stage.addEventHandler(WindowEvent.WINDOW_HIDDEN, event -> dispose());
         login("");
     }
 
@@ -102,7 +110,39 @@ public final class MarketplaceUi {
         return current == page;
     }
 
+    long authenticationRevision() {
+        return authenticationRevision;
+    }
+
+    boolean isGenerationCurrent(UiPage page, long revision) {
+        return !disposed && isCurrent(page) && authenticationRevision == revision;
+    }
+
+    /** A dirty confirmation runs a nested FX loop; deliver only after its caller handles the decision. */
+    void completeGeneration(Runnable completion) {
+        if (confirmingLeave) {
+            deferredGenerationCompletions.addLast(completion);
+        } else {
+            completion.run();
+        }
+    }
+
+    private void detachCurrent() {
+        if (current != null) {
+            current.leave();
+            current = null;
+        }
+    }
+
+    private void dispose() {
+        if (!disposed) {
+            disposed = true;
+            detachCurrent();
+        }
+    }
+
     UiPage page(String title) {
+        detachCurrent();
         current = new UiPage(this, title);
         content = new ScrollPane(current);
         content.setFitToWidth(true);
@@ -113,6 +153,7 @@ public final class MarketplaceUi {
 
     /** A page that fills the window without scrolling as a whole; its own parts scroll instead. */
     UiPage fixedPage(String title) {
+        detachCurrent();
         current = new UiPage(this, title);
         current.fillHeight();
         content = null;
@@ -132,9 +173,7 @@ public final class MarketplaceUi {
         if (!canLeave()) {
             return;
         }
-        if (current != null) {
-            current.leave();
-        }
+        detachCurrent();
         if (route != null) {
             history.push(route);
         }
@@ -145,7 +184,7 @@ public final class MarketplaceUi {
 
     void back() {
         if (!history.isEmpty() && canLeave()) {
-            current.leave();
+            detachCurrent();
             route = history.pop();
             route.run();
             refreshUnreadCount();
@@ -157,6 +196,7 @@ public final class MarketplaceUi {
     }
 
     void replace(Runnable next) {
+        detachCurrent();
         route = next;
         next.run();
         refreshUnreadCount();
@@ -193,7 +233,19 @@ public final class MarketplaceUi {
         if (current.isBusy()) {
             return false;
         }
-        return !current.isDirty() || confirm("Discard Changes", "Your unsaved changes will be lost.");
+        if (!current.isDirty()) {
+            return true;
+        }
+        confirmingLeave = true;
+        try {
+            return confirm("Discard Changes", "Your unsaved changes will be lost.");
+        } finally {
+            confirmingLeave = false;
+            while (!deferredGenerationCompletions.isEmpty()) {
+                Runnable completion = deferredGenerationCompletions.removeFirst();
+                Platform.runLater(() -> completeGeneration(completion));
+            }
+        }
     }
 
     boolean confirm(String action, String consequence) {
@@ -209,6 +261,8 @@ public final class MarketplaceUi {
     }
 
     void loggedIn(User user) {
+        detachCurrent();
+        authenticationRevision++;
         userId = user.getId();
         searchState.reset();
         history.clear();
@@ -219,6 +273,8 @@ public final class MarketplaceUi {
     }
 
     void login(String username) {
+        detachCurrent();
+        authenticationRevision++;
         userId = null;
         conversationsLink = null;
         searchState.reset();
@@ -230,6 +286,7 @@ public final class MarketplaceUi {
 
     private void logout() {
         if (canLeave()) {
+            authenticationRevision++;
             current.perform(runtime.getAccounts()::logout, ignored -> login(""));
         }
     }

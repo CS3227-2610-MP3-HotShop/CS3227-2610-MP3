@@ -61,6 +61,45 @@ prefill your preferred pickup location, which you can change for that listing.
 Photos are validated before being added and revalidated when saved; the app
 does not automatically crop or resize images.
 
+### Generating a listing description
+
+In **Create Listing**, enter a **Title** (1–120 Unicode code points after trimming) and
+choose a **Condition**, then select **Generate Description**. For example,
+`Wooden chair` and `Good` are enough; price, category, photos and pickup location
+are not needed for generation. Your title and condition are sent to an external
+LLM. Your existing description and other listing fields are not sent.
+
+A successful result immediately replaces the entire Description field without
+confirmation. Generated text has at most 100 words; review its accuracy and edit
+it as needed. The usual target is 50–70 words; shorter valid results are allowed.
+Check that it describes the item rather than repeating requests
+from the title or asking for more information. It remains unsaved until you fill in the required listing fields
+and choose **Save Listing**. Generation is available only when creating a listing.
+The 100-word generation limit does not change the usual manual description/save limits.
+
+While generating, progress appears and Generate is disabled. You can still edit,
+save manually or leave using the usual unsaved-changes confirmation. Editing the
+title, condition or description while generation is pending makes that result
+stale, even if you change the value back. Your draft is kept and you can request
+generation again after the earlier attempt finishes. Leaving, logging out or
+closing the window also prevents its result from updating that form. Cancelling
+the discard/close confirmation keeps the form usable.
+
+Failures show feedback beside Generate and preserve your draft. You can retry
+deliberately or write your own description; missing provider settings do not
+prevent manual saving. One request may run per account, with limits of five
+attempts per rolling minute and thirty per rolling hour. A local rate-limit
+message gives a retry delay. Dispatched provider failures and timeouts count toward
+these limits; invalid local inputs do not. There are no automatic retries. The
+transport attempt has a 45-second deadline, including waiting for dispatch and
+reading/validating the response. Leaving the form does not immediately free an
+account's active request. Limits reset when the server process restarts.
+
+The app does not execute returned commands or open returned links. Generated text
+can still be inaccurate or follow unwanted instructions; review every result.
+Remote provider tool use and independent concurrent hosted-user sessions have not
+been verified. These limits do not prevent manual listing creation.
+
 ### Editing, archiving, and deleting listings
 
 Open one of your listings for **Edit Listing**, **Archive Listing**, **Delete

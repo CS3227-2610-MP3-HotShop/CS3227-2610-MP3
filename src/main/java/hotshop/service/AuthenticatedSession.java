@@ -6,6 +6,12 @@ import java.util.UUID;
 /** Application identity; read and mutate only inside the shared service worker. */
 public final class AuthenticatedSession {
     private UUID userId;
+    private long revision;
+
+    /** Worker-owned identity generation; equality of account IDs alone cannot identify a login. */
+    long revision() {
+        return revision;
+    }
 
     /**
      * Returns the current user ID, or empty when logged out.
@@ -38,9 +44,11 @@ public final class AuthenticatedSession {
     void login(UUID id) {
         requireLoggedOut();
         userId = id;
+        revision++;
     }
 
     void logout() {
         userId = null;
+        revision++;
     }
 }
