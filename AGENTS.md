@@ -1,19 +1,40 @@
 # AGENTS.md
 
-## Minimal workflow records — owner approved 2026-10-20
+## Owner-approved workflow — 2026-10-22
 
-Subagents return concise results in messages; they do not create or maintain task logs,
-interaction summaries, approval records or other reporting Markdown files. Reports
-include changed files, actual check results and unresolved findings, without transcripts.
-The coordinator maintains one short current handoff in docs/InteractionRecord.md.
-Keep approvals in the chat until final review passes, then consolidate decisions,
-approvals and verification into the existing feature summary and decision record once.
-Do not create a separate log per task, agent, discussion or workflow adjustment.
-Required product/setup documentation still changes with behavior. On 2026-10-20
-the owner explicitly requested deletion of old interaction logs and verbose histories;
-retain only the current handoff and consolidated final summary. This rule supersedes older per-agent/per-task logging and
-every-decision documentation requirements in skills, role briefs and templates.
+This agreement takes precedence over conflicting older skills, role briefs, agent
+configuration and workflow text. It changes future execution, not historical results
+or completed benchmark/correction records.
 
+- One implementer owns the approved batch: production code, tests, fixtures, build
+  configuration and associated guides. It may write/update tests, preserving valid
+  assertions. No separate tester or intermediate review handoffs by default.
+- After implementation and checks, independent specification/coverage and security
+  reviewers inspect one stable candidate. The coordinator consolidates their findings.
+- Plan one shared correction pass. Additional passes are permitted only for confirmed
+  errors or mistakes within approved scope, supported by failing checks, a contract
+  violation or concrete execution-path evidence. Record the defect, scoped fix,
+  pass number and affected verification; proceed without repeated approval requests.
+  New features, requirement changes, speculative improvements, unresolved decisions
+  and live/deployment actions retain their own approval gates. Do not loop unchanged
+  attempts; surface a blocker when progress needs a new decision or external change.
+- Use targeted source/spec sections and compact briefs. New specialists receive
+  fork_turns=none; do not request full chats or unrelated histories. Prefer a Sol
+  coordinator and Luna specialists; saved settings do not prove a live model change.
+- Persist every human-visible interaction batch: sanitized user request/approval,
+  agent roles and assignment, decisions, concise results, review findings, corrections,
+  actual checks and limitations. Subagents return concise messages; the coordinator
+  appends these as work progresses to one existing feature record under logs/.
+  Preserve existing teammate logs. Do not create a new file per exchange or task,
+  restore previously deleted histories, or record secrets/private reasoning.
+- All logs, interaction records and handoffs live under logs/. The current shared
+  handoff is logs/ExecutionRecord.md; AGENTS.md holds durable rules, not activity logs.
+  Product guides and PLAN retain their normal behavior/status responsibilities.
+- Preserve school evidence: approved specifications and acceptance tests; actual
+  specialized-agent work and reviews; AI threat boundaries/evaluations; SoC model
+  configuration, quotas and error handling; team contributions and quantified MP2
+  reuse; and separately managed deployment automation. Record executed evidence
+  honestly, with benchmark/release limitations. Definitions alone do not prove use.
 
 This file defines the repository-wide instructions that AI coding agents must follow when working on HotShop.
 
@@ -211,7 +232,7 @@ Any significant new dependency should be mentioned in the final task summary.
 
 ## Documentation
 
-When writing human-readable documentation, prefer to explain relevant concepts and details using simple and easy to understand english. Avoid using jargon or ambiguous terms unless absolutely necessary. If something is unable to be explained simply, help by providing examples to aid with understanding.
+Use plain language in human-facing documentation, with concrete examples where helpful.
 
 ### User Documentation
 All user-facing features added to this application must be documented in:
@@ -236,11 +257,18 @@ Do not:
 
 When an existing user-facing feature changes, update its existing User Guide documentation as part of the same task.
 
+### Feature completion record
+
+Before feature completion, update relevant user/developer guidance and the existing
+feature record under logs/. AGENTS.md changes only when durable instructions change.
+
 ### Developer Documentation
 
-For every completed feature or change, update `docs/DeveloperGuide.md`, before reporting completion.
+For every completed behavior change, update the Developer Guide. Update AGENTS.md only for durable instruction changes; put activity records in logs/.
 This includes changes to agent configuration, workflow, and documentation.
 
+- In `AGENTS.md`, maintain the relevant durable instructions, constraints, or a
+  concise pointer to the updated developer documentation for future agents.
 - In the Developer Guide, describe the resulting behaviour, design, setup, or
   workflow and relevant verification or limitations. For a small change, use a
   brief note in the relevant section.
@@ -309,71 +337,6 @@ Determine whether the implementation or the test is incorrect before making chan
 
 ---
 
-## Autonomous Multi-Agent Orchestration
-
-The main Codex agent is the project orchestrator.
-
-When receiving a development request:
-
-1. Analyze the request and inspect relevant project files.
-2. Break the task into logical subtasks.
-3. Determine which specialized agents are appropriate.
-4. Delegate independent subtasks automatically.
-5. Coordinate dependencies between agents.
-6. Integrate the completed work.
-7. Run appropriate tests and request reviews.
-8. Resolve important issues before finishing.
-
-### Available Specialists
-
-- javafx_developer:
-  JavaFX layouts, controls, events, navigation, bindings, service integration,
-  styling, accessibility, threading, and lifecycle. Use the existing programmatic
-  UI; introduce FXML only when requested. This replaces javafx_view_designer and
-  controller_developer. Coordinate specialized CSS work with css_specialist and
-  tests with testing_agent; assign one writer per shared UI file.
-
-- app_architect:
-  Business logic, services, models, repositories.
-
-- testing_agent:
-  Unit tests, integration tests, regression checks.
-
-- css_specialist:
-  JavaFX CSS, styling, themes, accessibility.
-
-- code_reviewer:
-  Code quality, threading, architecture, correctness.
-
-### Delegation Policy
-
-- Choose agents based on the task requirements.
-- Do not require the user to name agents.
-- Delegate complex, independent work automatically.
-- Run independent tasks in parallel when beneficial.
-- Establish shared contracts before parallel implementation.
-- Never assign overlapping file edits concurrently.
-- Keep small, straightforward tasks with the main agent.
-- Avoid unnecessary delegation overhead.
-- Use the testing agent when behavior changes.
-- Use the reviewer for substantial or risky changes.
-
-### Main Agent Responsibilities
-
-The main agent remains responsible for:
-- Overall implementation quality.
-- Cross-agent coordination.
-- Integration of changes.
-- Resolving conflicting implementations.
-- Final build and test verification.
-- Reporting results to the user.
-
-Do not ask the user to choose agents unless the
-delegation decision requires a significant
-architectural or product decision.
-
----
-
 ## Build and Verification
 
 The Gradle requirements in this section apply to Java implementation tasks.
@@ -411,64 +374,11 @@ Do not disable tests, Checkstyle, or other verification mechanisms merely to mak
 
 ## Logging Agent Interactions
 
-At the end of every workflow task performed by the LLM, create a new Markdown file under:
-```
-logs/
-```
-Do not overwrite previous task logs.
-
-Use a descriptive filename that allows logs to be distinguished from one
-another. Prefer:
-```
-YYYY-MM-DD-<short-task-description>.md
-```
-If multiple tasks with the same description occur on the same date, add a numeric suffix.
-
-Each log must contain:
-```
-# Agent Interaction Log
-
-## User Prompt
-
-Record the user's original task prompt.
-
-## Steps Taken
-
-Summarize the significant steps performed by the LLM.
-
-## Reasoning Summary
-
-Explain the engineering rationale behind significant decisions.
-
-Do not include hidden chain-of-thought or private internal reasoning.
-Record concise, user-facing engineering justifications instead.
-
-## Changes Made
-
-List the important files created, modified, or deleted and explain why.
-
-## Verification
-
-Record the commands or checks actually performed and their outcomes.
-
-## Final Output and Conclusion
-
-Summarize the final result, including any unresolved issues.
-
-```
-Logs must accurately reflect what occured.
-
-Do not claim that commands, tests, or manual checks were performed when they were not.
-
-Do not include passwords, tokens, credentials, personal data, or other secrets in logs
-
----
-
-Follow the owner-approved "Minimal workflow records" rule above. Subagents return
-concise results in messages and do not write reporting Markdown. Coordinator keeps
-one current handoff and consolidates approvals/results into existing records after
-final review passes. Do not create per-task or per-agent logs. Old log deletion was explicitly authorised; do not include credentials, secrets, private reasoning or unrelated personal
-material. Product/setup documentation still reflects delivered behavior.
+Follow the owner-approved workflow above. Persist each interaction batch concisely
+in an existing feature record under logs/, with the current handoff in
+logs/ExecutionRecord.md. Preserve teammate records. Subagents report in messages;
+the coordinator records assignments, decisions, outcomes, defects and actual checks.
+No per-exchange files, activity logs in AGENTS.md, credentials or private reasoning.
 ## Handling Ambiguity
 When requirements are ambiguous:
 - inspect existing behaviour and documentation for evidence;
@@ -493,14 +403,112 @@ A task is complete only when all applicable conditions below are satisfied:
 - [ ] Checkstyle passes for modified Java code.
 - [ ] The project builds successfully.
 - [ ] User-facing changes are reflected in docs/UserGuide.md.
-- [ ] docs/DeveloperGuide.md is updated for the completed feature or change.
+- [ ] Developer documentation is updated; durable instruction changes go in AGENTS.md and activity records in logs/.
 - [ ] No credentials or sensitive information were introduced.
 - [ ] No temporary/debugging code remains.
-- [ ] The final diff has been inspected for unrelated changes.
-- [ ] The agent interaction has been recorded under logs/.
-- [ ] Any verification that could not be performed is clearly reported.
+- [ ]The final diff has been inspected for unrelated changes.
+- [ ] Final approvals and evidence are consolidated in existing records after reviews pass.
+- [ ]Any verification that could not be performed is clearly reported.
 
 ---
 
 ## Git Conventions
 All Git conventions when creating commits should follow from the [SE-EDU Git Conventions](https://se-education.org/guides/conventions/git.html)While it is not always necessary to have a body for the commit message, it must always have a subject.
+
+---
+
+## Final Response
+When completing a task, provide a concise summary containing:
+- what was changed;
+- important implementation or design decisions;
+- tests added or modified;
+- verification performed and its results;
+- documentation updated;
+- any limitations or unresolved issues.
+
+Never report a test, build, Checkstyle check, application run, or other verification as successful unless it was actually executed successfully.
+
+## Documentation
+
+Use plain language in human-facing documentation, with concrete examples where helpful. assignment
+
+For role-based work, follow the documentation ownership table in
+docs/agents/AgentSpecifications.md. Assign one writer per shared file at a time.
+The coordinator owns AGENTS.md, workflow documentation, decision records and feature
+SDD summaries; implementers own assigned user/design/setup guide updates.
+The specification reviewer independently checks final feature documentation.
+Each agent returns a concise result message; coordinator consolidates existing records for
+authorised consolidation. Feature Done requires the documented checks and evidence.
+
+Only the coordinator updates workflow/PLAN.md completion/progress fields from worker
+evidence and required gates. Workers report results without changing plan status.
+Keep completed entries immutable and create authorised follow-up work through planning.
+
+For role-based TDD, follow the common contract's per-criterion baseline evidence
+policy: meaningful red for missing/incorrect behaviour; independently reviewed
+implementation-path and passing-test evidence for already-satisfied behaviour.
+Never manufacture failure, count setup errors as red, or treat legacy Java tests
+as proof of target web behaviour. Preserve readiness and final acceptance gates.
+
+For workflow-validation evidence and its limits, read docs/agents/WorkflowExercise.md.
+When advancing a correction cycle, reconcile the current plan, handoff and SDD-summary
+counters in the same transition; preserve prior stage counts as historical evidence.
+A successful synthetic exercise does not establish migration-feature correctness.
+
+Keep current readiness/status summaries aligned with recorded exercise evidence.
+Distinguish native configuration loading, generic-dispatch observations and unexercised
+controls; preserve historical reports rather than rewriting prior outcomes.
+
+For the current assistant transition, read docs/CLAUDE-HANDOFF.md after these
+instructions; recheck repository state and preserve uncommitted inventory evidence.
+
+Before reading or writing GitHub issues/PRs, read docs/agents/issue-tracker.md
+for the MP3 target and execution gates. Before triaging, read
+docs/agents/triage-labels.md. Preserve concurrent feature-specification work.
+
+Tracking choice agreed 2026-10-17: use GitHub issues and labels; Projects is
+explicitly deferred. Follow docs/agents/issue-tracker.md for stage/flag updates.
+
+## Delivery workflow
+
+Follow the owner-approved workflow at the top of this file: one implementer owns
+code/tests/guides; final independent reviews follow the completed batch.
+
+## Retained Java PostgreSQL conversion
+
+Use PostgreSQL in every environment, separate migrateDatabase provisioning and
+read-only startup validation. Tests use disposable local PostgreSQL, never hosted
+data. Preserve directory-lock protection until separately approved integration.
+Current acceptance evidence lives under logs/ and in workflow/PLAN.md.
+
+## Correction policy
+
+Use one planned shared pass and the evidenced-error exception defined above.
+Historical experiment outcomes and completed correction counts remain unchanged.
+
+## Targeted context and handoff rule — owner approved 2026-10-19
+
+Coordinators and workers must read only context needed for the current assignment.
+Search headings/symbols first; read bounded relevant sections or line ranges. Use the
+current handoff plus selected task/acceptance criteria and relevant source/tests.
+Do not reread whole chats, long decision records, historical logs or unrelated specs.
+For new subagents use fork_turns=none and a compact self-contained brief containing
+scope, ownership, current decisions, exact document sections, checks and blockers.
+Reuse an active implementer instead of restarting it merely to remove old context.
+Mandatory instructions still apply: read applicable instructions once, then consult
+only changed/relevant sections. Expand reads only when needed to resolve a concrete
+ambiguity or dependency. Keep current handoffs short and link supporting evidence.
+Already injected app conversation context cannot be selectively removed by agents;
+this rule controls requested history, file/tool reads and future agent handoffs.
+
+
+## Owner model preference — 2026-10-19
+
+Use gpt-6.1-sol for the coordinator and gpt-6-luna for specialist subagents.
+Repository .codex/config.toml sets the main/default specialist preferences; the four
+.codex/agents/hotshop_*.toml roles explicitly select Luna. New specialist launches
+use no full-history inheritance. Do not claim an existing session changed model
+merely because configuration changed; the coordinator model is selected in the app.
+Let an already-running verification finish rather than restart it solely for model
+selection. Final specialist reviews use Luna. Settings persistence is verified by
+file inspection; a new live session's actual model requires runtime confirmation.

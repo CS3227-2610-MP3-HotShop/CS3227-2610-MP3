@@ -132,7 +132,7 @@ class LlmPreparationTest {
                 assertEquals("Bearer " + TOKEN, captured.authorization());
                 assertEquals("POST", captured.method());
                 assertEquals(new String(client.buildRequest(TITLE, Condition.GOOD), StandardCharsets.UTF_8),
-                        captured.body());
+                        captured.bodyText());
                 assertSafe(prepared.toString());
                 assertSafe(attempt.toString());
             }
@@ -400,7 +400,7 @@ class LlmPreparationTest {
     }
 
     private LlmConfiguration configuration(URI endpoint, String model) throws IOException {
-        Files.writeString(directory.resolve(".env"), "SOCLAAS_BASE_URL=" + endpoint + "\nSOCLAAS_API_KEY="
+        Files.writeString(directory.resolve(".env"), "SOCLAAS_DESCRIPTION_URL=" + endpoint + "\nSOCLAAS_API_KEY="
                 + TOKEN + "\nSOCLAAS_MODEL=" + model + "\n");
         LlmConfiguration configuration = LlmConfiguration.load(directory);
         assertTrue(configuration.isAvailable());

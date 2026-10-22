@@ -205,7 +205,7 @@ class DescriptionServiceTest extends PostgresTestSupport {
 
     @Test
     void generateDescription_realOversizeRequest_rejectsBeforeQuotaOrNetwork() throws Exception {
-        Files.writeString(directory.resolve(".env"), "SOCLAAS_BASE_URL=https://127.0.0.1:1/synthetic\n"
+        Files.writeString(directory.resolve(".env"), "SOCLAAS_DESCRIPTION_URL=https://127.0.0.1:1/synthetic\n"
                 + "SOCLAAS_API_KEY=synthetic-service-key\nSOCLAAS_MODEL=" + "m".repeat(8192) + "\n");
         LlmConfiguration configuration = LlmConfiguration.load(directory);
         assertTrue(configuration.isAvailable());

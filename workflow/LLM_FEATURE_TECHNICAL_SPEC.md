@@ -1,4 +1,10 @@
 # LLM Listing Description Technical Specification
+Current integration amendment (AI-MERGE-1,2026-10-22): when combined with buyer
+AI Search, seller generation uses SOCLAAS_DESCRIPTION_URL as its exact HTTPS
+endpoint; SOCLAAS_BASE_URL is reserved for the buyer API base. Shared API key/model
+names, seller request/response protocol, source precedence and safe unavailability
+remain unchanged. See TECHNICAL-SPEC.md AI-MERGE-1. This supersedes the original
+endpoint-setting name below for the integrated delivery, not historical evidence.
 
 Source: [LLM feature product specification](LLM_FEATURE_PRODUCT_SPEC.md), FR-001–006,
 NFR-001–007, TC-01–12 and UC-001–003. Date: 2026-10-19.

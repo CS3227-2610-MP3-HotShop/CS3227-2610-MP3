@@ -1,12 +1,15 @@
 package hotshop;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.sql.SQLException;
+import java.util.Map;
 
 import hotshop.llm.LlmConfiguration;
 import hotshop.ui.MarketplaceUi;
+import hotshop.llm.SocSearchClient;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -20,6 +23,7 @@ public class Main extends Application {
     private static final System.Logger LOGGER = System.getLogger(Main.class.getName());
     private ApplicationRuntime runtime;
     private Exception startupFailure;
+    private SocSearchClient aiSearchClient;
 
     /** Initialized once across JPro application instances; ordinary runtime opens remain offline. */
     private static final class ServerDescriptions {
@@ -72,8 +76,23 @@ public class Main extends Application {
             Platform.exit();
             return;
         }
-        new MarketplaceUi(stage, runtime);
+        aiSearchClient = createAiSearchClient(System.getenv());
+        new MarketplaceUi(stage, runtime, aiSearchClient == null ? null : aiSearchClient::propose);
         stage.show();
+    }
+
+    static SocSearchClient createAiSearchClient(Map<String, String> environment) {
+        String baseUrl = environment.get("SOCLAAS_BASE_URL");
+        String apiKey = environment.get("SOCLAAS_API_KEY");
+        String model = environment.get("SOCLAAS_MODEL");
+        if (baseUrl == null || apiKey == null || model == null) {
+            return null;
+        }
+        try {
+            return new SocSearchClient(URI.create(baseUrl), apiKey, model);
+        } catch (IllegalArgumentException failure) {
+            return null;
+        }
     }
 
     /**
@@ -81,6 +100,10 @@ public class Main extends Application {
      */
     @Override
     public void stop() {
+        if (aiSearchClient != null) {
+            aiSearchClient.close();
+            aiSearchClient = null;
+        }
         if (runtime != null) {
             runtime.closeAsync().whenComplete((ignored, failure) -> {
                 if (failure != null) {

@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -78,18 +77,8 @@ class MarketplaceUiTest extends PostgresTestSupport {
     private MarketplaceUi ui;
 
     @BeforeAll
-    static void startToolkit() throws Exception {
-        CountDownLatch started = new CountDownLatch(1);
-        Runnable initialize = () -> {
-            Platform.setImplicitExit(false);
-            started.countDown();
-        };
-        try {
-            Platform.startup(initialize);
-        } catch (IllegalStateException alreadyStarted) {
-            Platform.runLater(initialize);
-        }
-        assertTrue(started.await(15, TimeUnit.SECONDS));
+    static void startToolkit() throws InterruptedException {
+        JavaFxTestSupport.startToolkit();
     }
 
     @BeforeEach

@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 
 /** Immutable startup configuration for private generation settings. */
 public final class LlmConfiguration {
-    private static final String ENDPOINT_KEY = "SOCLAAS_BASE_URL";
+    private static final String ENDPOINT_KEY = "SOCLAAS_DESCRIPTION_URL";
     private static final String TOKEN_KEY = "SOCLAAS_API_KEY";
     private static final String MODEL_KEY = "SOCLAAS_MODEL";
     private static final Set<String> REQUIRED_KEYS = Set.of(ENDPOINT_KEY, TOKEN_KEY, MODEL_KEY);

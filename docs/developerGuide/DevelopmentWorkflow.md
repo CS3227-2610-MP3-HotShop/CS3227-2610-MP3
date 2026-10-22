@@ -4,6 +4,30 @@
   pageNav: 3
 ---
 
+## Agreed agent workflow and project evidence
+
+Use one implementer for code, tests and guides, then final independent specification/
+coverage and security reviews. Plan one shared correction pass. Further passes may
+fix confirmed errors within approved scope without another approval round; record
+the defect evidence, scoped change, pass count and affected checks. Changes to scope,
+requirements, live data or deployment still need the appropriate owner decision.
+Historical experiments and correction counts remain unchanged.
+
+Keep targeted context and compact briefs without full conversation inheritance.
+Prefer Sol for coordination and Luna for specialists. Persist each interaction batch
+concisely as work progresses: request/approval, agent assignment, decision, result,
+findings, corrections and actual verification. Subagents return messages; the
+coordinator appends one feature record rather than generating per-task files.
+Preserve existing teammate logs. All records and handoffs live in `logs/`; the current
+shared handoff is `logs/ExecutionRecord.md`. AGENTS.md contains durable guidance only.
+
+For school assessment, link specs and acceptance tests to implementation; record
+actual specialized-agent contributions/reviews, AI security controls/evaluations,
+SoC use and resource handling, each team member's contribution, quantified MP2 reuse,
+and separately managed deployment automation. Do not infer evidence from agent
+configuration files, green mocks or plans alone. This agreement supersedes older
+workflow/logging/correction wording below; retain historical outcomes as provenance.
+
 ## Setup
 
 Use JDK 25 and the included Gradle 9.1.0 Wrapper. Set JAVA_HOME to your JDK if
@@ -201,41 +225,23 @@ On macOS/Linux, use `ln -s ../.agents/skills .claude/skills`. The link is
 excluded locally rather than committed because the repository does not enable
 Git symlinks. Restart Claude Code if the skills do not appear.
 
-## Project Deployment Process
+## JPro and Docker packaging
 
-This application uses [JPro](https://www.jpro.one) to run existing Java and JavaFX files in a browser.
+Run `.\gradlew.bat jproRun` (or `./gradlew jproRun` on macOS/Linux) for local
+JPro development. It uses the host's JDK and JavaFX dependencies. To create the
+JPro ZIP directly, run `jproRelease` with the wrapper.
 
-For local manual testing purposes, run the following command to start JPro on your local machine:
-```
-./gradlew jproRun
-```
-The app should start at `localhost:8080`
+The repository Dockerfile builds a Linux JPro ZIP from source in a JDK 25 image,
+then copies that artifact into a JRE 25 runtime image with the Linux libraries
+required by JavaFX/JPro. Build it from a clean checkout with Docker:
 
-Once everything is verified to be working properly, create the JPro distribution `.zip` file with the following command:
-```
-./gradlew jproRelease
-```
-The resultant `.zip` file will be located at `/build/distributions/HotShop-jpro.zip`
-
-**NOTE:** Deployment onto JPro requires that the application's entry point extend `javafx.application.Application`, if you wish to run the app without JPro locally, change the mainClass of your `build.gradle` to `hotshop.Launcher` as such:
-```build.gradle
-application {
-    mainClass = 'hotshop.Launcher'
-    applicationDefaultJvmArgs = ['--enable-native-access=ALL-UNNAMED']
-}
+```powershell
+docker build -t hotshop:local .
 ```
 
-For deployment onto [Render](https://render.com), a Docker Image is required. Follow the steps to create the image:
-
-1. Install [Docker Desktop](https://docs.docker.com/desktop/) for your operating system.
-2. Run the following command in the project root directory:
-```
-docker build -t <image-name> .
-```
-3. Once the build has completed, test that it works by using the following command:
-```
-docker run -p 8080:8080 <image-name>
-```
+The image build does not provision PostgreSQL or establish hosted multi-user
+readiness. Configure the runtime database and private provider settings outside
+the image, and provision the database separately before starting the application.
 
 ### Development verification
 

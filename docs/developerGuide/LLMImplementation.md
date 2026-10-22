@@ -64,7 +64,7 @@ the hosting dashboard's private environment settings:
 
 | Name | Value |
 | --- | --- |
-| `SOCLAAS_BASE_URL` | The complete HTTPS endpoint, including its required path/query. |
+| `SOCLAAS_DESCRIPTION_URL` | The seller description service's complete HTTPS endpoint, including its required path/query. |
 | `SOCLAAS_API_KEY` | The private bearer token. |
 | `SOCLAAS_MODEL` | The provider's model identifier. |
 
@@ -93,13 +93,27 @@ The following is a synthetic local `.env` example, not a live provider configura
 Use a temporary directory for experiments; do not overwrite an operator's `.env`.
 
 ```dotenv
-SOCLAAS_BASE_URL='https://provider.invalid/example/responses'
+SOCLAAS_DESCRIPTION_URL='https://provider.invalid/example/responses'
 SOCLAAS_API_KEY='synthetic-test-token'
 SOCLAAS_MODEL='synthetic-test-model'
 ```
 
-`SOCLAAS_BASE_URL` is the complete, exact HTTPS endpoint; no path is appended.
-It must be absolute with a host and no user-info or fragment. Path and query are
+Seller description generation uses `SOCLAAS_DESCRIPTION_URL` as the complete,
+exact HTTPS endpoint; no path is appended. Buyer AI Search separately uses
+`SOCLAAS_BASE_URL` as its API base, normally ending in `/v1`, and appends
+`/chat/completions`. The two features share only the API key and model settings.
+Missing or invalid seller endpoint settings disable seller generation without
+disabling buyer AI Search or manual search.
+
+Buyer AI Search does not read `SOCLAAS_DESCRIPTION_URL`. Supply its separate
+`SOCLAAS_BASE_URL` process setting as the `/v1` API base; buyer startup does not
+automatically read `.env` or `.env.local`. For example:
+
+```text
+SOCLAAS_BASE_URL=https://provider.invalid/v1
+```
+
+The seller URL must be absolute with a host and no user-info or fragment. Path and query are
 preserved, and internal hosts are allowed. The model must be nonblank. The token
 must be nonempty, contain no whitespace or control characters, and fit Java HTTP
 header characters through U+00FF.

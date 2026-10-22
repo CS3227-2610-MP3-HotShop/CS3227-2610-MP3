@@ -135,7 +135,7 @@ class LiveLlmAdapterTest {
                 }
                 assertManifest(evidence, 1, 1);
                 assertEquals(1, server.requestCount());
-                assertTrue(server.takeRequest().body().contains(item.title()));
+                assertTrue(server.takeRequest().bodyText().contains(item.title()));
             }
             assertTrue(cleaned.get() != null);
             assertFalse(Files.exists(cleaned.get()));
@@ -260,7 +260,7 @@ class LiveLlmAdapterTest {
     }
 
     private Path configure(ControlledHttpsServer server) throws IOException {
-        Files.writeString(directory.resolve(".env"), "SOCLAAS_BASE_URL=" + server.uri("/responses")
+        Files.writeString(directory.resolve(".env"), "SOCLAAS_DESCRIPTION_URL=" + server.uri("/responses")
                 + "\nSOCLAAS_API_KEY=synthetic-only-token\nSOCLAAS_MODEL=synthetic-only-model\n");
         return Files.createDirectory(directory.resolve("evidence"));
     }

@@ -6,6 +6,8 @@
 
 # HotShop Developer Guide
 
+See [Agreed agent workflow and project evidence](developerGuide/DevelopmentWorkflow.html#agreed-agent-workflow-and-project-evidence) for ownership, correction and persistent interaction-record rules.
+
 ---
 
 ## Introduction

@@ -4,10 +4,13 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
 import hotshop.ApplicationRuntime;
 import hotshop.model.User;
 import hotshop.service.PublicProfile;
+import hotshop.llm.SocSearchClient;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
@@ -28,6 +31,7 @@ public final class MarketplaceUi {
     static final int MINIMUM_HEIGHT = 640;
     final ApplicationRuntime runtime;
     final Stage stage;
+    final Function<String, CompletableFuture<SocSearchClient.Result>> aiSearch;
     final SearchState searchState = new SearchState();
     final ListingPages listings;
     final OfferPages offers;
@@ -54,8 +58,15 @@ public final class MarketplaceUi {
      * @param runtime the initialized application services and resources
      */
     public MarketplaceUi(Stage stage, ApplicationRuntime runtime) {
+        this(stage, runtime, null);
+    }
+
+    /** Installs the marketplace with an optional borrowed AI search provider for SearchPage. */
+    public MarketplaceUi(Stage stage, ApplicationRuntime runtime,
+            Function<String, CompletableFuture<SocSearchClient.Result>> aiSearch) {
         this.stage = stage;
         this.runtime = runtime;
+        this.aiSearch = aiSearch;
         accounts = new AccountPages(this);
         listings = new ListingPages(this);
         offers = new OfferPages(this);

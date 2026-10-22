@@ -67,7 +67,7 @@ class LlmTestInfrastructureTest {
             assertEquals("/exact?item=1", captured.uri().toString());
             assertEquals("POST", captured.method());
             assertEquals("Bearer synthetic-token", captured.authorization());
-            assertEquals("synthetic café", captured.body());
+            assertEquals("synthetic café", captured.bodyText());
         }
     }
 

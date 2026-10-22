@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 class LlmConfigurationStartupTest {
-    private static final String ENDPOINT_KEY = "SOCLAAS_BASE_URL";
+    private static final String ENDPOINT_KEY = "SOCLAAS_DESCRIPTION_URL";
     private static final String TOKEN_KEY = "SOCLAAS_API_KEY";
     private static final String MODEL_KEY = "SOCLAAS_MODEL";
     private static final String ENDPOINT = "https://startup.invalid/exact?route=a=b";
@@ -41,6 +41,22 @@ class LlmConfigurationStartupTest {
     void loadFromEnvironment_partialProcessValues_doesNotFallBackToFile() throws Exception {
         writeSettings();
         runProbe(Map.of(TOKEN_KEY, TOKEN), "environment", false);
+    }
+
+    @Test
+    void loadFromEnvironment_buyerApiBaseWithoutDescriptionEndpoint_keepsGenerationUnavailable() {
+        LlmConfiguration configuration = LlmConfiguration.loadFromEnvironment(directory,
+                () -> Map.of("SOCLAAS_BASE_URL", "https://buyer.invalid/v1", TOKEN_KEY, TOKEN, MODEL_KEY, MODEL));
+        assertFalse(configuration.isAvailable());
+    }
+
+    @Test
+    void loadFromEnvironment_completeDescriptionSettingsWithBuyerBase_keepsEndpointContractsSeparate() {
+        LlmConfiguration configuration = LlmConfiguration.loadFromEnvironment(directory,
+                () -> Map.of("SOCLAAS_BASE_URL", "https://buyer.invalid/v1", ENDPOINT_KEY, ENDPOINT,
+                        TOKEN_KEY, TOKEN, MODEL_KEY, MODEL));
+        assertTrue(configuration.isAvailable());
+        assertEquals(ENDPOINT, configuration.endpoint().toString());
     }
 
     @Test

@@ -30,7 +30,7 @@ import hotshop.service.ListingDraft;
 import hotshop.support.PostgresTestSupport;
 
 class LlmConfigurationTest extends PostgresTestSupport {
-    private static final String ENDPOINT_KEY = "SOCLAAS_BASE_URL";
+    private static final String ENDPOINT_KEY = "SOCLAAS_DESCRIPTION_URL";
     private static final String TOKEN_KEY = "SOCLAAS_API_KEY";
     private static final String MODEL_KEY = "SOCLAAS_MODEL";
     private static final String ENDPOINT = "https://gateway.invalid/custom/v1?route=a=b&mode=private";

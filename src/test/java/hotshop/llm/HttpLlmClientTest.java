@@ -72,8 +72,8 @@ class HttpLlmClientTest {
                 assertEquals("application/json", header(captured, "Accept"));
                 assertEquals("identity", header(captured, "Accept-Encoding"));
                 assertEquals(new String(client.buildRequest("Chair", Condition.GOOD), StandardCharsets.UTF_8),
-                        captured.body());
-                assertFalse(captured.body().contains(TOKEN));
+                        captured.bodyText());
+                assertFalse(captured.bodyText().contains(TOKEN));
                 assertEquals(1, server.requestCount());
             }
         }
@@ -507,7 +507,7 @@ class HttpLlmClientTest {
     }
 
     private LlmConfiguration configuration(URI endpoint) throws Exception {
-        Files.writeString(directory.resolve(".env"), "SOCLAAS_BASE_URL=" + endpoint + "\n"
+        Files.writeString(directory.resolve(".env"), "SOCLAAS_DESCRIPTION_URL=" + endpoint + "\n"
                 + "SOCLAAS_API_KEY=" + TOKEN + "\nSOCLAAS_MODEL=synthetic-model\n");
         LlmConfiguration configuration = LlmConfiguration.load(directory);
         assertTrue(configuration.isAvailable());

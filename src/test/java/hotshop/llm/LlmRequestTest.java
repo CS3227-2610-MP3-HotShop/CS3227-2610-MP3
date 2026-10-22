@@ -194,7 +194,7 @@ class LlmRequestTest {
     }
 
     private LlmConfiguration configuration(String model) throws Exception {
-        Files.writeString(directory.resolve(".env"), "SOCLAAS_BASE_URL=" + ENDPOINT + "\n"
+        Files.writeString(directory.resolve(".env"), "SOCLAAS_DESCRIPTION_URL=" + ENDPOINT + "\n"
                 + "SOCLAAS_API_KEY=" + TOKEN + "\n"
                 + "SOCLAAS_MODEL='" + model + "'\n", StandardCharsets.UTF_8);
         LlmConfiguration configuration = LlmConfiguration.load(directory);

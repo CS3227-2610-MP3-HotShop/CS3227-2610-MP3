@@ -229,13 +229,13 @@ class LlmSecurityIntegrationTest extends PostgresTestSupport {
         assertEquals("POST", captured.method());
         assertEquals("/trusted/exact?route=synthetic", captured.uri().toString());
         assertEquals("Bearer " + TOKEN, captured.authorization());
-        assertSafe(captured.body());
+        assertSafe(captured.bodyText());
         captured.headers().forEach((name, values) -> {
             if (!name.equalsIgnoreCase("Authorization")) {
                 assertSafe(values.toString());
             }
         });
-        JsonObject request = JsonParser.parseString(captured.body()).getAsJsonObject();
+        JsonObject request = JsonParser.parseString(captured.bodyText()).getAsJsonObject();
         assertEquals(Set.of("model", "input"), request.keySet());
         assertEquals("synthetic-approved-model", request.get("model").getAsString());
         String input = request.get("input").getAsString();
@@ -294,7 +294,7 @@ class LlmSecurityIntegrationTest extends PostgresTestSupport {
         private final ApplicationRuntime runtime;
 
         Fixture(ControlledHttpsServer server) throws Exception {
-            Files.writeString(directory.resolve(".env"), "SOCLAAS_BASE_URL="
+            Files.writeString(directory.resolve(".env"), "SOCLAAS_DESCRIPTION_URL="
                     + server.uri("/trusted/exact?route=synthetic") + "\nSOCLAAS_API_KEY=" + TOKEN
                     + "\nSOCLAAS_MODEL=synthetic-approved-model\n");
             Files.writeString(directory.resolve("private-context.txt"), FILE_CANARY);
