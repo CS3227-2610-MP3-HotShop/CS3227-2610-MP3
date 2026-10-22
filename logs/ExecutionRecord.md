@@ -132,3 +132,12 @@ Focused documentation re-review passed after the stale handoff/workflow referenc
 were corrected. The reviewer inspected the changed policy sections without rerunning
 tests. No remaining consistency finding in the reviewed scope. Publication is
 authorized to PR11 and the existing PR18 head, with no force push or merge.
+
+## Publication correction — 2026-10-22
+
+Owner clarified that workflow reconciliation belongs on their branch after the
+teammate's final PR merges, not directly on the teammate branch. Reverted the
+unintended PR18 commit1a5f3a4 with704378c, without rewriting history; git diff
+cfec7c0a HEAD confirmed the original file tree restored. Restored PR18 description.
+Workflow changes remain only on PR11; integrate/rebase them after PR18 merges.
+No application tests were rerun for this revert/record-only correction.
