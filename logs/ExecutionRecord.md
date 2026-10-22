@@ -8,7 +8,8 @@ Same-process directory leases preserve separate browser identities and physical
 locking. Production buyer/seller share a90/minute process ceiling; seller account
 quotas remain. Windows281 affected cases/styles, final96/styles and packaging pass.
 Both independent Luna final source/coverage and security reviews accept the changed
-candidate; reviewers did not run tests. Linux focused/full CI pending publication.
+candidate; reviewers did not run tests. Linux focused checks pass. Full CI39835302159
+passes on e182828 (job12m31s): tests/styles/check/build/shadowJar and artifact upload.
 Owner explicitly authorizes continued confirmed CI fixes overnight, no merge/deploy.
 Private buckets/bindings verified active; rotated key confirmed without disclosure.
 Real browser checks await host-browser approval after automatic review rejection;
@@ -528,3 +529,5 @@ checks remain unverified and do not block isolated unit/CI correction work.
 Final readiness candidate: implementer reports281 affected Windows cases and both styles green; after final cleanup hardening96 cases/styles green. Wrapper check/build/shadowJar with tests excluded passes. Independent Luna specification/coverage and security reviewers accept the changed working tree above0f363d9, with no actionable findings; no duplicate tests run by reviewers. Linux Docker JPro release build passes; focused Linux tests are running. Root developer/user guides and durable agent pointers updated without activity logs in AGENTS. Owner's latest instruction explicitly authorizes continued confirmed CI fixes until green; merge/deployment remain untouched.
 
 Linux focused verification passed: Docker build-stage wrapper test selecting HttpLlmClientTest,LlmPreparationTest,LlmRequestBudgetTest,AiClientConfigurationCoexistenceTest, JavaFX linux, exit0 (23s). No credentials or hosted services supplied. Publish reviewed source and monitor full GitHub CI next.
+
+CI acceptance: published e182828 passed full Linux GitHub run39835302159, job12m31s and Gradle12m12s. Test, both Checkstyles, check/build/shadowJar and artifact upload all pass. PR12 check reports pass; working tree was clean before this evidence-only consolidation. PR19 is already merged and PR12 remains mergeable. No further source fix needed. Final result is consolidated in the PR description; remaining real-browser/Render gates are unchanged. This records the final human-visible batch; no manual Java test rerun for these documentation-only updates.
