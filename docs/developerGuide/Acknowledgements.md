@@ -10,20 +10,19 @@
 
 - [OpenAI Codex](https://openai.com/codex/): AI assistance with project scaffolding,
   implementation, tests, documentation, and review. The task records in
-  [logs](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/tree/main/logs)
+  [logs](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/tree/main/logs)
   describe the scope and verification of individual interactions;
   generated output was adapted to this project's requirements.
-- [`setup-javafx-project`](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/.agents/skills/setup-javafx-project/SKILL.md):
-  repository-local skill used to guide the initial JavaFX/Gradle scaffold, build
-  configuration, CI, and guide structure, as recorded in the
-  [scaffold log](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/blob/main/logs/2026-09-16-create-hotshop-javafx-scaffold.md). This link is
-  the local source; no external author or upstream source is recorded here.
+- `setup-javafx-project`: the original repository-local skill used to guide the
+  initial JavaFX/Gradle scaffold, build configuration, CI, and guide structure.
+  The skill and its original scaffold log are not present in the MP3 checkout;
+  no external author or upstream source is recorded here.
 - [Claude Code](https://claude.com/claude-code) (Anthropic): AI assistance for
   the listing, offer, sale, meetup, and chat services and screens, including
   design interviews, implementation, tests, reviews, merge-conflict
   resolution, these guides, and the PlantUML diagrams in `docs/diagrams/`.
   Each session is recorded in the repository's
-  [logs](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/tree/main/logs);
+  [logs](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/tree/main/logs);
   all output was reviewed and adapted to the project's requirements.
 
 ### Frameworks and engineering resources
@@ -57,7 +56,11 @@
   documentation tool only and is not part of the build.
 - [Gradle](https://docs.gradle.org/9.1.0/release-notes.html): wrapper and Java 25 build support.
 - [Shadow](https://gradleup.com/shadow/): executable dependency bundling.
-- [Xerial SQLite JDBC](https://github.com/xerial/sqlite-jdbc): bundled SQLite driver.
+- [PostgreSQL JDBC](https://jdbc.postgresql.org/) (42.7.14): PostgreSQL database driver.
+- [Testcontainers for Java](https://java.testcontainers.org/) (2.0.5): disposable
+  PostgreSQL instances for database-backed tests.
+- [Gson](https://github.com/google/gson) (2.14.0): streaming `JsonReader` and
+  `JsonWriter` for bounded, strict LLM request/response JSON handling.
 - [OWASP Password Storage](https://cheatsheetseries.owasp.org/cheatsheets/Password_Storage_Cheat_Sheet.html)
   and [Java security providers](https://docs.oracle.com/en/java/javase/25/security/oracle-providers.html):
   password-storage implementation guidance. The user-selected composition policy
@@ -65,3 +68,15 @@
 - [JPro](https://www.jpro.one): run existing Java and JavaFX files on a browser
 - [Docker Desktop](https://www.docker.com): containerization of application to be hosted
 - [Render](https://render.com): application hosting
+
+### LLM design and security references
+
+The LLM specification's distinction between prompt instructions and enforced
+capability boundaries is informed by
+[OWASP prompt injection guidance](https://genai.owasp.org/llmrisk/llm01-prompt-injection/)
+and [system prompt leakage guidance](https://genai.owasp.org/llmrisk/llm072025-system-prompt-leakage/).
+The technical design also consults the official
+[Java HTTP APIs](https://docs.oracle.com/en/java/javase/25/docs/api/java.net.http/java/net/http/HttpClient.html),
+[Gson project](https://github.com/google/gson),
+[Docker secret guidance](https://docs.docker.com/build/building/secrets/) and
+[Render secret-file documentation](https://render.com/docs/configure-environment-variables).

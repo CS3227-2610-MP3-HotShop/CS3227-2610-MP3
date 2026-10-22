@@ -83,7 +83,7 @@ class ApplicationRuntimeTest extends PostgresTestSupport {
         DatabaseConfig unavailable = new DatabaseConfig("jdbc:postgresql://127.0.0.1:1/unreachable",
                 "synthetic_user", "synthetic_password");
         SQLException failure = assertThrows(SQLException.class,
-                () -> ApplicationRuntime.open(directory, Clock.systemUTC(), unavailable));
+                () -> openTestRuntime(directory, Clock.systemUTC(), unavailable));
         org.junit.jupiter.api.Assertions.assertFalse(failure.toString().contains("synthetic_user"));
         org.junit.jupiter.api.Assertions.assertNull(failure.getCause());
         try (ApplicationRuntime runtime = openTestRuntime(directory)) {

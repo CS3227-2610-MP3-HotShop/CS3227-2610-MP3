@@ -236,18 +236,11 @@ Do not:
 
 When an existing user-facing feature changes, update its existing User Guide documentation as part of the same task.
 
-### Feature completion record
-
-Before declaring a feature Done, update docs/UserGuide.md, docs/DeveloperGuide.md, AGENTS.md, and its feature-level SDD interaction summary. Follow docs/agents/SDDInteractionSummary.md and link supporting task logs. Intermediate task completion does not waive parent-feature documentation gates.
-
 ### Developer Documentation
 
-For every completed feature or change, update both `AGENTS.md` and
-`docs/DeveloperGuide.md` as part of the same task, before reporting completion.
+For every completed feature or change, update `docs/DeveloperGuide.md`, before reporting completion.
 This includes changes to agent configuration, workflow, and documentation.
 
-- In `AGENTS.md`, maintain the relevant durable instructions, constraints, or a
-  concise pointer to the updated developer documentation for future agents.
 - In the Developer Guide, describe the resulting behaviour, design, setup, or
   workflow and relevant verification or limitations. For a small change, use a
   brief note in the relevant section.
@@ -379,7 +372,10 @@ Do not ask the user to choose agents unless the
 delegation decision requires a significant
 architectural or product decision.
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> 6ce4ca760e29e31543cc8b23ce80003f252d9f40
 ---
 
 ## Build and Verification
@@ -419,9 +415,6 @@ Do not disable tests, Checkstyle, or other verification mechanisms merely to mak
 
 ## Logging Agent Interactions
 
-After every agreed decision, update docs/InteractionRecord.md before ending the turn, including discussion-only turns. Record the decision, reason when known, affected scope, and any superseded decision. Maintain a current handoff covering workspace/branch, completed work, unverified work, blockers, and next authorised step. Distinguish proposals from approvals and planned checks from executed checks. Keep personal decisions in their separate external record.
-
-Maintain [docs/InteractionRecord.md](docs/InteractionRecord.md) for project decisions and outcomes. Keep personal conversation records and unrelated material outside the repository. For mixed requests, record the project-relevant task summary here and preserve the original conversation separately; this overrides the verbatim-prompt logging requirement for such requests. Preserve the separate project task logs required below.
 At the end of every workflow task performed by the LLM, create a new Markdown file under:
 ```
 logs/
@@ -504,7 +497,7 @@ A task is complete only when all applicable conditions below are satisfied:
 - [ ] Checkstyle passes for modified Java code.
 - [ ] The project builds successfully.
 - [ ] User-facing changes are reflected in docs/UserGuide.md.
-- [ ] AGENTS.md and docs/DeveloperGuide.md are updated for the completed feature or change.
+- [ ] docs/DeveloperGuide.md is updated for the completed feature or change.
 - [ ] No credentials or sensitive information were introduced.
 - [ ] No temporary/debugging code remains.
 - [ ] The final diff has been inspected for unrelated changes.
