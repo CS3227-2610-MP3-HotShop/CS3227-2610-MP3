@@ -1404,3 +1404,49 @@ Authority: Jonat approved one grouped correction pass for six CI failures in PR1
 One Luna implementer owns relevant UI tests/setup/helpers and only directly necessary SearchPage fixes if reproduction proves an approved-criterion implementation defect; related existing guides allowed. Correct three existing-preview blank-query fixtures by supplying valid input while preserving assertions/empty-input checks. Reproduce safe-feedback and navigation lookup failures, correct their demonstrated cause without weakening checks. Make JavaFX toolkit setup compatible across test classes. Preserve original benchmark worktrees/commits and measured results. Coordinator owns shared records/AGENTS/PLAN. No new task logs, hosted data, live SoC, deployment, storage integration or unrelated refactors.
 
 Acceptance: meaningful reproduced evidence; focused UI/config/client/validator checks and both styles pass; full wrapper test/check/build/shadowJar suite passes; final independent specification/security reviews find no unresolved in-scope failure. Publish fix to existing PR11 and verify GitHub CI. If additional scope or defects remain after this shared pass, report rather than loop. Completed: Yes for grouped Linux CI correction, 2026-10-21. Stable5f0c3ea published; full GitHub Linux CI39568040457 passes test/bothstyles/check/build/shadowJar in8m33s. Actual local baseline reproduced three preview failures and repeated-toolkit initialization; feedback/navigation failures only reproduced in original Linux CI, corrected with observable async waits and valid request preconditions. All valid assertions retained or strengthened. Local combinedUI84 and finalAI21/styles pass. Final independent Luna specification and security reviews clear by source inspection using supplied checks. Shared correction1/1 consumed. Supplementary full Windows run still active at review; no success claimed until it finishes. Original measured snapshots/CSV unchanged. No production changes, hosted/live calls or deployment readiness claim.
+
+## AI-MERGE-1 — integrate current master into buyer AI Search
+
+Authority: Jonat requested resolving PR11 merge conflicts on2026-10-22. Baselines:
+PR11 de7f765; master6ce4ca7 (seller PR18 merged). This is new integration work;
+completed feature/benchmark entries and results remain immutable.
+
+Sources: buyer AI-T2-C2 / AI-T3 and AI-UI-01..06; seller LLM feature FR/NFR/TC
+contracts; current owner-approved workflow. Preserve PostgreSQL, both AI features,
+manual fallback, seller session/quota ownership and buyer preview/apply behavior.
+
+Ownership: one Luna implementer owns production code, tests/fixtures and affected
+user/setup topic guides. Coordinator owns AGENTS.md, root DeveloperGuide landing,
+PLAN, technical integration notes and logs/ExecutionRecord.md. No overlapping edits.
+
+Resolve Main.java, ControlledHttpsServer, MarketplaceUiTest and HTTPS-FIXTURES.md
+conflicts and inspect automatically merged runtime/UI/build paths. Preserve valid
+assertions from both arms, test-fixture TLS verification and one Gson dependency.
+Preserve both clients by default; full transport deduplication is separate unless
+owner selects it. Resolve/document endpoint configuration coexistence deliberately;
+never read keys, modify private env files or make live provider/database calls.
+Keep the seller's guide organization and the owner's agreed workflow on our branch.
+
+Acceptance: no conflict markers/unmerged entries; focused buyer/seller/session/UI
+and shared-fixture checks plus styles pass; aggregate build/packaging checks pass;
+full final-candidate Linux CI passes; final specification/security reviews have no
+unresolved blocker. Publish to PR11 and retarget to master only after integration
+is concrete. No PR merge, deployment, Storage integration or benchmark rewrites.
+Use one planned correction pass plus evidenced in-scope error fixes under current
+policy. Record interaction batches and actual checks concisely in the existing log.
+Completed: No. Initial integration, no post-submission correction pass yet.
+
+AI-MERGE-1 checkpoint: testing stopped at owner request. All conflict index entries
+resolved; merge remains uncommitted. New URL-isolation regressions are not compiled
+or verified. Resume from those checks only when owner authorizes testing. See
+logs/ExecutionRecord.md; Completed remains No.
+
+AI-MERGE-1 resumption 2026-10-23: owner authorized verification again. Existing implementer resumes preserved changes and new URL-isolation regressions; prior testing pause lifted. Acceptance remains incomplete pending actual checks and final reviews.
+
+AI-MERGE-1 paused again 2026-10-23 at owner request. Confirmed integration test worker stopped; no further checks authorized until resumption. Preserve current work and obtain implementer checkpoint. Completed remains No.
+
+AI-MERGE-1 resumption after second pause 2026-10-23: owner authorizes tests again; implementer resumes preserved integration candidate. Completed remains No pending checks and reviews.
+
+AI-MERGE-1 final review: security no confirmed blocker; specification F-1 requires joint synthetic-dispatch URL coexistence coverage. Shared correction pass1 assigned to existing implementer for focused regression, affected checks and re-review under current owner policy. Full Linux CI still pending; Completed remains No.
+
+AI-MERGE-1 local verification complete 2026-10-23:835 distinct targeted tests pass (646+188+1), zero failures/errors/skips; both styles and check/build/shadowJar packaging pass. Correction pass1 test-only F-1 resolved by independent focused re-review; security no confirmed introduced finding. Full final-candidate Linux CI remains pending. Merge and changes preserved uncommitted; Completed remains No until all acceptance gates pass.

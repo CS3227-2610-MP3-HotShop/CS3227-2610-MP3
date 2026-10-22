@@ -232,6 +232,8 @@ Any significant new dependency should be mentioned in the final task summary.
 
 ## Documentation
 
+Use plain language in human-facing documentation, with concrete examples where helpful.
+
 ### User Documentation
 All user-facing features added to this application must be documented in:
 ```
@@ -426,7 +428,9 @@ When completing a task, provide a concise summary containing:
 
 Never report a test, build, Checkstyle check, application run, or other verification as successful unless it was actually executed successfully.
 
-## Documentation assignment
+## Documentation
+
+Use plain language in human-facing documentation, with concrete examples where helpful. assignment
 
 For role-based work, follow the documentation ownership table in
 docs/agents/AgentSpecifications.md. Assign one writer per shared file at a time.

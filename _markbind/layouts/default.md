@@ -7,7 +7,7 @@
     <a slot="brand" href="{{baseUrl}}/index.html" title="Home" class="navbar-brand">HotShop</a>
     <li><a highlight-on="sibling-or-child" href="{{baseUrl}}/docs/UserGuide.html" class="nav-link">User Guide</a></li>
     <li><a highlight-on="sibling-or-child" href="{{baseUrl}}/docs/DeveloperGuide.html" class="nav-link">Developer Guide</a></li>
-    <li><a href="https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2" target="_blank" class="nav-link"><md>:fab-github:</md></a>
+    <li><a href="https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3" target="_blank" class="nav-link"><md>:fab-github:</md></a>
     </li>
     <li slot="right">
       <form class="navbar-form">
@@ -36,8 +36,9 @@
   * [Architecture Overview]({{ baseUrl }}/docs/developerGuide/ArchitectureOverview.html)
   * [JavaFX UI]({{ baseUrl }}/docs/developerGuide/JavaFXUI.html)
   * [Service Worker]({{ baseUrl }}/docs/developerGuide/ServiceWorker.html)
-  * [Account Service and Local Persistence]({{ baseUrl }}/docs/developerGuide/AccountServiceAndLocalPersistence.html)
+  * [Account Service and PostgreSQL Persistence]({{ baseUrl }}/docs/developerGuide/AccountServiceAndLocalPersistence.html)
   * [Marketplace Services]({{ baseUrl }}/docs/developerGuide/MarketplaceServices.html)
+  * [LLM Implementation]({{ baseUrl }}/docs/developerGuide/LLMImplementation.html)
   * [Listing Service]({{ baseUrl }}/docs/developerGuide/ListingService.html)
   * [Offer Service]({{ baseUrl }}/docs/developerGuide/OfferService.html)
   * [Chat Service]({{ baseUrl }}/docs/developerGuide/ChatService.html)

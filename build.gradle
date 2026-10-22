@@ -55,7 +55,26 @@ jpro {
 }
 
 tasks.named('test') {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        excludeTags 'llm-live'
+    }
+    jvmArgs '--enable-native-access=ALL-UNNAMED'
+}
+
+tasks.register('llmLiveTest', Test) {
+    description = 'Runs explicitly authorised live LLM evaluations; never part of check or build.'
+    group = 'verification'
+    testClassesDirs = sourceSets.test.output.classesDirs
+    classpath = sourceSets.test.runtimeClasspath
+    useJUnitPlatform {
+        includeTags 'llm-live'
+    }
+    ['runId', 'evidenceDir'].each { key ->
+        def value = providers.gradleProperty("llmLive${key.capitalize()}").orNull
+        if (value != null) {
+            systemProperty "hotshop.llm.live.${key}", value
+        }
+    }
     jvmArgs '--enable-native-access=ALL-UNNAMED'
 }
 

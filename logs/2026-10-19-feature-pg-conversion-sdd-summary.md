@@ -53,3 +53,48 @@ unverified. Supabase Storage and JPro multi-browser/shared-image lifecycle are
 separate work. Local tests used disposable PostgreSQL17, never hosted/demo data.
 Owner authorised commit/push to postgres-migration on2026-10-20; publication in progress. No deployment. web/.env.local stays local, ignored and unread.
 Next work requires a separately scoped hosted/storage/JPro integration task.
+
+## LLM test merge follow-up — 2026-10-21
+
+Owner approved retaining both three-argument runtime overloads with one combined
+four-argument implementation, replacing SQLite seed copies with a shared PostgreSQL
+account, and migrating all test callers to openTestRuntime. These changes preserve
+clocks, description owners, quotas and synthetic connection-failure configuration.
+The live adapter owns a disposable PostgreSQL fixture; no test caller reads hosted
+database settings. Storage assertions include public rows and sequence state.
+Final read-only test review found no remaining issue. compileTestJava and both
+Checkstyle tasks pass. test/style and check/build commands failed with Docker
+unavailable (684 executed, 60 failed); assembly completed, but acceptance remains
+unverified. No live LLM evaluation, hosted access, commit or push performed.
+
+Owner subsequently requested removal of work-history-only material from the
+Developer Guide. Historical check/review outcomes, exercise and obsolete handoff
+sections, task-specific approvals/budgets and machine-specific certificate-copy
+history were removed; reusable setup and standing instructions remain. The
+documentation diff was reviewed; existing merge markers remain for later resolution.
+
+Owner then requested removing coding-agent instructions from the Developer Guide.
+Skill procedures, agent role/record duties and agent-specific completion/review
+sections were removed. Technical setup, testing, contributor issue/PR guidance
+and acknowledgements remain. Scoped diff whitespace check passed; no tests rerun
+for this documentation-only change.
+
+Owner requested removing the main guide's duplicated JPro packaging, targeted
+verification, issue/PR and tracker sections. Those sections now live only in the
+existing Development Workflow topic page, linked from the main guide. Partially
+overlapping and unique technical content remains. Scoped diff reviewed and
+whitespace check passed; no application tests rerun.
+
+Owner requested a simple Developer Guide landing page with remaining details moved
+to suitable topic pages. Runtime overloads moved to ArchitectureOverview, PostgreSQL
+setup/schema/transactions to AccountServiceAndLocalPersistence, local development
+and fixture guidance to DevelopmentWorkflow, LLM runtime test details to
+LLMImplementation, and dependency credits to Acknowledgements. Existing pages fit
+all material; no new topic was needed. Conflicting SQLite setup in the persistence
+page was replaced; sidebar labeling and user-guide setup links were updated.
+Read-only review found moved content and links consistent. Existing unrelated agent
+workflow/logging contradictions remain outside scope. MarkBind built all39 pages
+with exit0 outside the sandbox after a sandbox permission warning; existing HTML
+and link-validator warnings remain. Five moved-section anchors and five landing
+links were verified in generated HTML; scoped whitespace checks passed. No Java
+tests rerun for documentation-only changes. Existing user-deleted handoff stays deleted.

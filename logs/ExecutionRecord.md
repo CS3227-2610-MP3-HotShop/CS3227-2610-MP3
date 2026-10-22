@@ -141,3 +141,74 @@ unintended PR18 commit1a5f3a4 with704378c, without rewriting history; git diff
 cfec7c0a HEAD confirmed the original file tree restored. Restored PR18 description.
 Workflow changes remain only on PR11; integrate/rebase them after PR18 merges.
 No application tests were rerun for this revert/record-only correction.
+
+## PR11 integration — 2026-10-22
+
+Owner requested resolving merge conflicts after seller PR18 merged. Prepared
+master6ce4ca7 merge into de7f765 in the isolated buyer checkout. Six conflicts:
+AGENTS, DeveloperGuide, Main, shared HTTPS fixture/test setup and fixture guide.
+Coordinator owns workflow/root landing/records; one implementer will own code,
+tests and topic guides. No live calls or publication to teammate branch. Default
+scope preserves separate clients; transport dedup preference was asked asynchronously.
+
+Owner selected integration only; shared transport dedup deferred. Implementer
+proposed separate seller SOCLAAS_DESCRIPTION_URL exact endpoint, retaining buyer
+SOCLAAS_BASE_URL API-base semantics and shared key/model. Coordinator accepted
+this narrow coexistence contract and recorded AI-MERGE-1 technical amendment.
+Missing seller URL disables only seller AI; no private settings were changed.
+
+Implementer resolved the four owned code/test conflicts and reported compileJava,
+compileTestJava and testClasses passing. Focused buyer/seller/session/UI checks
+are running. Shared HTTPS fixture string assertions now use bodyText(), preserving
+the expected values while retaining buyer byte-capture capabilities. Full CI and
+final reviews remain pending; compilation alone is not integration acceptance.
+
+### AI-MERGE-1 testing checkpoint — owner stop request
+
+User requested stopping running tests for now. Implementer stopped focused Gradle
+session39752 with Ctrl+C; exit1 is an interrupted run, not a passing test result.
+compileJava, compileTestJava, processTestResources and testClasses completed before
+test started. Cross-URL regressions and guide edits added afterward are uncompiled
+and unverified. No test/Checkstyle pass is claimed. No new tests may start until
+owner resumes testing. Root process inspection found no Java wrapper/test workers.
+
+The four source/fixture conflict resolutions are staged; git diff --diff-filter=U
+is empty. Merge of master6ce4ca7 into PR11 de7f765 remains uncommitted in
+E:/CS3227-2610-MP3/tools/workflow-sync-buyer. Other configuration, synthetic tests
+and topic-guide edits remain preserved in the worktree. No push, PR retarget,
+merge, live call or private configuration change was performed in this integration.
+
+Resume from compiling the new MainAiSearchConfigurationTest and seller URL-isolation
+regressions, then focused buyer/seller/session/UI tests, styles, aggregate checks,
+final reviews and full Linux CI. Inspect current staged/worktree changes first;
+do not redo the completed conflict resolution or claim the interrupted suite passed.
+
+### AI-MERGE-1 verification resumed — 2026-10-23
+Owner explicitly resumed the paused tests. Existing implementer reassigned the preserved integration checkout for compilation, focused buyer/seller/session/UI checks, styles and packaging. No Storage integration, hosted calls or private-setting changes. Results and final reviews pending; earlier interruption remains historical.
+
+### AI-MERGE-1 paused again — 2026-10-23
+Owner requested pausing tests again. Coordinator notified implementer to stop and launch no further checks, then stopped confirmed integration Gradle Test Executor3 PID24356. Process inspection afterward found no Gradle wrapper/test executor/worker processes. Worktree preserved. Interrupted run is not a pass; implementer checkpoint/results pending. Testing requires explicit owner resumption.
+
+### AI-MERGE-1 verification resumed after second pause — 2026-10-23
+Owner explicitly resumed tests again. Existing implementer continues preserved integration checks; previous interrupted runs remain nonpassing. No publication, Storage integration, hosted calls or private configuration changes authorized by this resumption.
+
+### AI-MERGE-1 resumed verification results — 2026-10-23
+Implementer reports stable uncommitted merge of master6ce4ca7 into buyerde7f765.
+Completed focused run: 646 cases, zero failures/errors/skips; both Checkstyle tasks
+passed. Remaining targeted run: validator76, unavailableUI1, buyerUI21, quota37,
+sellerUI53 =188 cases, zero failures/errors/skips. Total834 distinct targeted cases;
+not a full-suite count. Earlier interrupted runs are excluded. Aggregate
+`check build shadowJar -x test` passed; test exclusion avoids repeating these cases.
+Both index/worktree whitespace checks and unmerged/conflict-marker checks passed.
+No production correction was needed during resumed verification. Coordinator assigned
+read-only final specification/security reviews of this stable candidate; no test rerun.
+Full Linux CI and hosted behavior remain unverified. No commit/push/live call.
+
+### AI-MERGE-1 final review and correction pass 1 — 2026-10-23
+Independent security review found no confirmed introduced security defect. Specification review F-1 identified missing joint synthetic-dispatch evidence for distinct buyer/seller URL coexistence; individual routing and configuration checks pass. Full Linux CI remains unverified. Scoped pass1: implementer adds one joint HTTPS fixture regression using both configuration keys and existing client seams, asserting destinations/protocols and successful outputs. No production refactor or live calls; preserve all existing checks. Run affected tests and test style only, followed by focused re-review. Authorized by current owner workflow for evidenced in-scope corrections; this is initial shared correction pass1.
+
+### AI-MERGE-1 local verification consolidated — 2026-10-23
+Correction pass1 added only AiClientConfigurationCoexistenceTest. New test initially passed but test style found one unused import; implementer removed it and reran the affected command. Final focused test1/1 and checkstyleTest passed, zero failures/errors/skips. Total835 distinct targeted cases across three completed invocations; interrupted runs excluded. No production changes after prior main style/build/packaging passes, so unchanged checks were not repeated. Specification reviewer independently inspected the regression and marked F-1 resolved; security review reported no confirmed introduced defect. Correction pass1 complete. Final-source Linux CI and hosted runtime remain unverified; overall AI-MERGE-1 remains incomplete. No commit, push, PR retarget, merge or live call performed during resumed verification. Next: publish integrated candidate and obtain Linux CI under the existing integration scope; hosted checks remain separate.
+
+### AI-MERGE-1 publication authorized — 2026-10-23
+Owner requested committing and pushing so PR11 can be merged. Remote master still6ce4ca7; reviewed merge includes that tip. Coordinator stages reviewed code/test/guide/workflow updates, publishes only buyer branch, retargets PR11 to master, and will check final-source Linux CI before marking ready. No PR merge or deployment authorized by this operation.

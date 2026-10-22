@@ -26,14 +26,16 @@ shown with an outline.
 
 Before launch, ask the operator to configure HOTSHOP_DB_URL, HOTSHOP_DB_USER and
 HOTSHOP_DB_PASSWORD and run the separate migrateDatabase setup command. See the
-[PostgreSQL setup guide](../DeveloperGuide.html#postgresql-operator-setup). The first
+[PostgreSQL setup guide](../developerGuide/AccountServiceAndLocalPersistence.html#postgresql-operator-setup). The first
 provisioning creates an empty marketplace; it does not import older SQLite files.
 Startup validates the schema and never upgrades, seeds or resets it automatically.
 
-For optional AI Search, the operator also supplies SOCLAAS_BASE_URL, SOCLAAS_API_KEY
-and SOCLAAS_MODEL. The app reads process settings; it does not automatically load
-.env.local. Follow the Developer Guide local AI Search setup to load that file
-before launching. You can use ordinary search when AI is unavailable.
+For optional AI Search, the operator also supplies SOCLAAS_BASE_URL as the API
+base (normally ending in /v1), SOCLAAS_API_KEY and SOCLAAS_MODEL. The app reads
+process settings; it does not automatically load .env.local. Follow the Developer
+Guide local AI Search setup to load that file before launching. You can use ordinary
+search when AI is unavailable. Seller description generation has separate optional
+provider setup; see the Developer Guide.
 
 Marketplace records persist in PostgreSQL. Images and the application lock remain
 in the local .hotshop directory under your home folder. Only one runtime may use
@@ -49,7 +51,7 @@ image folder and no competing instance. Close HotShop before backing up its imag
 ### Download a prebuilt JAR
 
 Prebuilt JARs for 64-bit Windows and Linux are attached to the
-[latest release](https://github.com/CS3227-2610-MP2-HotShop/CS3227-2610-MP2/releases/latest),
+[latest release](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3/releases/latest),
 and are also in the repository's `release/` folder:
 
 - `HotShop-windows.jar` for Windows

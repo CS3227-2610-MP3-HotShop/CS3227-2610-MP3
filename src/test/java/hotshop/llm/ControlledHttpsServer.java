@@ -10,14 +10,16 @@ import java.security.GeneralSecurityException;
 import java.security.KeyStore;
 import java.security.cert.CertificateFactory;
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -32,6 +34,7 @@ final class ControlledHttpsServer implements AutoCloseable {
     private final HttpsServer server;
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     private final BlockingQueue<Request> requests = new LinkedBlockingQueue<>();
+    private final AtomicInteger requestCount = new AtomicInteger();
     private volatile Response response = new Response(200, Map.of("Content-Type", "application/json"), new byte[0],
             false, null, false);
     private volatile Function<Request, Response> responder;
@@ -54,6 +57,7 @@ final class ControlledHttpsServer implements AutoCloseable {
                 byte[] body = exchange.getRequestBody().readNBytes(8193);
                 Request request = new Request(exchange.getRequestMethod(), exchange.getRequestURI(),
                         Map.copyOf(exchange.getRequestHeaders()), body);
+                requestCount.incrementAndGet();
                 requests.add(request);
                 Function<Request, Response> currentResponder = responder;
                 Response current = currentResponder == null ? response : currentResponder.apply(request);
@@ -110,6 +114,15 @@ final class ControlledHttpsServer implements AutoCloseable {
         responder = requestResponder;
     }
 
+    void redirect(URI destination) {
+        respondBytes(302, Map.of("Content-Type", "application/json", "Location", destination.toString()),
+                new byte[0], false);
+    }
+
+    void respondChunked(String body) {
+        respondBytes(200, Map.of("Content-Type", "application/json"), body.getBytes(StandardCharsets.UTF_8), true);
+    }
+
     Request takeRequest() throws InterruptedException {
         Request request = requests.poll(5, TimeUnit.SECONDS);
         if (request == null) {
@@ -125,6 +138,10 @@ final class ControlledHttpsServer implements AutoCloseable {
         }
         requests.add(request);
         return true;
+    }
+
+    int requestCount() {
+        return requestCount.get();
     }
 
     HttpClient trustedClient() throws GeneralSecurityException, IOException {
@@ -155,10 +172,18 @@ final class ControlledHttpsServer implements AutoCloseable {
         return stream;
     }
 
-    record Request(String method, URI uri, Map<String, java.util.List<String>> headers, byte[] body) {
+    record Request(String method, URI uri, Map<String, List<String>> headers, byte[] body) {
         String header(String name) {
             return headers.entrySet().stream().filter(entry -> entry.getKey().equalsIgnoreCase(name))
                     .flatMap(entry -> entry.getValue().stream()).findFirst().orElse(null);
+        }
+
+        String authorization() {
+            return header("Authorization");
+        }
+
+        String bodyText() {
+            return new String(body, StandardCharsets.UTF_8);
         }
     }
 
@@ -167,5 +192,14 @@ final class ControlledHttpsServer implements AutoCloseable {
 
     record Response(int status, Map<String, String> headers, byte[] body, boolean chunked,
             StallGate stallGate, boolean disconnect) {
+        Response(int status, String contentType, byte[] body, Map<String, String> headers, boolean chunked) {
+            this(status, withContentType(headers, contentType), body, chunked, null, false);
+        }
+
+        private static Map<String, String> withContentType(Map<String, String> headers, String contentType) {
+            java.util.HashMap<String, String> result = new java.util.HashMap<>(headers);
+            result.put("Content-Type", contentType);
+            return Map.copyOf(result);
+        }
     }
 }
