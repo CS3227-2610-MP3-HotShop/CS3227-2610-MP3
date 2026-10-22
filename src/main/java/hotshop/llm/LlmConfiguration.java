@@ -8,6 +8,7 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /** Immutable startup configuration for private generation settings. */
 public final class LlmConfiguration {
@@ -40,22 +41,39 @@ public final class LlmConfiguration {
         }
         try {
             String contents = Files.readString(workingDirectory.resolve(".env"), StandardCharsets.UTF_8);
-            Map<String, String> settings = parse(contents);
-            if (!settings.keySet().containsAll(REQUIRED_KEYS)) {
-                return unavailable();
-            }
-            URI endpoint = URI.create(settings.get(ENDPOINT_KEY));
-            String token = settings.get(TOKEN_KEY);
-            String model = settings.get(MODEL_KEY);
-            if (!validEndpoint(endpoint) || token.isEmpty() || token.codePoints().anyMatch(
-                    codePoint -> codePoint > MAX_HEADER_CODE_POINT
-                            || isSpace(codePoint) || Character.isISOControl(codePoint))
-                    || model.codePoints().allMatch(LlmConfiguration::isSpace)) {
-                return unavailable();
-            }
-            return new LlmConfiguration(endpoint, token, model);
+            return fromSettings(parse(contents));
         } catch (IOException | IllegalArgumentException | SecurityException failure) {
             // Configuration failure disables generation; exception payloads may contain private values.
+            return unavailable();
+        }
+    }
+
+    /**
+     * Loads trusted process settings, with local file fallback when no required key is present.
+     *
+     * @param workingDirectory the fallback file's trusted working directory
+     * @return immutable validated settings, unavailable if the selected source is invalid
+     */
+    public static LlmConfiguration loadFromEnvironment(Path workingDirectory) {
+        return loadFromEnvironment(workingDirectory, System::getenv);
+    }
+
+    static LlmConfiguration loadFromEnvironment(Path workingDirectory,
+            Supplier<Map<String, String>> environment) {
+        if (environment == null) {
+            return unavailable();
+        }
+        try {
+            Map<String, String> settings = environment.get();
+            if (settings == null) {
+                return unavailable();
+            }
+            if (REQUIRED_KEYS.stream().anyMatch(settings::containsKey)) {
+                return fromSettings(settings);
+            }
+            return load(workingDirectory);
+        } catch (IllegalArgumentException | SecurityException failure) {
+            // Selected environment failures never expose private values or fall back to a file.
             return unavailable();
         }
     }
@@ -97,6 +115,29 @@ public final class LlmConfiguration {
         if (!isAvailable()) {
             throw new IllegalStateException(UNAVAILABLE_MESSAGE);
         }
+    }
+
+    private static LlmConfiguration fromSettings(Map<String, String> settings) {
+        String endpointValue = settings.get(ENDPOINT_KEY);
+        String token = settings.get(TOKEN_KEY);
+        String model = settings.get(MODEL_KEY);
+        if (endpointValue == null || token == null || model == null
+                || containsLineBreakOrNul(endpointValue) || containsLineBreakOrNul(token)
+                || containsLineBreakOrNul(model)) {
+            return unavailable();
+        }
+        URI endpoint = URI.create(endpointValue);
+        if (!validEndpoint(endpoint) || token.isEmpty() || token.codePoints().anyMatch(
+                codePoint -> codePoint > MAX_HEADER_CODE_POINT
+                        || isSpace(codePoint) || Character.isISOControl(codePoint))
+                || model.codePoints().allMatch(LlmConfiguration::isSpace)) {
+            return unavailable();
+        }
+        return new LlmConfiguration(endpoint, token, model);
+    }
+
+    private static boolean containsLineBreakOrNul(String value) {
+        return value.indexOf('\r') >= 0 || value.indexOf('\n') >= 0 || value.indexOf('\0') >= 0;
     }
 
     private static Map<String, String> parse(String contents) {

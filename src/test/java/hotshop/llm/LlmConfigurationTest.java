@@ -11,7 +11,10 @@ import java.net.http.HttpRequest;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -21,10 +24,10 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import hotshop.ApplicationRuntime;
-import hotshop.support.PostgresTestSupport;
 import hotshop.model.Category;
 import hotshop.model.Condition;
 import hotshop.service.ListingDraft;
+import hotshop.support.PostgresTestSupport;
 
 class LlmConfigurationTest extends PostgresTestSupport {
     private static final String ENDPOINT_KEY = "SOCLAAS_BASE_URL";
@@ -230,6 +233,7 @@ class LlmConfigurationTest extends PostgresTestSupport {
     @Test
     void load_missingConfiguration_manualListingStillPersists() throws Exception {
         assertUnavailable(LlmConfiguration.load(directory));
+        assertUnavailable(loadEnvironment(Map.of(TOKEN_KEY, TOKEN)));
         Path data = directory.resolve("manual-data");
         java.util.UUID listingId;
         try (ApplicationRuntime runtime = openTestRuntime(data)) {
@@ -246,6 +250,194 @@ class LlmConfigurationTest extends PostgresTestSupport {
             assertEquals("Handwritten description", saved.getDetails().description());
         }
         assertFalse(Files.exists(directory.resolve(".env")));
+    }
+
+    @Test
+    void loadFromEnvironment_completeSettingsWithoutFile_preservesExactSettingsWithoutWrites() throws Exception {
+        assertSettings(loadEnvironment(environmentSettings()), ENDPOINT, TOKEN, MODEL);
+        try (var files = Files.list(directory)) {
+            assertEquals(List.of(), files.toList());
+        }
+    }
+
+    @Test
+    void loadFromEnvironment_completeSettingsWithoutWorkingDirectory_bypassesFallbackPath() {
+        assertSettings(LlmConfiguration.loadFromEnvironment(null, LlmConfigurationTest::environmentSettings),
+                ENDPOINT, TOKEN, MODEL);
+    }
+
+    @Test
+    void loadFromEnvironment_noKeysAndNoWorkingDirectory_isUnavailable() {
+        assertUnavailable(LlmConfiguration.loadFromEnvironment(null, Map::of));
+    }
+
+    @Test
+    void loadFromEnvironment_conflictingFile_usesOnlyEnvironmentAndPreservesFile() throws Exception {
+        String original = settings("https://file.invalid/route", "file-token", "file-model");
+        write(original);
+        assertSettings(loadEnvironment(environmentSettings()), ENDPOINT, TOKEN, MODEL);
+        assertEquals(original, Files.readString(directory.resolve(".env")));
+    }
+
+    @Test
+    void loadFromEnvironment_malformedFile_bypassesFileParsing() throws Exception {
+        Files.write(directory.resolve(".env"), new byte[] {(byte) 0xc3, (byte) 0x28});
+        assertSettings(loadEnvironment(environmentSettings()), ENDPOINT, TOKEN, MODEL);
+    }
+
+    @Test
+    void loadFromEnvironment_directoryInsteadOfFile_bypassesFileReading() throws Exception {
+        Files.createDirectory(directory.resolve(".env"));
+        assertSettings(loadEnvironment(environmentSettings()), ENDPOINT, TOKEN, MODEL);
+        assertTrue(Files.isDirectory(directory.resolve(".env")));
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = {false, true})
+    void loadFromEnvironment_noRequiredKeys_usesValidFile(boolean unrelatedKey) throws Exception {
+        write(settings(ENDPOINT, TOKEN, MODEL));
+        Map<String, String> environment = unrelatedKey ? Map.of("UNRELATED", "ignored") : Map.of();
+        assertSettings(loadEnvironment(environment), ENDPOINT, TOKEN, MODEL);
+    }
+
+    @Test
+    void loadFromEnvironment_noRequiredKeysAndMissingFile_isUnavailableWithoutWrites() throws Exception {
+        assertUnavailable(loadEnvironment(Map.of("UNRELATED", "ignored")));
+        try (var files = Files.list(directory)) {
+            assertEquals(List.of(), files.toList());
+        }
+    }
+
+    @Test
+    void loadFromEnvironment_noRequiredKeysAndInvalidFile_isUnavailable() throws Exception {
+        write("malformed file");
+        assertUnavailable(loadEnvironment(Map.of()));
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1, 2, 3, 4, 5, 6})
+    void loadFromEnvironment_partialRequiredKeySubset_doesNotMixOrFallBack(int keyMask) throws Exception {
+        write(settings(ENDPOINT, TOKEN, MODEL));
+        List<String> keys = List.of(ENDPOINT_KEY, TOKEN_KEY, MODEL_KEY);
+        Map<String, String> environment = new HashMap<>(environmentSettings());
+        for (int index = 0; index < keys.size(); index++) {
+            if ((keyMask & (1 << index)) == 0) {
+                environment.remove(keys.get(index));
+            }
+        }
+        assertUnavailable(loadEnvironment(environment));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {ENDPOINT_KEY, TOKEN_KEY, MODEL_KEY})
+    void loadFromEnvironment_presentNullValue_doesNotFallBack(String key) throws Exception {
+        write(settings(ENDPOINT, TOKEN, MODEL));
+        Map<String, String> environment = new HashMap<>(environmentSettings());
+        environment.put(key, null);
+        assertUnavailable(loadEnvironment(environment));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {ENDPOINT_KEY, TOKEN_KEY, MODEL_KEY})
+    void loadFromEnvironment_presentEmptyValue_doesNotFallBack(String key) throws Exception {
+        assertInvalidEnvironment(key, "");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {ENDPOINT_KEY, TOKEN_KEY, MODEL_KEY})
+    void loadFromEnvironment_presentBlankValue_doesNotFallBack(String key) throws Exception {
+        assertInvalidEnvironment(key, " \t\u2003");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"http://gateway.invalid/path", "/relative", "https:///missing-host",
+        "https://user:password@gateway.invalid/path", "https://gateway.invalid/path#fragment",
+        "https://gateway.invalid/a b", "https:opaque", " https://gateway.invalid/path "})
+    void loadFromEnvironment_invalidEndpoint_doesNotFallBack(String endpoint) throws Exception {
+        assertInvalidEnvironment(ENDPOINT_KEY, endpoint);
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidTokens")
+    void loadFromEnvironment_invalidBearerToken_doesNotFallBack(String token) throws Exception {
+        assertInvalidEnvironment(TOKEN_KEY, token);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"synthetic\u0100token", "synthetic\ud83d\ude00token"})
+    void loadFromEnvironment_nonHeaderSafeBearerToken_doesNotFallBack(String token) throws Exception {
+        assertInvalidEnvironment(TOKEN_KEY, token);
+    }
+
+    @Test
+    void loadFromEnvironment_headerSafeLatinOneBoundary_preservesExactToken() {
+        Map<String, String> environment = new HashMap<>(environmentSettings());
+        String token = "synthetic\u00fftoken";
+        environment.put(TOKEN_KEY, token);
+        assertSettings(loadEnvironment(environment), ENDPOINT, token, MODEL);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"model\rreturn", "model\nline", "model\u0000nul"})
+    void loadFromEnvironment_modelWithForbiddenControl_doesNotFallBack(String model) throws Exception {
+        assertInvalidEnvironment(MODEL_KEY, model);
+    }
+
+    @Test
+    void loadFromEnvironment_literalValues_doesNotTrimUnquoteExpandOrUnescape() {
+        String token = "'synthetic=$HOME\\literal\"'";
+        String model = "  '\"$HOME ${NAME} $(echo synthetic) `command` C:\\models\\new # = literal'  ";
+        Map<String, String> environment = new HashMap<>(environmentSettings());
+        environment.put(TOKEN_KEY, token);
+        environment.put(MODEL_KEY, model);
+        assertSettings(loadEnvironment(environment), ENDPOINT, token, model);
+    }
+
+    @Test
+    void loadFromEnvironment_deniedAccess_isSafelyUnavailableWithoutFileFallback() throws Exception {
+        write(settings(ENDPOINT, TOKEN, MODEL));
+        assertUnavailable(LlmConfiguration.loadFromEnvironment(directory, () -> {
+            throw new SecurityException(ENDPOINT + TOKEN + MODEL);
+        }));
+    }
+
+    @Test
+    void loadFromEnvironment_changedEnvironmentAndFile_retainsSingleReadSnapshot() throws Exception {
+        Map<String, String> environment = new HashMap<>(environmentSettings());
+        AtomicInteger reads = new AtomicInteger();
+        LlmConfiguration configuration = LlmConfiguration.loadFromEnvironment(directory, () -> {
+            reads.incrementAndGet();
+            return environment;
+        });
+        environment.clear();
+        write(settings("https://replacement.invalid", "replacement-token", "replacement-model"));
+        assertSettings(configuration, ENDPOINT, TOKEN, MODEL);
+        assertEquals(1, reads.get());
+        assertRedacted(configuration.toString());
+    }
+
+    @Test
+    void loadFromEnvironment_unavailableSnapshot_doesNotReloadWhenEnvironmentBecomesComplete() {
+        Map<String, String> environment = new HashMap<>(Map.of(TOKEN_KEY, TOKEN));
+        LlmConfiguration configuration = loadEnvironment(environment);
+        environment.putAll(environmentSettings());
+        assertUnavailable(configuration);
+        assertSettings(loadEnvironment(environment), ENDPOINT, TOKEN, MODEL);
+    }
+
+    private void assertInvalidEnvironment(String key, String value) throws Exception {
+        write(settings(ENDPOINT, TOKEN, MODEL));
+        Map<String, String> environment = new HashMap<>(environmentSettings());
+        environment.put(key, value);
+        assertUnavailable(loadEnvironment(environment));
+    }
+
+    private LlmConfiguration loadEnvironment(Map<String, String> environment) {
+        return LlmConfiguration.loadFromEnvironment(directory, () -> environment);
+    }
+
+    private static Map<String, String> environmentSettings() {
+        return Map.of(ENDPOINT_KEY, ENDPOINT, TOKEN_KEY, TOKEN, MODEL_KEY, MODEL);
     }
 
     private void write(String contents) throws Exception {

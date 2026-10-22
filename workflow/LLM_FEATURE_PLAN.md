@@ -6,11 +6,11 @@ NFR-001–007, TC-01–12 and UC-001–003. Created 2026-10-20.
 
 The plan itself authorises no execution or deployment. On 2026-10-20 the user
 explicitly selected TASK-001–004 and confirmed configuration readiness; see their
-execution records below. Subsequent selections completed TASK-005–015; the user
-has now selected TASK-016–017 using implement-task-short. This selection covers
-documentation and scoped acceptance only, with no new live calls or deployment.
-The TASK-012–015 full-regression deferral remains recorded; no current full-suite
-result is inferred. Initial source
+execution records below. Subsequent selections completed TASK-005–017; the user
+then selected TASK-018 using implement-task-short for environment-first startup
+configuration. No new live calls or deployment were selected. Earlier full-suite
+deferrals remain historical; TASK-018's actual full verification is recorded below.
+Initial source
 inspection found the JavaFX editor, single service worker/session and runtime lock,
 but no feature implementation, JSON dependency or `llmLiveTest` task. Inspection
 is not passing runtime evidence. No SQL migration is planned; generation never
@@ -20,7 +20,7 @@ saves a listing.
 
 | Gate | Current state / affected work | Resolution |
 | --- | --- | --- |
-| G-01: implementation scope | Resolved 2026-10-20: TASK-001–015 recorded complete; user selected TASK-016–017. | Documentation/scoped acceptance only; no new live calls, hosting implementation or deployment. |
+| G-01: implementation scope | Resolved 2026-10-20: TASK-001–017 complete; user selected and completed TASK-018. | Environment/file configuration only; no new live calls, hosted-session implementation or deployment. |
 | G-02: deferred tests | Resolved 2026-10-20: user explicitly confirmed endpoints and API key are ready. No secrets inspected. | Offline verification authorised; live calls still require separate explicit authorisation. |
 | G-03: provider tools | Provider-side tools cannot be confirmed disabled. Blocks full end-to-end no-tool security acceptance in TASK-015/017, not independent local-boundary implementation after G-01/02. | Obtain provider capability assurance/configuration evidence, or explicit product-spec revision accepting a narrower guarantee. Prompt instructions or passing samples alone do not close this gate. |
 | G-04: hosted identity | Independent concurrent JPro client identity/session isolation is not established in current code. Multi-user hosted acceptance in TASK-017 remains blocked. | Separately approved lifecycle/session integration review/work; do not add an authentication rewrite to this plan. Local/isolated runtime acceptance can be recorded separately. |
@@ -67,6 +67,13 @@ full-suite/build verification delegated to the user, without claiming it passed.
 This overrides the full-command step in TASK-013 for this selected execution.
 
 ## Ordered tasks
+
+Follow-up planning (2026-10-20): the user requested TASK-018 for runtime
+environment-variable configuration with local `.env` fallback. This authorises
+planning only. TASK-001–017 entries and their completion evidence are preserved;
+The user subsequently selected TASK-018; step 1 aligned the specification before
+behavioural implementation. Its source-selection decision and actual execution
+evidence are recorded below. G-03/G-04 remain open.
 
 ### TASK-001: Establish authorised scope and execution readiness
 
@@ -645,6 +652,121 @@ not Done:** G-03/G-04 still block full security/hosted acceptance. Evidence:
   local completion and feature-level completion are distinguished honestly.
 - [x] Required guide/AGENTS/SDD/log gates satisfied before any feature Done declaration.
 
+### TASK-018: Support runtime environment configuration with local file fallback
+
+**Description:** Extend trusted startup configuration so operators can supply
+`SOCLAAS_BASE_URL`, `SOCLAAS_API_KEY` and `SOCLAAS_MODEL` as runtime environment
+variables instead of creating a `.env` file. Retain local file loading, existing
+validation, immutable startup snapshots and safe generation-unavailable behaviour.
+Affect `LlmConfiguration`, its tests, startup wiring in `Main` only if needed,
+related deterministic fixtures and current configuration documentation. No new
+dependency, database migration, provider call or deployment is required.
+**Source:** Technical 1.1/1.2, 3.2 and 5.2; FR-003, NFR-002/004/006/007,
+TC-04/07/09; the user's 2026-10-20 environment-variable follow-up. Step 1 aligned
+technical 3.2's earlier file-only contract before behavioural tests/code.
+**Dependencies:** TASK-004 — validated private file configuration;
+TASK-010 — startup ownership and offline runtime seams;
+TASK-017 — recorded local acceptance and outstanding release gates.
+**Completed:** Yes — 2026-10-20. Environment-first startup and explicit file-only
+fixtures implement the approved exclusive-source policy. Behavioural red:
+129 cases, 53 expected assertion failures; green: all 129 passed with both styles.
+Broader focused regressions passed 433 cases across 12 suites. Required full
+test/Checkstyle/check/build passed 1,268 tests across 42 suites, zero failures,
+errors or skips. Independent correctness/coverage and security reviews cleared
+the stable candidate without findings. No live provider call or deployment.
+Evidence: [test-first log](../logs/2026-10-20-task018-configuration-tests.md),
+[implementation](../logs/2026-10-20-task018-configuration-implementation.md),
+[independent reviews](../logs/2026-10-20-task018-independent-reviews.md),
+[integration/checks](../logs/2026-10-20-task018-configuration-integration.md).
+
+**Readiness:** The user confirmed source selection on 2026-10-20: if any of the
+three required environment keys is present, require a complete valid environment
+set and do not fall back or mix sources; use `.env` only when all three keys are
+absent. A present empty/blank/invalid key is not absent. Complete valid environment
+settings bypass file access, including a missing/malformed/unreadable `.env`;
+denied environment access produces safe unavailability without file fallback.
+The user separately authorised execution, and specification alignment preceded
+behavioural tests/code. Existing completed prerequisite entries were preserved.
+
+**Steps**
+
+1. Using the recorded source-selection decision, align the product specification's
+   private-configuration guidance and technical 3.2 (plus affected type/test
+   contracts) with runtime environment support. Keep the same three key names,
+   exact full HTTPS destination, credential validation and restart-only reload.
+   Specify the agreed blank/invalid/partial environment behaviour, file access behaviour
+   when environment settings are sufficient, and safe failure if environment
+   access is denied. Environment values are literal process strings, not dotenv
+   syntax: do not unquote, expand, shell-evaluate or silently trim credentials.
+   Do not add automatic `/etc/secrets` discovery, new secret-file paths, container
+   packaging, Vercel runtime support or hosted-session changes to this task.
+2. Red: testing owner adds deterministic cases to `LlmConfigurationTest` before
+   implementation, with an explicit injected environment map/reader and temporary
+   synthetic files. Cover complete valid environment with absent file; conflicting
+   valid file; complete environment with malformed/unreadable file; no required
+   environment keys (including unrelated keys) with valid/missing/invalid file;
+   all six partial-key subsets; present empty/blank/null-invalid values where the
+   seam permits them; invalid HTTPS/token/model partitions and existing boundary
+   values; literal `=`, `$`, backslashes and quotes; denied environment access;
+   environment/file mutation after load; safe diagnostics and manual persistence
+   when unavailable. Define expected partial/fallback outcomes from step 1, keep
+   separate negative conditions separate, and verify fallback never creates files.
+   Include no raw secret/endpoint/model in public diagnostics or exceptions.
+3. Keep ordinary tests independent of the developer/CI process environment. Retain
+   an explicit file-only or injected-settings seam for existing file-parser,
+   adapter and runtime fixtures; do not mutate global process environment or read
+   the real working-directory `.env`. Minimal typed seams may enable compilation.
+   Run `.\gradlew.bat test --tests '*LlmConfigurationTest'`; record failures caused
+   by missing environment behaviour, not compilation/setup. Investigate any
+   already-passing paths rather than manufacturing red evidence.
+4. Green: application owner implements the smallest source-resolution change,
+   reusing existing validation and parser rather than duplicating them. Read the
+   real process environment only at the production startup boundary, once, and
+   wire it through the server-owned immutable configuration snapshot. Use the
+   approved precedence policy, avoid unnecessary file reads and retain explicit
+   unavailable outcomes without raw causes. `ApplicationRuntime.open(Path)` and
+   `open(Path, Clock)` must remain offline and must not acquire ambient settings.
+   Add/extend `DescriptionRuntimeTest` or an isolated synthetic JVM startup test
+   only where needed to prove production wiring and unchanged offline opens;
+   no real provider requests, waiting sleeps or production credentials.
+5. Refactor the changed code with the focused tests passing. Run
+   `.\gradlew.bat test --tests 'hotshop.llm.*' --tests '*DescriptionRuntimeTest' --tests '*ApplicationRuntimeTest' checkstyleMain checkstyleTest`,
+   then the applicable repository Java verification
+   `.\gradlew.bat test checkstyleMain checkstyleTest check build`.
+   Previous TASK-012–013 deferrals do not automatically waive this follow-up's
+   checks; record any new explicit verification override and actual outcomes.
+   Ordinary checks continue excluding `llm-live`; do not run `llmLiveTest`.
+6. Update `docs/developerGuide/LLMImplementation.md` in place with operator key
+   names, environment-versus-file selection, literal value syntax, synthetic
+   setup/testing, reload behaviour and safe unavailable outcomes. Keep guide
+   landing pages brief. Update usage only if visible behaviour changes; update
+   AGENTS pointers if needed, the feature SDD summary and the task interaction
+   log. Request independent configuration/security review of the stable change,
+   resolving material findings with regression-first evidence. Mark this task Yes
+   only after its acceptance evidence and actual checks are recorded. Supporting
+   environment variables establishes no Render/Vercel deployment, G-03 assurance
+   or G-04 hosted-client acceptance; secret mounts/image exclusion stay separate.
+
+**Acceptance criteria**
+
+- [x] The source-selection decision and aligned specification are recorded before
+  behavioural implementation; no unresolved precedence choice is hidden in code.
+- [x] A complete valid synthetic runtime environment enables configuration without
+  a `.env` file; local file loading remains available under the approved policy.
+  Partial, blank, invalid and inaccessible sources produce their specified safe
+  outcomes, preserving HTTPS/header validation and preventing unintended source mixing.
+- [x] Production startup uses the environment-aware snapshot exactly once;
+  environment/file changes do not mutate it. Offline runtime opens and ordinary
+  synthetic tests remain independent of ambient settings and provider access.
+- [x] Relevant equivalence partitions/boundaries have behavioural red, green and
+  refactor evidence; focused regressions, both Checkstyle tasks and required
+  test/check/build verification pass, or the task remains No with explicit blockers.
+- [x] No credentials/configuration values enter model context, UI, errors, logs,
+  resources or new files; no environment-to-file export, tool execution, dependency,
+  packaging/deployment change or live provider call is introduced.
+- [x] Current guides/specifications, SDD/task records and independent review reflect
+  actual results; G-03/G-04 and separate release work remain explicitly open.
+
 ## Coverage and handoff
 
 | Source | Tasks |
@@ -661,8 +783,11 @@ not Done:** G-03/G-04 still block full security/hosted acceptance. Evidence:
 | TC-04/07/08/09/12 | TASK-004/006–010/013 |
 | TC-05/06/11 | TASK-003/006/013/014/015 |
 | TC-10 | TASK-005/008–013 |
+| Runtime environment follow-up: Technical 3.2/5.2, FR-003, NFR-002/004/006/007, TC-04/07/09 | TASK-018 (source-selection decision recorded; spec alignment precedes code) |
 
-Current progress: **17/17 tasks recorded complete**, with dated supporting evidence.
+Current progress: **18/18 tasks recorded complete**, with dated supporting evidence.
+TASK-018 completed configuration source selection, startup wiring, deterministic
+tests and documentation; it does not close hosting or provider acceptance gates.
 TASK-016/017 complete documentation and scoped acceptance only. Completed prerequisite entries
 are preserved. TASK-014 has historical unchecked acceptance boxes alongside its
 explicit Completed Yes/user acceptance record; this discrepancy is reported
@@ -674,7 +799,9 @@ TASK-010/011 full verification passed 1,149 tests; TASK-012/013 used focused
 verification under the user's deferral. TASK-014 v2 has 26 user-accepted semantic
 results; its original v1 failure remains preserved. TASK-015's stable local
 candidate passed 586 focused cases and independent reviews. Overlapping runs
-are not a full-suite total; no current full regression/build result is claimed.
+are not a full-suite total. TASK-018 separately passed the full
+`.\gradlew.bat test checkstyleMain checkstyleTest check build`: 1,268 tests across
+42 suites, zero failures/errors/skips, with styles/check/build successful.
 
 **Feature remains not Done.** G-03 blocks full end-to-end no-tool acceptance;
 G-04 blocks independent multi-user hosted acceptance. Packaging is unchanged:

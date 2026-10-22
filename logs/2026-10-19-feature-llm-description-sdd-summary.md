@@ -7,7 +7,15 @@ are recorded complete, including runtime/UI integration, stale-result protection
 deterministic boundary checks, two live corpus runs and final independent local
 reviews. The user accepted all 26 second-run semantic results; the first run's
 failure is preserved. TASK-016/017 complete final documentation and scoped
-acceptance: 17/17 plan tasks recorded complete on 2026-10-20. See the [acceptance report](2026-10-20-llm-documentation-reorganisation.md#archived-acceptance-record)
+acceptance: TASK-001–018 are complete. TASK-018 adds verified environment-variable
+configuration support; overall progress is 18/18. The user selected complete
+environment settings whenever any required key is present, otherwise `.env`.
+Specifications were aligned before tests/code. TASK-018 passed 129 configuration/
+startup cases, 433 broader focused cases and a full 1,268-test check/build with
+both styles; independent correctness/security reviews found no issue. The runs
+overlap and are not additive. See the
+[configuration integration evidence](2026-10-20-task018-configuration-integration.md)
+and earlier [acceptance report](2026-10-20-llm-documentation-reorganisation.md#archived-acceptance-record)
 for their final status and evidence. **Feature not Done:** provider tool assurance
 (G-03) and independent hosted-client session isolation (G-04) remain open.
 
