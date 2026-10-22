@@ -372,6 +372,8 @@ Do not ask the user to choose agents unless the
 delegation decision requires a significant
 architectural or product decision.
 
+---
+
 ## Build and Verification
 
 The Gradle requirements in this section apply to Java implementation tasks.
