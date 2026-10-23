@@ -71,11 +71,13 @@ final class AccountPages {
         VBox image = new VBox(12);
         showProfileImage(image, user);
         var replace = UiControls.button("Replace Image", "replace-profile-image", () -> { });
-        replace.setOnAction(event -> page.perform(() -> UiImages.choose(app.stage, replace,
-                hotshop.storage.ImageStorage.PROFILE_LIMITS).thenCompose(selected -> selected == null
+        UiImages.PreparedChooser chooser = UiImages.prepareChooser(app.stage, replace,
+                hotshop.storage.ImageStorage.PROFILE_LIMITS);
+        page.setLeaving(chooser::cancel);
+        replace.setOnAction(event -> page.performSelection(chooser.choose(), selected -> selected == null
                         ? java.util.concurrent.CompletableFuture.completedFuture(null)
                         : app.runtime.getAccounts().replaceProfileImage(selected)
-                                .whenComplete((updated, failure) -> UiImages.release(selected))), updated -> {
+                                .whenComplete((updated, failure) -> UiImages.release(selected)), updated -> {
                                     if (updated != null) {
                                         showProfileImage(image, updated);
                                         page.message("Profile image saved.");

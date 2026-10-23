@@ -1,19 +1,21 @@
 # Current execution record
 
-## Current handoff — PR12 CI readiness, 2026-10-23
-Branch codex/supabase-image-storage, published integration0f363d9 targets master.
-CI39827937755 failed two cancellation cleanup assertions among1544 cases; confirmed
-sendAsync-registration race corrected in the current stable readiness batch.
-Same-process directory leases preserve separate browser identities and physical
-locking. Production buyer/seller share a90/minute process ceiling; seller account
-quotas remain. Windows281 affected cases/styles, final96/styles and packaging pass.
-Both independent Luna final source/coverage and security reviews accept the changed
-candidate; reviewers did not run tests. Linux focused checks pass. Full CI39835302159
-passes on e182828 (job12m31s): tests/styles/check/build/shadowJar and artifact upload.
-Owner explicitly authorizes continued confirmed CI fixes overnight, no merge/deploy.
-Private buckets/bindings verified active; rotated key confirmed without disclosure.
-Real browser checks await host-browser approval after automatic review rejection;
-Render remains on the earlier buyer branch. Do not claim browser/hosted acceptance.
+## Current handoff — PR12 browser acceptance, 2026-10-23
+Branch codex/supabase-image-storage. Published60ad08c full CI39837340913 passes.
+New BROWSER-UPLOAD-FIX-1 candidate fixes the actual first-click image picker:
+prebind uploader, enable click selection, keep chooser cancellation interactive,
+reject stale selections before upload and compose page-leave cleanup. Source is
+independently reviewed; coverage follow-up closes the actual-leave test gap.
+Worker123 affected tests/styles/package pass; final4 selection tests/style pass.
+Restricted localhost Chrome acceptance PASSES: distinct sessions/logout isolation;
+chooser first-click/cancel/retry; profile/listing upload/render; replacing app
+container without image volume; second-account listing/public-profile reads.
+Used disposable localPG17, never hosted marketplace records. Two uniquely owned
+private-bucket PNGs matched original bytes, denied anonymous reads, and were removed
+through UI; authenticated reads verify absence and fixture refs/cleanup count0.
+Next: publish reviewed source/guide/evidence batch and obtain final-source full CI.
+Owner authorizes confirmed CI fixes until green. No merge or Render deployment;
+Render remains on earlier buyer branch. Local acceptance is not hosted smoke testing.
 ## Workflow reconciliation — 2026-10-22
 
 Owner approved preserving one implementer, final reviews, one planned correction pass
@@ -531,3 +533,11 @@ Final readiness candidate: implementer reports281 affected Windows cases and bot
 Linux focused verification passed: Docker build-stage wrapper test selecting HttpLlmClientTest,LlmPreparationTest,LlmRequestBudgetTest,AiClientConfigurationCoexistenceTest, JavaFX linux, exit0 (23s). No credentials or hosted services supplied. Publish reviewed source and monitor full GitHub CI next.
 
 CI acceptance: published e182828 passed full Linux GitHub run39835302159, job12m31s and Gradle12m12s. Test, both Checkstyles, check/build/shadowJar and artifact upload all pass. PR12 check reports pass; working tree was clean before this evidence-only consolidation. PR19 is already merged and PR12 remains mergeable. No further source fix needed. Final result is consolidated in the PR description; remaining real-browser/Render gates are unchanged. This records the final human-visible batch; no manual Java test rerun for these documentation-only updates.
+
+Browser authorization: owner approved host Chrome checks restricted to localhost8080 with temporary profiles, resolving earlier automatic-review gate. Bounded noninteractive driver restricts HTTP/WebSocket origins to localhost8080; no unrestricted host REPL. Current image60ad08c built, disposable localPG17 provisioned/bound; no hosted application DB writes. Paced physical pointer/keyboard events required by JPro; initial driver attempts lost characters and are not feature failures. Corrected driver confirms two simultaneous distinct Alpha/Beta sessions. ReplaceImage first-click no chooser7s is a real confirmed source-path bug: busy-disable precedes late uploader binding; listing flow shares it. BROWSER-UPLOAD-FIX-1 assigned existing Luna worker under confirmed-error policy; sourceCI was green before this new acceptance finding. No image objects uploaded yet; temporary fixture accounts only local.
+
+Session acceptance passes on local Docker app60ad08c: two temporary Chrome contexts concurrently show distinct Alpha/Beta accounts; B logout leaves A authenticated and SaveProfile succeeds; A logout/relogin restores expected identity. File chooser remains the only observed browser blocker so far. Concrete picker correction design accepted: prebind browser uploader before firstclick; remain interactive through chooser cancellation; become busy only after selection; cancel pending selection/stale callbacks on leave while composing existing staged-image cleanup. No arbitrary chooser timeout or weakening of upload bounds. Coordinator will rebuild and run live local browser acceptance; implementer uses offline tests only.
+
+Picker correction diagnosis refined by installed JPro2026.3.1 API/implementation evidence: FileUploaderImpl initializes selectFileOnClick=false; makeFileUploadNode alone does not enable selection. Initial prebinding snapshot still produced no chooser and DOM had0fileinputs. Worker explicitly enables setSelectFileOnClick(true), keeping prebinding and selection-only busy state. This is the same confirmed upload defect correction, not a separate feature. No remote photos uploaded by failed attempts.
+
+Browser acceptance conclusion: picker first-click/cancel/retry, profile upload/render, listing staged upload/save, app-container replacement with no image volume, cross-account listing/public-profile reads and independent logout all pass. Driver initially clicked before page transitions settled and selected a background duplicate dialog label; corrected physical timing/modal target completed the same UI actions, with no further application defect. Actual private-object GETs for2ownedPNGs match selected SHA256; anonymous authenticated-endpoint access denied400 and bucket metadata public=false. UI profile removal and listing deletion completed; authenticated re-read confirms bothobjects404/absent and localDB refs/cleanup0/0/0. No other bucketobjects enumerated/deleted. DisposableDBonly accounts/listings; hostedmarketplaceDB untouched. Worker123affectedtests/styles/checkbuildshadowJar-x testpass; spec/security source reviews clear. Test-only coverage follow-up invokes actualUiPage.leave+composedcallbacks and lateownedtempcleanup:4selectiontests/checkstyleTestpass; specfocusedre-reviewclosesgap. This is confirmed picker correction3, with grouped test-only coverage follow-up; historical Storage/PG budgets remain historical. Final-source CI to run after publication; PRcheck/link is authoritative. No manualtests rerun for record/guide-only edits.

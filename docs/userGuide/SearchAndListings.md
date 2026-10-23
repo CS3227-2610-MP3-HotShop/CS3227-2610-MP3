@@ -54,6 +54,8 @@ condition is available on the detail page instead of these owner cards.
 Choose **Create Listing** and fill in **Title**, **Description**, **Asking price
 (SGD)**, **Category**, **Condition**, and **Listing pickup location**. Optionally
 use **Add Photo**; the file chooser offers `.jpg`, `.jpeg`, and `.png` files.
+You can cancel the picker and try again; the page stays available until a file is
+selected, then shows progress while the image is uploaded and checked.
 Choose **Save Listing** to save and open the listing, or **Cancel** to go back
 (you will be asked to discard any unsaved changes).
 Photo previews have **Move Up**, **Move Down**, and **Remove** controls. New listings

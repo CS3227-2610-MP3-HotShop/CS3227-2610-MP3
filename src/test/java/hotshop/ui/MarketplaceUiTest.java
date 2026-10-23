@@ -1548,6 +1548,121 @@ class MarketplaceUiTest extends PostgresTestSupport {
                 .getPreferredPickupLocation().orElseThrow());
     }
 
+    @Test
+    void imageSelection_waitingForUserChoice_keepsPageAvailableUntilSelectionStarts() throws Exception {
+        UiPage page = fx(() -> ui.page("Image selection"));
+        var result = new java.util.concurrent.CompletableFuture<Path>();
+        var started = new java.util.concurrent.CompletableFuture<Void>();
+        var selection = new UiImages.Selection(result, started);
+        fx(() -> {
+            page.performSelection(selection, selected ->
+                    java.util.concurrent.CompletableFuture.completedFuture(null), ignored -> { });
+            assertFalse(page.body.isDisabled());
+            return null;
+        });
+
+        started.complete(null);
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        while (System.nanoTime() < deadline && !fx(() -> page.body.isDisabled())) {
+            Thread.sleep(10);
+        }
+        assertTrue(fx(() -> page.body.isDisabled()));
+
+        result.complete(null);
+        deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        while (System.nanoTime() < deadline && fx(() -> page.body.isDisabled())) {
+            Thread.sleep(10);
+        }
+        assertFalse(fx(() -> page.body.isDisabled()));
+    }
+
+    @Test
+    void imageSelection_canceledBeforeFileSelection_keepsPageInteractive() throws Exception {
+        UiPage page = fx(() -> ui.page("Canceled image selection"));
+        var result = new java.util.concurrent.CompletableFuture<Path>();
+        var started = new java.util.concurrent.CompletableFuture<Void>();
+        var selection = new UiImages.Selection(result, started);
+        fx(() -> {
+            page.performSelection(selection, selected ->
+                    java.util.concurrent.CompletableFuture.completedFuture(null), ignored -> { });
+            return null;
+        });
+
+        result.complete(null);
+        Thread.sleep(50);
+        assertFalse(fx(() -> page.body.isDisabled()));
+        assertFalse(started.isDone());
+    }
+
+    @Test
+    void imageSelection_completedAfterLeavingPage_skipsWorkAndReleasesTemporaryFile() throws Exception {
+        Path uploaded = directory.resolve("uploaded.png");
+        ImageIO.write(new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB), "png", uploaded.toFile());
+        Path temporary = ImageUploadFiles.copyUploadedFile(uploaded.toFile(),
+                hotshop.storage.ImageStorage.PROFILE_LIMITS, directory);
+        UiPage page = fx(() -> new UiPage(ui, "Abandoned image selection"));
+        var result = new java.util.concurrent.CompletableFuture<Path>();
+        var started = new java.util.concurrent.CompletableFuture<Void>();
+        var selection = new UiImages.Selection(result, started);
+        var workStarted = new java.util.concurrent.atomic.AtomicBoolean();
+        fx(() -> {
+            page.performSelection(selection, selected -> {
+                workStarted.set(true);
+                return java.util.concurrent.CompletableFuture.completedFuture(null);
+            }, ignored -> { });
+            return null;
+        });
+
+        result.complete(temporary);
+        long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(2);
+        while (System.nanoTime() < deadline
+                && (ImageUploadFiles.isOwned(temporary) || java.nio.file.Files.exists(temporary))) {
+            Thread.sleep(10);
+        }
+        assertFalse(workStarted.get());
+        assertFalse(ImageUploadFiles.isOwned(temporary));
+        assertFalse(java.nio.file.Files.exists(temporary));
+    }
+
+    @Test
+    void imageSelection_leaveWhileUploadPending_composesCleanupAndReleasesLateUpload() throws Exception {
+        UiPage page = fx(() -> ui.page("Pending image upload"));
+        var result = new java.util.concurrent.CompletableFuture<Path>();
+        var started = new java.util.concurrent.CompletableFuture<Void>();
+        var selection = new UiImages.Selection(result, started);
+        var existingCleanupRan = new java.util.concurrent.atomic.AtomicBoolean();
+        var serviceWorkStarted = new java.util.concurrent.atomic.AtomicBoolean();
+        page.setLeaving(() -> existingCleanupRan.set(true));
+        page.setLeaving(() -> result.complete(null));
+        fx(() -> {
+            page.performSelection(selection, selected -> {
+                serviceWorkStarted.set(true);
+                return java.util.concurrent.CompletableFuture.completedFuture(null);
+            }, ignored -> { });
+            return null;
+        });
+
+        started.complete(null);
+        fx(() -> {
+            page.leave();
+            ui.page("After leaving image upload");
+            return null;
+        });
+        assertTrue(existingCleanupRan.get());
+        assertTrue(result.isDone());
+        assertFalse(serviceWorkStarted.get());
+
+        Path uploaded = directory.resolve("late-upload.png");
+        ImageIO.write(new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB), "png", uploaded.toFile());
+        Path temporary = ImageUploadFiles.copyUploadedFile(uploaded.toFile(),
+                hotshop.storage.ImageStorage.PROFILE_LIMITS, directory);
+        if (!result.complete(temporary)) {
+            UiImages.release(temporary);
+        }
+        assertFalse(ImageUploadFiles.isOwned(temporary));
+        assertFalse(java.nio.file.Files.exists(temporary));
+    }
+
     private void awaitReady() throws Exception {
         long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(15);
         while (System.nanoTime() < deadline) {

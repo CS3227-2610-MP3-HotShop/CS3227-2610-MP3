@@ -4,6 +4,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import hotshop.service.ServiceException;
@@ -84,7 +85,11 @@ final class UiPage extends VBox {
     }
 
     void setLeaving(Runnable action) {
-        leaving = action;
+        Runnable previous = leaving;
+        leaving = () -> {
+            previous.run();
+            action.run();
+        };
     }
 
     void leave() {
@@ -139,6 +144,66 @@ final class UiPage extends VBox {
 
     <T> void perform(Supplier<CompletableFuture<T>> work, Consumer<T> success, Consumer<Throwable> failure) {
         run(work, success, false, failure);
+    }
+
+    <T> void performSelection(UiImages.Selection selection, Function<java.nio.file.Path,
+            CompletableFuture<T>> work, Consumer<T> success) {
+        if (isBusy) {
+            selection.result().thenAccept(selected -> {
+                if (selected != null) {
+                    UiImages.release(selected);
+                }
+            });
+            return;
+        }
+        status.setText("");
+        retry.setVisible(false);
+        selection.started().thenRun(() -> Platform.runLater(() -> {
+            if (app.isCurrent(this)) {
+                setBusy(true);
+            }
+        }));
+        selection.result().thenCompose(selected -> {
+            if (selected == null) {
+                return CompletableFuture.completedFuture(null);
+            }
+            CompletableFuture<T> operation = new CompletableFuture<>();
+            Platform.runLater(() -> {
+                if (!app.isCurrent(this)) {
+                    UiImages.release(selected);
+                    operation.complete(null);
+                    return;
+                }
+                try {
+                    work.apply(selected).whenComplete((value, failure) -> {
+                        if (failure == null) {
+                            operation.complete(value);
+                        } else {
+                            operation.completeExceptionally(failure);
+                        }
+                    });
+                } catch (RuntimeException failure) {
+                    operation.completeExceptionally(failure);
+                }
+            });
+            return operation;
+        })
+                .whenComplete((value, failure) -> Platform.runLater(() -> {
+                    if (selection.started().isDone()) {
+                        setBusy(false);
+                    }
+                    if (!app.isCurrent(this)) {
+                        if (value instanceof java.nio.file.Path selected) {
+                            UiImages.release(selected);
+                        }
+                        return;
+                    }
+                    if (failure == null) {
+                        success.accept(value);
+                    } else {
+                        error(failure);
+                    }
+                }));
     }
 
     private <T> void run(Supplier<CompletableFuture<T>> work, Consumer<T> success, boolean canRetry,

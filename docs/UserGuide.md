@@ -32,6 +32,8 @@ records persist across application restarts. New installations start empty; old 
 files are not imported or reset. Listing and profile photos use private Supabase buckets. Your local data directory retains the
 application lock and temporary browser staging. The operator must verify/import existing photos and activate both bucket bindings after schema setup; see [private image storage setup](developerGuide/AccountServiceAndLocalPersistence.html#private-image-storage-setup-and-import).
 
+Cancelling the browser file chooser leaves the current page usable; select a file with **Replace Image** or **Add Photo** to begin upload. See the account and listing guides for image limits.
+
 If startup reports a database setup/connectivity problem, ask the operator to check
 connection settings and run compatible provisioning. A folder/lock error means the
 local working folder is unavailable or another instance is using it. Startup can also fail when private image storage settings or bindings are missing; the operator must verify configuration and activation. Data is not reset to

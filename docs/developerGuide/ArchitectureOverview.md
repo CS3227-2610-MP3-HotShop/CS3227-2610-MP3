@@ -65,6 +65,15 @@ image services coordinate private object uploads, authorized reads and cleanup w
 saved database references. UI image resolution goes through the runtime rather than
 repositories; production startup requires both configured Storage buckets.
 
+For browser image selection, profile and listing pages bind a JPro uploader to each
+trigger before the page is rendered and explicitly enable click selection. The page
+stays interactive while the browser chooser is open; selecting a file starts busy
+feedback and upload. Since JPro exposes no chooser-cancel callback, cancellation
+leaves the trigger available for another attempt. Page departure clears the pending
+selection, and any late staged file is released before application work can start.
+The native JavaFX path continues to use `FileChooser` and validates the selected
+image before accepting it.
+
 ### Runtime initialization and shutdown
 
 `Main` owns a process-local directory-lock registry. JPro browser instances that

@@ -58,6 +58,9 @@ JPro runtimes lease one process-owned data-directory lock while retaining separa
 authentication and service state. See the Architecture Overview for lifecycle ownership
 and LLM Implementation for the shared production AI dispatch ceiling; retain standalone
 client ownership and seller account quotas when changing transport code.
+Bind JPro image pickers before the first click and explicitly enable click selection;
+keep chooser cancellation interactive and discard abandoned selections before upload.
+See the manual-testing guide for isolated browser acceptance and temporary-object cleanup.
 
 HotShop is a Java-based e-commerce application.
 

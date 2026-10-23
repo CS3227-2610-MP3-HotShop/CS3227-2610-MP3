@@ -7,6 +7,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -87,50 +88,122 @@ final class UiImages {
         return selected == null ? null : selected.toPath();
     }
 
-    static CompletableFuture<Path> choose(Window owner, Node trigger, ImageStorage.Limits limits) {
-        if (!WebAPI.isBrowser()) {
-            Path selected = choose(owner);
-            if (selected == null) {
-                return CompletableFuture.completedFuture(null);
-            }
-            return CompletableFuture.supplyAsync(() -> {
+    /** Binds browser file selection while the trigger is rendered, before its first click. */
+    static PreparedChooser prepareChooser(Window owner, Node trigger, ImageStorage.Limits limits) {
+        return new PreparedChooser(owner, trigger, limits);
+    }
+
+    static final class PreparedChooser {
+        private final Window owner;
+        private final ImageStorage.Limits limits;
+        private final boolean browser;
+        private final WebAPI.SingleFileUploader uploader;
+        private final RuntimeException unavailable;
+        private final AtomicReference<Selection> current = new AtomicReference<>();
+
+        PreparedChooser(Window owner, Node trigger, ImageStorage.Limits limits) {
+            this.owner = owner;
+            this.limits = limits;
+            browser = WebAPI.isBrowser();
+            WebAPI.SingleFileUploader prepared = null;
+            RuntimeException preparationFailure = null;
+            if (browser) {
                 try {
-                    ImageStorage.validateImage(selected, limits);
-                    return selected;
-                } catch (IOException failure) {
-                    throw new CompletionException(failure);
+                    prepared = WebAPI.getWebAPI(owner).makeFileUploadNode(trigger);
+                    prepared.setSelectFileOnClick(true);
+                    prepared.supportedExtensions().setAll(".jpg", ".jpeg", ".png");
+                    prepared.setOnFileSelected(this::fileSelected);
+                } catch (RuntimeException failure) {
+                    preparationFailure = new IllegalArgumentException("Image picker is unavailable");
                 }
-            });
+            }
+            uploader = prepared;
+            unavailable = preparationFailure;
         }
-        CompletableFuture<Path> result = new CompletableFuture<>();
-        try {
-            WebAPI.SingleFileUploader uploader = WebAPI.getWebAPI(owner).makeFileUploadNode(trigger);
-            uploader.supportedExtensions().setAll(".jpg", ".jpeg", ".png");
-            uploader.setOnFileSelected(filename -> {
-                if (uploader.getSelectedFileSize() < 1 || uploader.getSelectedFileSize() > limits.maximumBytes()) {
-                    result.completeExceptionally(new IllegalArgumentException("Image file exceeds the size limit"));
-                    return;
+
+        Selection choose() {
+            if (!browser) {
+                Path selected = UiImages.choose(owner);
+                CompletableFuture<Void> started = CompletableFuture.completedFuture(null);
+                if (selected == null) {
+                    return new Selection(CompletableFuture.completedFuture(null), started);
                 }
-                uploader.uploadFile();
-                uploader.getJSFile().getUploadedFileFuture().whenComplete((uploaded, failure) -> {
-                    if (failure != null) {
-                        result.completeExceptionally(new IllegalArgumentException("Image upload failed"));
-                        return;
-                    }
+                CompletableFuture<Path> validated = CompletableFuture.supplyAsync(() -> {
                     try {
-                        Path temporary = ImageUploadFiles.copyUploadedFile(uploaded, limits);
-                        if (!result.complete(temporary)) {
-                            ImageUploadFiles.release(temporary);
-                        }
-                    } catch (IOException | IllegalArgumentException invalid) {
-                        result.completeExceptionally(invalid);
+                        ImageStorage.validateImage(selected, limits);
+                        return selected;
+                    } catch (IOException failure) {
+                        throw new CompletionException(failure);
                     }
                 });
-            });
-        } catch (RuntimeException failure) {
-            result.completeExceptionally(new IllegalArgumentException("Image picker is unavailable"));
+                return new Selection(validated, started);
+            }
+            if (unavailable != null) {
+                return new Selection(CompletableFuture.failedFuture(unavailable),
+                        CompletableFuture.completedFuture(null));
+            }
+            Selection selection = new Selection(new CompletableFuture<>(), new CompletableFuture<>());
+            Selection previous = current.getAndSet(selection);
+            if (previous != null) {
+                previous.result.complete(null);
+            }
+            return selection;
         }
-        return result;
+
+        void cancel() {
+            Selection pending = current.getAndSet(null);
+            if (pending != null) {
+                pending.result.complete(null);
+            }
+        }
+
+        private void fileSelected(String filename) {
+            Selection selection = current.get();
+            if (selection == null || selection.result.isDone()) {
+                return;
+            }
+            selection.started.complete(null);
+            if (uploader.getSelectedFileSize() < 1 || uploader.getSelectedFileSize() > limits.maximumBytes()) {
+                selection.result.completeExceptionally(new IllegalArgumentException(
+                        "Image file exceeds the size limit"));
+                return;
+            }
+            uploader.uploadFile();
+            uploader.getJSFile().getUploadedFileFuture().whenComplete((uploaded, failure) -> {
+                if (failure != null) {
+                    selection.result.completeExceptionally(new IllegalArgumentException("Image upload failed"));
+                    return;
+                }
+                try {
+                    Path temporary = ImageUploadFiles.copyUploadedFile(uploaded, limits);
+                    if (!selection.result.complete(temporary)) {
+                        ImageUploadFiles.release(temporary);
+                    }
+                } catch (IOException | IllegalArgumentException invalid) {
+                    selection.result.completeExceptionally(invalid);
+                } finally {
+                    current.compareAndSet(selection, null);
+                }
+            });
+        }
+    }
+
+    static final class Selection {
+        private final CompletableFuture<Path> result;
+        private final CompletableFuture<Void> started;
+
+        Selection(CompletableFuture<Path> result, CompletableFuture<Void> started) {
+            this.result = result;
+            this.started = started;
+        }
+
+        CompletableFuture<Path> result() {
+            return result;
+        }
+
+        CompletableFuture<Void> started() {
+            return started;
+        }
     }
 
     static void release(Path selected) {

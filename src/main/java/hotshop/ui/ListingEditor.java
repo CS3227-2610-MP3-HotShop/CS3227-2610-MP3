@@ -43,6 +43,7 @@ final class ListingEditor {
     private List<String> initialFields;
     private long formRevision;
     private long generationSequence;
+    private UiImages.PreparedChooser photoChooser;
 
     ListingEditor(MarketplaceUi app, Listing original) {
         this.app = app;
@@ -78,7 +79,9 @@ final class ListingEditor {
         form.field("condition", "Condition", condition);
         form.text("pickup-location", "Listing pickup location", pickup);
         var addPhoto = UiControls.button("Add Photo", "add-photo", () -> { });
-        addPhoto.setOnAction(event -> addPhoto(addPhoto));
+        photoChooser = UiImages.prepareChooser(app.stage, addPhoto, ImageStorage.LISTING_LIMITS);
+        page.setLeaving(photoChooser::cancel);
+        addPhoto.setOnAction(event -> addPhoto());
         form.getChildren().addAll(UiControls.label(
                 "Up to 10 JPEG/PNG photos; each at most 10 MiB and 4096 × 4096 pixels. No automatic resizing.", "hint"),
                 photoRows, addPhoto,
@@ -197,17 +200,18 @@ final class ListingEditor {
                 form.value("pickup-location"));
     }
 
-    private void addPhoto(Node trigger) {
+    private void addPhoto() {
         if (photos.size() == Listing.MAX_IMAGES) {
             page.error(new IllegalArgumentException("A listing can have at most 10 photos."));
             return;
         }
-        page.perform(() -> UiImages.choose(app.stage, trigger, ImageStorage.LISTING_LIMITS), selected -> {
-            if (selected != null) {
-                photos.add(ListingPhoto.add(selected));
-                renderPhotos();
-            }
-        });
+        page.performSelection(photoChooser.choose(),
+                selected -> java.util.concurrent.CompletableFuture.completedFuture(selected), selected -> {
+                    if (selected != null) {
+                        photos.add(ListingPhoto.add(selected));
+                        renderPhotos();
+                    }
+                });
     }
 
     private void renderPhotos() {

@@ -722,3 +722,8 @@ mixed-feature/refund tests and existing safe PROVIDER_BUSY feedback, no auto ret
 This per-process ceiling is not a multi-replica/key-wide guarantee; monetary budgets
 remain provider-enforced. Key-specific budget endpoint queries returned404 and no
 specific remaining balance was independently established by the coordinator.
+
+### BROWSER-UPLOAD-FIX-1 — first-click browser image picker
+Actual localhost acceptance on60ad08c proves two distinct concurrent sessions and logout isolation. First profile ReplaceImage click does not open chooser within7s: UiPage disables controls before the late-installed JPro uploader. Install one browser upload binding per trigger before its first click; keep page interactive while chooser is open/cancelled, and start busy upload/save only on actual selection. Native FileChooser remains supported. Abandoned/stale selections cannot upload; page-leave disposal composes with existing listing generation/photo cleanup. Preserve all format/size/copy/deadline/auth bounds. JPro has no published chooser-cancel callback; cancellation must leave the control usable without an invented timeout. Validate first-click/cancel/retry, profile/listing upload/render/remove, relogin and app restart using disposable localPG and only uniquely owned temporary bucket objects; never modify hosted marketplace records.
+
+Installed JPro2026.3.1 FileUploaderImpl initializes selectFileOnClick=false. Prepared image triggers must explicitly setSelectFileOnClick(true); makeFileUploadNode alone does not enable the chooser. Actual browser acceptance must observe a filechooser on the first click, not infer it from successful construction.
