@@ -1,4 +1,4 @@
-# Reflection on AI-Assisted Software Engineering in HotShop
+# Yeo Jian Ming - Reflection on AI-Assisted Software Engineering in HotShop
 
 This implementation of this set of new features exposed me to different workflows like SDD and Multi-agent workflows. Which also branched into understanding concepts like context engineering in order to properly optimise the efficiency of the agents working. A balance needed to be achieved between token usage as well as LLM context and capabilities. Creating a user-facing LLM feature also allowed me to consider different prompt injection scenarios, and subsequently creating a set of test cases to verify the security of my feature.
 
