@@ -36,6 +36,11 @@ or completed benchmark/correction records.
   reuse; and separately managed deployment automation. Record executed evidence
   honestly, with benchmark/release limitations. Definitions alone do not prove use.
 
+The submission reflection entry point is docs/Reflections.md. Preserve named
+contributor reflections and check personal claims and benchmark figures against
+their recorded evidence when editing it. Distinguish tested application boundaries
+from model semantic correctness; security-tag counts are not security guarantees.
+
 This file defines the repository-wide instructions that AI coding agents must follow when working on HotShop.
 
 These instructions apply to all files in this repository unless a more specific instruction file exists for a particular directory.

@@ -8,16 +8,28 @@
 
 ---
 
-HotShop is a desktop marketplace where you can buy and sell items, exchange
+HotShop is a JavaFX marketplace, also accessible through JPro in a browser, where you can buy and sell items, exchange
 messages, make offers, and arrange meetups. One account supports both buying
 and selling.
+
+## Access HotShop
+
+Open [HotShop on Render](https://cs3227-2610-mp3-ueno.onrender.com/) in your browser.
+Create an account from the login page, then log in to buy or sell. You need an
+internet connection, but do not need to install Java, configure a database or
+supply API keys to use the hosted app.
+
+The hosted application uses Supabase PostgreSQL for marketplace records and
+private Supabase Storage for photos. SQLite is no longer used. Records and photos
+persist across application restarts. The setup instructions below are for the
+operator or someone running a separate local instance.
 
 ## Introduction
 
 Welcome to the HotShop User Guide. This guide explains how to get started and
 use HotShop's marketplace features.
 
-Begin with [Getting Started](userGuide/GettingStarted.html) for requirements and
+Begin with [Getting Started](userGuide/GettingStarted.html) for browser access and local
 launch instructions, including the Intel and Apple Silicon macOS JARs.
 Then read [Accounts and Interface](userGuide/AccountsAndInterface.html)
 to create an account and find your way around. Use the sidebar to explore each
@@ -55,7 +67,7 @@ the page shows a fixed status message; ordinary search remains available.
 For example, enter **used bicycle under S$200**, choose **AI Search**, and review
 the proposed filters before applying them. Ordinary **Search** and Enter do not
 call the AI service. Leaving Search or logging out discards the pending proposal.
-Images remain local; no Supabase Storage bucket is needed to use AI Search.
+AI Search interprets the search text; it does not upload listing or profile images to the AI service. The application still requires the private image storage setup described above.
 
 ## Purpose of this Guide
 
