@@ -8,7 +8,7 @@
 
 ---
 
-HotShop is a desktop marketplace where you can buy and sell items, exchange
+HotShop is a JavaFX marketplace, also accessible through JPro in a browser, where you can buy and sell items, exchange
 messages, make offers, and arrange meetups. One account supports both buying
 and selling.
 
@@ -55,7 +55,7 @@ the page shows a fixed status message; ordinary search remains available.
 For example, enter **used bicycle under S$200**, choose **AI Search**, and review
 the proposed filters before applying them. Ordinary **Search** and Enter do not
 call the AI service. Leaving Search or logging out discards the pending proposal.
-Images remain local; no Supabase Storage bucket is needed to use AI Search.
+AI Search interprets the search text; it does not upload listing or profile images to the AI service. The application still requires the private image storage setup described above.
 
 ## Purpose of this Guide
 

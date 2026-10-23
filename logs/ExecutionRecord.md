@@ -13,8 +13,8 @@ container without image volume; second-account listing/public-profile reads.
 Used disposable localPG17, never hosted marketplace records. Two uniquely owned
 private-bucket PNGs matched original bytes, denied anonymous reads, and were removed
 through UI; authenticated reads verify absence and fixture refs/cleanup count0.
-Next: publish reviewed source/guide/evidence batch and obtain final-source full CI.
-Owner authorizes confirmed CI fixes until green. No merge or Render deployment;
+Final source e41f39e passed full CI39885467822 (tests, styles, check/build and packaging). PR12 merged into master on 2026-10-23; the GitHub run and merge were rechecked for this handoff.
+Next: verify the deployed revision and perform hosted smoke checks. No Render deployment was performed in this work;
 Render remains on earlier buyer branch. Local acceptance is not hosted smoke testing.
 ## Workflow reconciliation — 2026-10-22
 

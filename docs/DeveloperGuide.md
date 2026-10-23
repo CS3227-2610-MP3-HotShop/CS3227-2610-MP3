@@ -13,7 +13,7 @@ See [Agreed agent workflow and project evidence](developerGuide/DevelopmentWorkf
 ## Introduction
 
 Welcome to the HotShop Developer Guide. This guide introduces the architecture,
-codebase, and development workflow of HotShop, a JavaFX desktop marketplace with
+codebase, and development workflow of HotShop, a JavaFX/JPro marketplace with
 PostgreSQL persistence and private Supabase image storage.
 
 Start with [Development Workflow](developerGuide/DevelopmentWorkflow.html) to set
@@ -21,6 +21,16 @@ up your environment, run checks, and build the application, including selecting
 the JavaFX platform for Intel and Apple Silicon macOS JARs. Then read
 [Architecture Overview](developerGuide/ArchitectureOverview.html) to understand
 how the application is organised. Use the sidebar to explore each topic in detail.
+
+## Project reflections
+
+[Project reflections](Reflections.md) contains Jonathen Cheng's reflection on AI security, specification-driven development and the three workflow benchmarks, with concrete security-test assertions, their assurance limits, supporting evidence and a link to the preserved seller-feature reflection.
+
+## Workflow evidence
+
+The `workflow/PRODUCT-SPEC.md`, `workflow/TECHNICAL-SPEC.md` and `workflow/PLAN.md` files record approved requirements, design and implementation status. The corresponding `LLM_FEATURE_*` files record the seller AI feature's specification, design and plan. `workflow/benchmark-results.csv` preserves the measured candidates and their limitations; its results are not a test report for the current release. Agent roles and skills remain in their natural configuration locations under `.codex/`, `.agents/` and `docs/agents/`, with repository instructions in `AGENTS.md` and automation under `.github/workflows/`.
+
+`logs/ExecutionRecord.md` holds the current handoff and concise development evidence; existing feature summaries and teammate logs remain under `logs/`. The reflection is a report supported by this evidence, rather than a transcript of its drafting conversation.
 
 ## Purpose of this Guide
 
