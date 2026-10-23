@@ -22,6 +22,31 @@ the JavaFX platform for Intel and Apple Silicon macOS JARs. Then read
 [Architecture Overview](developerGuide/ArchitectureOverview.html) to understand
 how the application is organised. Use the sidebar to explore each topic in detail.
 
+## Hosted deployment and persistence
+
+The application is hosted on [Render](https://cs3227-2610-mp3-ueno.onrender.com/).
+Render runs the JavaFX/JPro server from the repository's `dockerfile`, and users
+interact through their browsers. The Docker build produces the JPro distribution
+with JDK 25 and copies it into a Java 25 JRE runtime image.
+
+Supabase PostgreSQL stores marketplace records. The private `listingImages` and
+`profileImages` Supabase Storage buckets hold photos. PostgreSQL is used in
+production, development and tests; there is no SQLite runtime fallback. Automated
+tests use disposable local Docker PostgreSQL databases, never hosted data.
+
+Configure runtime credentials in the Render service environment. A developer's
+`.env.local` is not automatically transferred to Render or loaded by the app.
+A database CA certificate path must be accessible inside the container, rather
+than point to a Windows workstation file. Follow the
+[operator setup guide](developerGuide/AccountServiceAndLocalPersistence.html#postgresql-operator-setup)
+for separate schema provisioning and private Storage activation before startup.
+Starting the application does not migrate or reset data. Its local working
+directory provides locking and temporary staging, not durable database or photo storage.
+
+Verify login, independent browser sessions, image upload/read/removal and restart
+persistence on the deployed revision. Existing local acceptance evidence does
+not establish that a particular Render deployment passed these checks.
+
 ## Project reflections
 
 [Project reflections](Reflections.md) contains Jonathen Cheng's reflection on AI security, specification-driven development and the three workflow benchmarks, with concrete security-test assertions, their assurance limits, supporting evidence and a link to the preserved seller-feature reflection.

@@ -1,42 +1,52 @@
 # HotShop
 
-HotShop is a desktop marketplace application where you can buy and sell items,
-search listings, exchange messages, make offers, and arrange meetups. One account
-supports both buying and selling.
+HotShop is a marketplace where you can buy and sell items, search listings,
+exchange messages, make offers and arrange meetups. One account supports both
+buying and selling. Optional AI features help buyers propose search filters and
+sellers generate listing descriptions.
 
-HotShop stores data locally and works offline after setup. Separate installations
-do not automatically share listings or messages. No database server is needed.
+## Use the hosted app
 
-## Download and run
+Open **[HotShop on Render](https://cs3227-2610-mp3-ueno.onrender.com/)** in your
+browser, create an account from the login page, then log in. Browser users need
+an internet connection; no Java installation or local database setup is required.
 
-1. Install **JDK 25** (Java Development Kit). Check that `java -version` reports
-   version 25, and set `JAVA_HOME` to your JDK installation if needed.
-2. Open the [HotShop repository](https://github.com/CS3227-2610-MP3-HotShop/CS3227-2610-MP3),
-   select **Code > Download ZIP**, and extract the ZIP.
-3. Open a terminal in the extracted project folder containing `gradlew` and
-   `gradlew.bat`, then run the command for your operating system:
+The JavaFX application runs through JPro on Render. Marketplace records persist
+in **Supabase PostgreSQL**, and listing/profile photos are stored in **private
+Supabase Storage buckets**. The current application does not use SQLite or store
+marketplace records in a local `.hotshop` database. The local working directory
+is used for locking and temporary files, not as a replacement for remote storage.
 
-   **Windows (PowerShell):**
+## Run locally for development
 
-   ```powershell
-   .\gradlew.bat run
-   ```
+Install **JDK 25** and clone this repository. Before launching, follow the
+[database and private Storage setup guide](docs/developerGuide/AccountServiceAndLocalPersistence.md)
+to configure the environment, provision the PostgreSQL schema and activate the
+image-storage bindings. Local runs also require access to the configured services;
+this is not an offline application. The app does not automatically load `.env.local`.
 
-   **macOS/Linux:**
+After setup, run from the project directory:
 
-   ```bash
-   chmod +x gradlew
-   ./gradlew run
-   ```
+```powershell
+# Windows
+.\gradlew.bat run
+```
 
-The included Gradle 9.1.0 Wrapper downloads the required dependencies on the first
-run, so an internet connection is needed for initial setup. You do not need to
-install Gradle separately. A graphical desktop is required.
+```bash
+# macOS/Linux
+chmod +x gradlew
+./gradlew run
+```
 
-When HotShop opens, create an account from the login page, then log in to get
-started. Your data is saved in the `.hotshop` folder in your home directory and
-is kept between runs.
+The Gradle 9.1.0 Wrapper downloads dependencies as needed; no separate Gradle
+installation is required. Local desktop runs require a graphical environment.
+Automated database tests use disposable Docker PostgreSQL databases, never the
+hosted application database. See the Developer Guide for test and Docker/JPro
+packaging instructions.
 
 ## Guides
 
-To view our User Guides and Developer Guides, they can be found in our [website](https://cs3227-2610-mp3-hotshop.github.io/CS3227-2610-MP3/).
+Visit the [product documentation website](https://cs3227-2610-mp3-hotshop.github.io/CS3227-2610-MP3/)
+for the [User Guide](https://cs3227-2610-mp3-hotshop.github.io/CS3227-2610-MP3/docs/UserGuide.html)
+and [Developer Guide](https://cs3227-2610-mp3-hotshop.github.io/CS3227-2610-MP3/docs/DeveloperGuide.html).
+The documentation website and the Render application are separate services.

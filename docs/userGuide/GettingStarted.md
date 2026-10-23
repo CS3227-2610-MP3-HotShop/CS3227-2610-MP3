@@ -4,12 +4,21 @@
   pageNav: 3
 ---
 
-## Requirements
+## Use HotShop in your browser
+
+Open [HotShop on Render](https://cs3227-2610-mp3-ueno.onrender.com/), create an
+account from the login page, and log in. An internet connection is required.
+You do not need Java or local database settings for browser access. Marketplace
+records and photos are stored in Supabase PostgreSQL and private Storage, not SQLite.
+
+The remaining instructions describe running a separate local desktop instance.
+
+## Local requirements
 
 Install a **JDK 25** (Java Development Kit) to build and run HotShop using the
 Gradle Wrapper below. A graphical desktop is required.
 
-## Start HotShop
+## Start HotShop locally
 
 From the project directory on Windows:
 

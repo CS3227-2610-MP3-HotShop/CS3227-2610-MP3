@@ -12,12 +12,24 @@ HotShop is a JavaFX marketplace, also accessible through JPro in a browser, wher
 messages, make offers, and arrange meetups. One account supports both buying
 and selling.
 
+## Access HotShop
+
+Open [HotShop on Render](https://cs3227-2610-mp3-ueno.onrender.com/) in your browser.
+Create an account from the login page, then log in to buy or sell. You need an
+internet connection, but do not need to install Java, configure a database or
+supply API keys to use the hosted app.
+
+The hosted application uses Supabase PostgreSQL for marketplace records and
+private Supabase Storage for photos. SQLite is no longer used. Records and photos
+persist across application restarts. The setup instructions below are for the
+operator or someone running a separate local instance.
+
 ## Introduction
 
 Welcome to the HotShop User Guide. This guide explains how to get started and
 use HotShop's marketplace features.
 
-Begin with [Getting Started](userGuide/GettingStarted.html) for requirements and
+Begin with [Getting Started](userGuide/GettingStarted.html) for browser access and local
 launch instructions, including the Intel and Apple Silicon macOS JARs.
 Then read [Accounts and Interface](userGuide/AccountsAndInterface.html)
 to create an account and find your way around. Use the sidebar to explore each
