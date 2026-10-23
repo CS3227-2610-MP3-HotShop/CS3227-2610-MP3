@@ -14,7 +14,7 @@ import java.util.function.Supplier;
 public final class LlmConfiguration {
     private static final String ENDPOINT_KEY = "SOCLAAS_DESCRIPTION_URL";
     private static final String TOKEN_KEY = "SOCLAAS_API_KEY";
-    private static final String MODEL_KEY = "SOCLAAS_MODEL";
+    private static final String MODEL_KEY = "SOCLAAS_DESCRIPTION_MODEL";
     private static final Set<String> REQUIRED_KEYS = Set.of(ENDPOINT_KEY, TOKEN_KEY, MODEL_KEY);
     private static final String UNAVAILABLE_MESSAGE = "Description generation configuration is unavailable";
     private static final int MAX_HEADER_CODE_POINT = 0xff;
