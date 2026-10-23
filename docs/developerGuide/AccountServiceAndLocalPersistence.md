@@ -8,17 +8,23 @@
 
 ### Runtime lifecycle and data directory
 
-`ApplicationRuntime.open` owns the image-directory lock, schema validation, image
-recovery, shared service worker and services. Close it to drain queued work before
-releasing the lock. `Main.init` opens the runtime off the JavaFX thread;
+`Main` shares one operating-system data-directory lock across same-process JPro
+browser instances through independent runtime leases. Each `ApplicationRuntime`
+still owns its schema validation, image recovery, service worker, services and
+in-memory login session. Close it to drain queued work before releasing its lease;
+the physical lock remains until the last browser runtime closes. Direct
+`ApplicationRuntime.open` calls retain exclusive locking. A different process or
+independent lock owner cannot open the same directory while it is in use.
+`Main.init` opens the runtime off the JavaFX thread;
 `Main.stop` starts asynchronous shutdown. Initialization failures show an error
 instead of resetting storage. See [runtime initialization and shutdown](ArchitectureOverview.html#runtime-initialization-and-shutdown)
 for the database/description-owner overloads.
 
-The directory selects managed images and locking only; it does not select the
-PostgreSQL database. It contains `application.lock`, `images/profiles/` and
-`images/listings/`. Legacy `marketplace.db` files are left untouched. The directory
-defaults to `${user.home}/.hotshop`; override it before `-jar`, for example:
+The directory selects locking only; it does not select the PostgreSQL database or
+remote image storage. Production stores the lock file there; local image stores are
+used only by explicit fixture/offline overloads. Legacy `marketplace.db` files are
+left untouched. The directory defaults to `${user.home}/.hotshop`; override it
+before `-jar`, for example:
 
 ```powershell
 java "-Dhotshop.dataDir=C:\HotShop-test-data" -jar release/HotShop.jar
@@ -26,17 +32,17 @@ java "-Dhotshop.dataDir=C:\HotShop-test-data" -jar release/HotShop.jar
 
 The current Gradle `run` task does not forward this system property to its
 application JVM. The default Windows folder is normally `%USERPROFILE%\.hotshop`.
-Deleting the directory does not reset PostgreSQL records and can remove images
-still referenced by those records. Use a separate disposable database and image
-directory for experiments.
+Deleting the directory does not reset PostgreSQL records. Use a separate disposable
+database and data directory for experiments.
 
 ### PostgreSQL storage and transactions
 
 PostgreSQL is used in development, production and tests, with no SQLite runtime
 dependency. Fresh installations start empty; SQLite records are not imported.
-Images remain local; Supabase Storage and hosted deployment are separate integration
-work. Database tests do not establish two-browser isolation, JPro directory-lock
-behavior or shared-storage cleanup safety.
+Production profile and listing images use private Supabase Storage buckets. The
+runtime validates both bucket bindings at startup and has no local-image fallback.
+Local Docker PostgreSQL tests use disposable databases; they do not establish
+hosted credentials, browser isolation or remote-storage operational readiness.
 
 `DatabaseConfig` reads server environment settings or accepts explicit fixture
 configuration. It supplies credentials as separate JDBC properties, redacts
@@ -98,6 +104,52 @@ Set `HOTSHOP_DB_URL` to a credential-free `jdbc:postgresql://` URL. Supply
 `HOTSHOP_DB_USER` and `HOTSHOP_DB_PASSWORD` as separate server environment values;
 never put credentials in the URL or print environment values. Use a distinct
 database per environment.
+
+### Private image storage setup and import
+
+Configure the server-only Supabase settings in the application process environment
+or the Render service environment. Use the same Supabase project as the PostgreSQL
+database and create private buckets named `listingImages` and `profileImages`, with
+maximum object sizes of 10 MiB and 5 MiB respectively. The service uses the secret
+key only for server-side Storage requests; never expose it to the browser, database,
+source control, Docker build arguments or logs.
+
+```text
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_SECRET_KEY=YOUR_SERVER_ONLY_SB_SECRET
+HOTSHOP_LISTING_IMAGE_BUCKET=listingImages
+HOTSHOP_PROFILE_IMAGE_BUCKET=profileImages
+```
+
+After running `migrateDatabase`, stop older HotShop processes. Keep the existing
+image trees read-only while importing: the Windows `%USERPROFILE%\.hotshop\images`
+tree and the mounted Docker `hotshop-images/images/` tree. The importer reads only files
+referenced by PostgreSQL, validates their contents, and deduplicates identical
+copies. Missing or conflicting source files stop the import; source files are never
+rewritten.
+
+Run the create-only import, then its read-only verification:
+
+```powershell
+.\gradlew.bat migrateImages `
+  -PwindowsImageRoot="C:/path/to/.hotshop/images" `
+  -PdockerImageRoot="D:/path/to/hotshop-images/images"
+```
+
+```powershell
+.\gradlew.bat migrateImages `
+  -PwindowsImageRoot="C:/path/to/.hotshop/images" `
+  -PdockerImageRoot="D:/path/to/hotshop-images/images" `
+  -PimageImportVerifyOnly=true
+```
+
+Both bucket bindings become active together only after import. Startup refuses
+missing or mismatched bindings and does not fall back to local files. Keep the
+originals and backups. Before rolling back to old code, restore its database and
+image snapshot; if new remote-only images have been written, first export every
+currently referenced remote image. Import is create-only: an existing object name
+is never replaced. Automated tests use only local fixtures and never hosted
+credentials or buckets.
 
 Remote URLs require canonical `sslmode=verify-full` and appropriate certificate
 trust; uppercase or encoded spellings of the `sslmode` option are rejected.

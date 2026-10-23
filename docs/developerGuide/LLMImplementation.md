@@ -113,6 +113,29 @@ automatically read `.env` or `.env.local`. For example:
 SOCLAAS_BASE_URL=https://provider.invalid/v1
 ```
 
+## Shared HTTP resource ownership
+
+`Main` creates one process-level `DescriptionRuntime`. It owns a lazy
+`LlmHttpTransport` containing the strict-TLS HTTP client, managed worker and
+deadline scheduler. `HttpLlmClient` adapts the seller Responses protocol and
+`SocSearchClient` adapts buyer Chat Completions; each keeps its own endpoint,
+request/response rules and error mapping while borrowing the same transport.
+The production transport also enforces one process-wide limit of 90 buyer and
+seller HTTP dispatches per rolling minute. This is an application safeguard; it
+does not represent the provider's per-key daily or monthly budget and does not
+coordinate separate processes or replicas. Standalone and injected transports
+retain their existing behavior unless a budget is supplied.
+Closing a buyer client cancels only its exchanges. The process owner closes the
+shared resources at shutdown, and closing an application session does not close
+that owner. Standalone clients created by tests or alternate hosts retain ownership
+of their own transport.
+
+Both adapters use bounded asynchronous response handling, reject redirects and do
+not retry. Seller requests retain their one-shot preparation and quota admission
+ordering; buyer responses retain identity-only encoding and their own parser and
+status policy. Sharing the resource does not make the seller endpoint a fallback
+for buyer Search or vice versa.
+
 The seller URL must be absolute with a host and no user-info or fragment. Path and query are
 preserved, and internal hosts are allowed. The model must be nonblank. The token
 must be nonempty, contain no whitespace or control characters, and fit Java HTTP

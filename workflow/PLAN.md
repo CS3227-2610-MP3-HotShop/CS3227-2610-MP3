@@ -1405,6 +1405,179 @@ One Luna implementer owns relevant UI tests/setup/helpers and only directly nece
 
 Acceptance: meaningful reproduced evidence; focused UI/config/client/validator checks and both styles pass; full wrapper test/check/build/shadowJar suite passes; final independent specification/security reviews find no unresolved in-scope failure. Publish fix to existing PR11 and verify GitHub CI. If additional scope or defects remain after this shared pass, report rather than loop. Completed: Yes for grouped Linux CI correction, 2026-10-21. Stable5f0c3ea published; full GitHub Linux CI39568040457 passes test/bothstyles/check/build/shadowJar in8m33s. Actual local baseline reproduced three preview failures and repeated-toolkit initialization; feedback/navigation failures only reproduced in original Linux CI, corrected with observable async waits and valid request preconditions. All valid assertions retained or strengthened. Local combinedUI84 and finalAI21/styles pass. Final independent Luna specification and security reviews clear by source inspection using supplied checks. Shared correction1/1 consumed. Supplementary full Windows run still active at review; no success claimed until it finishes. Original measured snapshots/CSV unchanged. No production changes, hosted/live calls or deployment readiness claim.
 
+## Supabase image storage implementation — ST-PLAN1
+
+Status: owner-approved ST-001..ST-007 execution,2026-10-21 (start work on a new branch and implement). Source ST-P1 and ST-T1. Owner resumed
+bucket work after agreeing disposable PostgreSQL/local Storage fixtures remain the
+automated-test strategy. Initial implementation candidate3b431ab is published in
+draft PR12. Full Linux CI39595457297 passed; final reviews found unresolved HTTP,
+restart-recovery, upload-bound, configuration and provider-contract defects.
+Owner approved the grouped correction pass in chat on2026-10-21; shared cycle1/1
+is complete on441a6ae:48 focused tests, styles and aggregate build checks pass.
+Original findings are resolved, but security re-review reports uncapped recovery
+work under the shared guard (S-2). Owner explicitly authorised narrow cycle2 on
+2026-10-22 for capped queries, bounded work and fair repeat recovery; shared budget
+is extended to2/2 for this finding only. Same implementer completed it, followed
+by focused checks and re-review. Stable4099056 passes eight focused lifecycle tests,
+both styles and aggregate build checks; both re-reviews accept the fix with no
+remaining blocking finding. Full Linux CI39634278877 passed on4099056; superseded
+run39633201840 was cancelled. ST-001..ST-007 code acceptance is complete2026-10-22;
+ST-008 hosted/photo cutover remains separately gated. Shared correction2/2 exhausted.
+See logs/ExecutionRecord.md. Initial full Windows
+verification passed946 tests and required wrapper checks. No live Storage writes
+or deployment were performed.
+Branch codex/supabase-image-storage; source baseline27cdc2b. Preserve pending
+log-relocation docs, original benchmark snapshots and both existing PR branches.
+
+Human owner/approver: Jonat. One Luna implementer owns ST-001..ST-006 as a single
+batch (production, tests, fixtures, build/setup and associated guides). No tester or
+intermediate-review handoffs. Coordinator owns specifications, PLAN, shared logs and
+publication state; only coordinator updates Completed fields. All tasks start with
+Completed: No. One shared post-submission correction pass maximum, requiring explicit
+approval; historical PG/SoC/UI correction budgets are unchanged and not reused.
+
+### ST-001 — Storage seam, private HTTP client and configuration
+
+- Depends on: approved ST-T1/ST-PLAN1; existing validated ImageStorage behavior.
+- Requirements: ST-01..04,08,09; ST-T1 backend/config/private-read contract.
+- Own: src/main/java/hotshop/storage/; narrow relevant HTTP fixtures/storage tests;
+  existing build.gradle only if required by the approved design.
+- Keep byte validation/limits/generated filenames; introduce the small byte-store
+  seam and injected local fixture backend. Add HTTPS Supabase client using existing
+  HttpClient/Gson, two fixed buckets, apikey secret handling and bounded whole-body
+  requests. No public/signed browser URLs, credentials in paths/logs or runtime
+  fallback. Tests cover malformed settings, immutable binary upload/read/delete,
+  malformed/truncated/oversized responses, HTTP/TLS failures and resource cleanup.
+- Check: focused storage/config/HTTP tests and both styles; meaningful red for new
+  behavior. Existing valid image-validation assertions remain unchanged.
+- Completed: Yes,2026-10-22. Private client/config and corrected HTTP regressions
+  pass; full CI39634278877 on4099056 and final reviews pass.
+
+### ST-002 — Provisioned image manifest, binding and lifecycle guard
+
+- Depends on: ST-001 contracts; existing separate migrateDatabase command.
+- Requirements: ST-05,06,08,09.
+- Own: database/repository image lifecycle code, next numbered SQL migration (new),
+  migration registration and focused disposable-PostgreSQL tests.
+- Add image_objects manifest, namespace/project/bucket activation binding and durable
+  retirement integration. Add bounded session-advisory-lock guard. Protected writes
+  use its SAME connection across committed phases; no nested fresh-connection bypass.
+  Preserve existing schema/startup-version checks and application-clock timestamps.
+- Check: migration atomicity/idempotence/version rejection, session-lock contention,
+  connection-loss fencing, durable PENDING/ACTIVE/RETIRED transitions and incomplete
+  binding rejection. No hosted migration performed by automated tests.
+- Completed: Yes,2026-10-22. Disposable-PostgreSQL migration/guard/binding tests,
+  full CI39634278877 and final reviews pass. No hosted provisioning performed.
+
+### ST-003 — Service/reference transactions and coordinated recovery
+
+- Depends on: ST-001,ST-002.
+- Requirements: ST-02,04..06,09.
+- Own: ManagedImages, ProfileImages, AccountService, ListingService and related
+  narrow repository/runtime/image fixture changes and tests.
+- Reserve before upload, commit entity refs and ACTIVE/retirement state atomically,
+  retain old reference on failure, and reconcile owned unreferenced objects safely.
+  Cover every reference-mutating path. No full-bucket orphan scan; uncertain writes
+  retain tracking. Keep existing authorization, offer/state rules and directory lock.
+  Add identity-authorized async reads; do not expose arbitrary filename read bypass.
+- Check: profile/listing regressions; gated two-runtime upload-vs-cleanup, DB rollback,
+  failed/late remote writes, retired-object deletion retries, namespace isolation and
+  unknown-object preservation. Controlled HTTP fixture + disposable local PostgreSQL.
+- Completed: Yes,2026-10-22. Lifecycle, restart/late-object and21-row batch/guard
+  regressions pass; full CI39634278877 and both final re-reviews pass.
+
+### ST-004 — Browser/desktop file selection and private display
+
+- Depends on: ST-001,ST-003.
+- Requirements: ST-01..04,09.
+- Own: UiImages, affected profile/listing/card/detail/editor UI/runtime API surfaces
+  and related tests. Extend current patterns rather than parallel screens.
+- Use existing JPro WebAPI upload futures in browser mode and native FileChooser on
+  desktop; transfer actual bytes to an owned temporary file. Validate again on save.
+  Fetch authorized private image bytes off FX with bounded resources, safe fallback
+  and page/session guards. Preserve Add Photo/remove/reorder and existing limits.
+  Clean temp files on save/cancel/failure/stale completion. No private key in browser.
+- Check: control/provider calls, selection/transfer failure, limits/order, stale page/
+  logout, temp cleanup, no FX-blocking network and authenticated image reads. Run the
+  combined UI classes to exercise shared JavaFxTestSupport initialization.
+- Completed: Yes,2026-10-22 for implementation/local fixtures. Bounded copy and UI
+  regression checks, full CI39634278877 and final reviews pass. Real browser and
+  hosted persistence checks remain ST-008; no general JPro readiness claim.
+
+### ST-005 — Repeatable importer and cutover verification
+
+- Depends on: ST-001..ST-003.
+- Requirements: ST-01,07..09.
+- Own: new operator image-import command under storage/, narrow Gradle command entry,
+  tests and existing setup/developer guide instructions.
+- Inventory only DB-referenced images from both Windows and Docker sources via
+  read-only source access; preserve flat names/originals. Coalesce identical copies,
+  block missing/conflicting content, verify existing remote bytes without overwrites,
+  and activate BOTH namespace bindings only after complete verification. Support
+  verify-only/restartable runs; no startup import, bucket reset or silent data loss.
+  Document stop-old-app prerequisite and rollback limits after remote-only writes.
+- Check: two source roots, matching/conflicting duplicates, missing source, provider
+  conflicts/outages, crash/resume, repeat import, activation atomicity, originals
+  intact, no key leakage. Automated command tests use local fixtures only.
+- Completed: Yes,2026-10-22. Isolated importer/conflict/verification tests and
+  final reviews pass; full CI39634278877 passes. Live cutover stays ST-008.
+
+### ST-006 — Integration, guides and stable-candidate verification
+
+- Depends on: ST-001..ST-005.
+- Requirements: all ST-01..09.
+- Own: assigned implementation guides (UserGuide, DeveloperGuide and affected linked
+  pages), existing test fixtures, narrowly required build/runtime configuration.
+- Update PostgresTestSupport/runtime injection so all automated tests remain isolated
+  from Supabase and existing local images. Update actual configuration/import/browser
+  behavior in guides; do not claim future live acceptance. Preserve logging cleanup.
+- Run focused changed areas/styles during development; after batch is green run one
+  full wrapper test/checkstyleMain/checkstyleTest/check/build/shadowJar verification.
+  Build the Docker image if packaging changes and verify no settings/CA/key leakage.
+  Review diff for weakened assertions, unrelated changes and sensitive data.
+- Return exact source snapshot, actual check results/counts and unresolved findings
+  in a concise message, with no new reporting Markdown/per-agent logs.
+- Completed: Yes,2026-10-22. User/Developer guides updated; focused48-case cycle1
+  and eight-case cycle2 checks pass (overlap not summed). Full CI39634278877 on
+  4099056 passes test, both styles, check, build and shadowJar. Packaging unchanged.
+
+### ST-007 — Final acceptance reviews and consolidation
+
+- Depends on: ST-006 stable candidate and actual verification evidence.
+- Owners: independent Luna specification/coverage reviewer and security reviewer,
+  source-only where existing executed checks suffice; coordinator consolidates.
+- Assess ST-01..09 traceability, backend auth/read boundaries, bounded JPro uploads,
+  reference/cleanup races and importer cutover/rollback without repeating unchanged
+  green checks. Group any findings into the one shared correction plan; no extra
+  loop or unapproved weakening. Record evidence in existing logs/ExecutionRecord.md
+  or the existing feature summary, never AGENTS.md. No benchmark score rewrites.
+- Code acceptance does not establish hosted/provider or general JPro readiness.
+- Completed: Yes,2026-10-22. Both final focused re-reviews accept4099056 with no
+  blocking finding; full CI passes. Owner-approved corrections1 and narrow2 are
+  consolidated in logs/ExecutionRecord.md; shared budget2/2 exhausted. Provider
+  operations are capped at32 per recovery pass; metadata iteration remains uncapped
+  as disclosed.
+
+### ST-008 — Operator setup and live photo cutover (separately gated)
+
+- Depends on: ST-007 acceptance, configured private buckets/key and reviewed inventory.
+- Owner: coordinator/operator Jonat; no implementer automated hosted writes.
+- Prepare a read-only inventory/verification report for actual Windows .hotshop and
+  Docker hotshop-images sources, exact referenced-image counts/conflicts and target
+  project/buckets. Verify private visibility and permissions without logging secrets.
+  Present concrete transfer/activation/rollback scope for owner approval BEFORE live
+  uploads/cutover. Tests never use these credentials or source assets.
+- Only after that approval: stop old writers, preserve backups/originals, execute
+  importer, verify both buckets and refs, activate binding, test real browser upload/
+  display/remove and app restart without old image volume. Record actual evidence;
+  do not automatically remove directory lock, merge PRs or deploy production.
+- Missing keys, source conflicts or browser/session blockers pause only this gate;
+  they do not authorize silent resets or erase local code-verification evidence.
+- Completed: No.
+
+Execution approval granted for ST-001..ST-007 only. ST-008 live writes and cutover
+remain separately gated on a concrete inventory and explicit operator approval.
+
 ## AI-MERGE-1 — integrate current master into buyer AI Search
 
 Authority: Jonat requested resolving PR11 merge conflicts on2026-10-22. Baselines:
@@ -1434,7 +1607,7 @@ unresolved blocker. Publish to PR11 and retarget to master only after integratio
 is concrete. No PR merge, deployment, Storage integration or benchmark rewrites.
 Use one planned correction pass plus evidenced in-scope error fixes under current
 policy. Record interaction batches and actual checks concisely in the existing log.
-Completed: No. Initial integration, no post-submission correction pass yet.
+Completed: Yes,2026-10-23. Integration126fc8c passes full LinuxCI39820740076 and both final reviews; focused835 cases/styles/package pass. Coverage correction1 completed. PR11 merged into masterd59d6ba. The subsequent checkpoint notes below preserve historical progress states.
 
 AI-MERGE-1 checkpoint: testing stopped at owner request. All conflict index entries
 resolved; merge remains uncommitted. New URL-isolation regressions are not compiled
@@ -1450,3 +1623,73 @@ AI-MERGE-1 resumption after second pause 2026-10-23: owner authorizes tests agai
 AI-MERGE-1 final review: security no confirmed blocker; specification F-1 requires joint synthetic-dispatch URL coexistence coverage. Shared correction pass1 assigned to existing implementer for focused regression, affected checks and re-review under current owner policy. Full Linux CI still pending; Completed remains No.
 
 AI-MERGE-1 local verification complete 2026-10-23:835 distinct targeted tests pass (646+188+1), zero failures/errors/skips; both styles and check/build/shadowJar packaging pass. Correction pass1 test-only F-1 resolved by independent focused re-review; security no confirmed introduced finding. Full final-candidate Linux CI remains pending. Merge and changes preserved uncommitted; Completed remains No until all acceptance gates pass.
+
+## ST-MERGE-1 / AI-DEDUPE-1 — PR12 integration and AI connection consolidation
+Authority: owner Jonat requests conflicts/deduplication and explicitly includes both
+AI connection clients,2026-10-23. Source: technical amendment with these IDs.
+One existing Luna implementer owns application/tests/build/topic guides; coordinator
+owns root guides, AGENTS, specs/PLAN and logs. Human approver Jonat. Preserve completed
+ST001..007 and prior correction2/2 histories; this is newly authorized integration/refactor.
+- ST-MERGE-1: resolve masterd59d6ba into Storage7cb796e, preserve runtime/editor/UI
+  ownership and Storage behavior, remove duplicate integration/guide code. Ready now.
+- AI-DEDUPE-1: inventory shared transport differences and propose smallest common
+  connection component, then record concrete design before modifying production.
+  Depends on resolved source contracts; readiness pending mechanism/ownership evidence.
+- Verification: test observable preserved behavior with relevant local HTTPS/DockerPG
+  regressions, both styles, check/build/shadowJar; no weakened valid assertions.
+  One stable final candidate receives spec/coverage and security reviews, one grouped
+  correction pass with current owner policy for confirmed in-scope mistakes.
+- Publication/merge acceptance requires final-source Linux CI. ST008 live cutover and
+  hosted/browser readiness remain distinct gates; never infer them from source tests.
+Completed: No. Local master merge started; two application conflicts delegated.
+
+AI-DEDUPE-1 design readiness: initial source inventory found duplicated connections,
+workers/timers/exchange tracking and bounded reads. Concrete shared transport contract
+recorded in TECHNICAL-SPEC; coordinator accepts one process-owned request/response-policy
+transport with protocol adapters and explicit borrowing/owning lifecycle. Existing
+implementer may proceed within owner-authorized consolidation. Verify connection reuse,
+per-client/session close isolation and common-owner shutdown alongside all existing
+protocol/error/bounds/race tests. Ready for initial implementation; Completed remains No.
+
+ST-MERGE-1/AI-DEDUPE-1 initial implementation: 575 unique focused cases pass across
+recorded green runs, both styles and aggregate check/build/shadowJar pass. Independent
+security review no confirmed finding. Spec AI-DEDUPE-1-COV-1 requires pending borrower
+cancellation isolation coverage. Shared correction pass1 assigned for focused tests
+and re-review, no production defect established. Linux CI pending; Completed remains No.
+
+ST-MERGE-1/AI-DEDUPE-1 local acceptance: correction1 test-only coverage gap resolved by independent re-review. Both final source reviews accept;577 unique targeted cases/styles/check/build/shadowJar pass. Prepare publication and final-source Linux CI; no live cutover or hosted readiness inferred. Completed remains No pending Linux CI.
+
+## BROWSER-READY-1 / AI-CI-FIX-2 — final PR12 readiness batch
+Owner Jonat explicitly requests all necessary Storage/browser/two-session work and
+keeping CI fixes running until green,2026-10-23. Source: final technical amendment.
+Preserve completed histories; confirmed CI cleanup defects use authorized extra
+correction2 after integration correction1. New browser/quota work is initial scope.
+One general Luna worker owns production/tests/topic guides. Coordinator owns root
+guides/specs/PLAN/records/operator checks. Reassignment was necessary because the
+configured specialist's higher-level role conflicted with combined test ownership;
+no split tester handoff or simultaneous production owners.
+Tasks: preserve synchronous cancellation cleanup; canonical same-process directory
+leases with per-runtime identity; shared90/minute application dispatch budget; affected
+unit/style/package checks; focused Linux reproduction; final independent reviews;
+commit/push one stable batch and obtain final-source full Linux CI.
+Operator work: user confirms rotated replacement key in local/Render; read-only
+verification finds both private buckets and active bindings. No import needed for
+zero current photo refs. Coordinator configured10MiB listing/5MiB profile bucket
+limits. Linux Docker app built and started locally, HTTP200 observed; UI not verified.
+Browser automation approval is pending after automatic review rejected unrestricted
+host Node execution bypassing sandbox localhost restriction. Continue unaffected
+code/tests; no workaround or UI success claim. Hosted Render branch is still buyer
+branch, not Storage candidate; no deployment performed. Reflection prompt remains
+unavailable; do not fabricate personal experience or submission requirements.
+Completed: No. Focused fixes underway; final Linux CI and browser gates remain open.
+
+Readiness candidate reviewed:281 affected Windows cases/styles pass; final96/styles pass after cleanup hardening; check/build/shadowJar with tests excluded passes. Independent specification/coverage and security reviews accept the changed candidate above0f363d9 without findings. Linux JPro release build passes. Focused Linux transport verification and final-source full CI remain pending; browser approval remains separately blocked. Completed remains No.
+
+Focused Linux transport/preparation/budget/coexistence wrapper tests PASS (23s), isolated build-stage image with no production credentials. Full GitHub CI pending publication.
+
+Final source CI acceptance: e182828, GitHub39835302159 PASS (job12m31s; Gradle12m12s), complete test/styles/check/build/shadowJar plus artifact upload. AI-CI-FIX-2 and ST-MERGE-1/AI-DEDUPE-1 code/integration gates are accepted. BROWSER-READY-1/ST008 overall completion remains No because real two-browser/image acceptance and hosted cutover are unverified. Evidence-only consolidation does not change source or benchmark outcomes; current PR checks remain authoritative.
+
+### BROWSER-UPLOAD-FIX-1 — confirmed browser acceptance correction
+Owner approved restricted localhost Chrome checks2026-10-23. Disposable local PostgreSQL17 (no hosted DB accounts/listings), real configured private buckets for uniquely owned temporary photos. Both sessions start and retain distinct Alpha/Beta profiles. Actual first profile ReplaceImage click fails to open filechooser within7s. Concrete source: UiPage.run disables body before UiImages.choose attaches JPro upload handler; listing AddPhoto has same path. Assign existing Luna implementer one narrow production/test/topic-guide correction, preserving native chooser, bounds, auth, stale/temp cleanup. Coordinator owns browserchecks/sharedrecords. This confirmed in-scope error is authorized by owner additional-pass policy; no new feature or deployment. Focused checks, final reviews and actual profile/listing browser rerun required. Completed: No.
+
+BROWSER-UPLOAD-FIX-1 local acceptance:123 affected tests, both styles and check/build/shadowJar-x test PASS; focused actual-page-leave coverage follow-up4cases/style PASS. Independent spec/security reviews clear and coverageitemclosed byspec re-review. Real bounded localhost Chrome+disposablePG17: two identities/logoutisolation; profile/listing firstclickchooser/cancel/retry/upload/render; no-image-volume appreplacement; buyer/publicprofile reads; profileremove/listingdelete PASS. Twoownedprivatebucketobjects verified byte-identical then absent;0photo refs/0cleanup. No hostedmarketplaceDB writes or merge/deploy. Confirmed correction3 and grouped coveragefollow-up recorded. Final-source CI pending publication; localbrowser/operator acceptance complete, hostedRender smoke remains separate. Completed remains No for final-source CI only; ST008 hosted cutover is not claimed.

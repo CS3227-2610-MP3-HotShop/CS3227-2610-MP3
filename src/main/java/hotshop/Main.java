@@ -21,6 +21,7 @@ import javafx.stage.Stage;
  */
 public class Main extends Application {
     private static final System.Logger LOGGER = System.getLogger(Main.class.getName());
+    private static final ApplicationRuntimeDirectoryLocks DIRECTORY_LOCKS = new ApplicationRuntimeDirectoryLocks();
     private ApplicationRuntime runtime;
     private Exception startupFailure;
     private SocSearchClient aiSearchClient;
@@ -44,8 +45,9 @@ public class Main extends Application {
     public void init() {
         try {
             String defaultDirectory = Path.of(System.getProperty("user.home"), ".hotshop").toString();
-            runtime = ApplicationRuntime.open(Path.of(System.getProperty("hotshop.dataDir", defaultDirectory)),
-                    Clock.systemDefaultZone(), ServerDescriptions.OWNER);
+            runtime = ApplicationRuntime.openForApplication(
+                    Path.of(System.getProperty("hotshop.dataDir", defaultDirectory)),
+                    Clock.systemDefaultZone(), ServerDescriptions.OWNER, DIRECTORY_LOCKS);
         } catch (Exception exception) {
             startupFailure = exception;
             LOGGER.log(System.Logger.Level.ERROR, "Unable to initialize HotShop; check storage and database setup");
@@ -66,8 +68,8 @@ public class Main extends Application {
             alert.setTitle("HotShop startup failed");
             alert.setHeaderText("Unable to open HotShop data");
             if (startupFailure instanceof SQLException || startupFailure instanceof IllegalArgumentException) {
-                alert.setContentText("Check PostgreSQL connection settings and connectivity. "
-                        + "Ask the operator to run migrateDatabase with a compatible application version.");
+                alert.setContentText("Check PostgreSQL and private image storage operator settings and connectivity. "
+                        + "Ask the operator to verify provisioning and image storage bindings.");
             } else {
                 alert.setContentText("Check that the image data folder is writable and no other HotShop instance "
                         + "is using it. Existing data has not been reset.");
@@ -76,12 +78,17 @@ public class Main extends Application {
             Platform.exit();
             return;
         }
-        aiSearchClient = createAiSearchClient(System.getenv());
+        aiSearchClient = createAiSearchClient(System.getenv(), ServerDescriptions.OWNER);
         new MarketplaceUi(stage, runtime, aiSearchClient == null ? null : aiSearchClient::propose);
         stage.show();
     }
 
     static SocSearchClient createAiSearchClient(Map<String, String> environment) {
+        return createAiSearchClient(environment, null);
+    }
+
+    private static SocSearchClient createAiSearchClient(Map<String, String> environment,
+            DescriptionRuntime owner) {
         String baseUrl = environment.get("SOCLAAS_BASE_URL");
         String apiKey = environment.get("SOCLAAS_API_KEY");
         String model = environment.get("SOCLAAS_MODEL");
@@ -89,7 +96,9 @@ public class Main extends Application {
             return null;
         }
         try {
-            return new SocSearchClient(URI.create(baseUrl), apiKey, model);
+            URI endpoint = URI.create(baseUrl);
+            return owner == null ? new SocSearchClient(endpoint, apiKey, model)
+                    : owner.createBuyerSearchClient(endpoint, apiKey, model);
         } catch (IllegalArgumentException failure) {
             return null;
         }

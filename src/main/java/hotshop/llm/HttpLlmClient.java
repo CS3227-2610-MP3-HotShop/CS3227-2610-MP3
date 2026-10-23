@@ -17,9 +17,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import com.google.gson.stream.JsonWriter;
 
@@ -29,7 +26,6 @@ import hotshop.model.Condition;
 public final class HttpLlmClient implements LlmClient, AutoCloseable {
     private static final int MAX_TITLE_CODE_POINTS = 120;
     private static final int MAX_REQUEST_BYTES = 8192;
-    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(45);
     private static final String INVALID_INPUT = "Description generation input is invalid";
     private static final String UNAVAILABLE = "Description generation is unavailable";
@@ -47,9 +43,8 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
     private final LlmConfiguration configuration;
     private final Set<Operation> operations = new HashSet<>();
     private final Set<CompletableFuture<PreparedRequest>> preparations = new HashSet<>();
-    private HttpClient httpClient;
-    private ExecutorService worker;
-    private DeadlineScheduler scheduler;
+    private final LlmHttpTransport transport;
+    private final boolean ownsTransport;
     private boolean closed;
 
     /**
@@ -58,21 +53,29 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
      * @param configuration trusted startup snapshot
      */
     public HttpLlmClient(LlmConfiguration configuration) {
+        this(configuration, new LlmHttpTransport(), true);
+    }
+
+    /** Borrows the process-owned transport and closes only this client's pending operations. */
+    public HttpLlmClient(LlmConfiguration configuration, LlmHttpTransport transport) {
+        this(configuration, transport, false);
+    }
+
+    private HttpLlmClient(LlmConfiguration configuration, LlmHttpTransport transport, boolean ownsTransport) {
         this.configuration = Objects.requireNonNull(configuration);
+        this.transport = Objects.requireNonNull(transport);
+        this.ownsTransport = ownsTransport;
     }
 
     /** Transfers ownership of isolated transport resources; closing this client shuts them down. */
     HttpLlmClient(LlmConfiguration configuration, HttpClient client, ExecutorService worker,
             DeadlineScheduler scheduler) {
-        this(configuration);
-        this.httpClient = Objects.requireNonNull(client);
-        this.worker = Objects.requireNonNull(worker);
-        this.scheduler = Objects.requireNonNull(scheduler);
+        this(configuration, new LlmHttpTransport(Objects.requireNonNull(client), Objects.requireNonNull(worker),
+                Objects.requireNonNull(scheduler)), true);
     }
 
     static HttpClient createHttpClient(Executor executor) {
-        return HttpClient.newBuilder().executor(executor).connectTimeout(CONNECT_TIMEOUT)
-                .followRedirects(HttpClient.Redirect.NEVER).build();
+        return LlmHttpTransport.createHttpClient(executor);
     }
 
     @Override
@@ -89,8 +92,7 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
             }
         });
         try {
-            initializeResources();
-            worker.execute(() -> encodePreparation(title, condition, preparation));
+            transport.execute(() -> encodePreparation(title, condition, preparation));
         } catch (RuntimeException failure) {
             preparation.completeExceptionally(new PreparationException(Failure.UNAVAILABLE));
         }
@@ -119,9 +121,11 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
     }
 
     @Override
-    public synchronized CompletableFuture<LlmClient.Result> generate(String title, Condition condition) {
-        if (closed) {
-            return CompletableFuture.completedFuture(new Failed(Failure.CLOSED));
+    public CompletableFuture<LlmClient.Result> generate(String title, Condition condition) {
+        synchronized (this) {
+            if (closed) {
+                return CompletableFuture.completedFuture(new Failed(Failure.CLOSED));
+            }
         }
         byte[] request;
         try {
@@ -129,32 +133,19 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
         } catch (IllegalArgumentException | IllegalStateException failure) {
             return CompletableFuture.completedFuture(new Failed(Failure.UNAVAILABLE));
         }
-        initializeResources();
         return startAttempt(request, () -> { }).result();
     }
 
-    private void initializeResources() {
-        if (worker == null) {
-            worker = Executors.newVirtualThreadPerTaskExecutor();
-            scheduler = new ScheduledDeadline();
-            httpClient = createHttpClient(worker);
-        }
-    }
-
-    private synchronized Attempt startAttempt(byte[] request, Runnable beforeSend) {
+    private Attempt startAttempt(byte[] request, Runnable beforeSend) {
         Operation operation = new Operation(request, beforeSend);
-        if (closed) {
-            operation.finish(new Failed(Failure.CLOSED));
-            return operation;
+        synchronized (this) {
+            if (closed) {
+                operation.finish(new Failed(Failure.CLOSED));
+                return operation;
+            }
+            operations.add(operation);
         }
-        operations.add(operation);
-        try {
-            operation.registerDeadline(scheduler.schedule(() -> operation.finish(new Failed(Failure.TIMEOUT)),
-                    REQUEST_TIMEOUT));
-            worker.execute(operation::dispatch);
-        } catch (RuntimeException failure) {
-            operation.finish(new Failed(Failure.UNAVAILABLE));
-        }
+        operation.dispatch();
         return operation;
     }
 
@@ -172,46 +163,17 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
         }
         preparing.forEach(preparation -> preparation.completeExceptionally(new PreparationException(Failure.CLOSED)));
         pending.forEach(operation -> operation.finish(new Failed(Failure.CLOSED)));
-        if (httpClient != null) {
-            httpClient.shutdownNow();
-        }
-        if (scheduler != null) {
-            scheduler.close();
-        }
-        if (worker != null) {
-            worker.shutdownNow();
+        if (ownsTransport) {
+            transport.close();
         }
     }
 
-    interface DeadlineScheduler extends AutoCloseable {
+    interface DeadlineScheduler extends LlmHttpTransport.DeadlineScheduler {
+        @Override
         Cancellable schedule(Runnable callback, Duration delay);
-
-        @Override
-        default void close() {
-        }
     }
 
-    interface Cancellable {
-        void cancel();
-    }
-
-    private static final class ScheduledDeadline implements DeadlineScheduler {
-        private final ScheduledExecutorService timer = Executors.newSingleThreadScheduledExecutor(task -> {
-            Thread thread = new Thread(task, "hotshop-llm-deadline");
-            thread.setDaemon(true);
-            return thread;
-        });
-
-        @Override
-        public Cancellable schedule(Runnable callback, Duration delay) {
-            var future = timer.schedule(callback, delay.toNanos(), TimeUnit.NANOSECONDS);
-            return () -> future.cancel(false);
-        }
-
-        @Override
-        public void close() {
-            timer.shutdownNow();
-        }
+    interface Cancellable extends LlmHttpTransport.Cancellable {
     }
 
     private final class Prepared implements PreparedRequest {
@@ -247,11 +209,8 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
                 return super.cancel(mayInterruptIfRunning);
             }
         };
-        private CompletableFuture<HttpResponse<byte[]>> exchange;
-        private BoundedLlmBodySubscriber subscriber;
-        private Cancellable deadline;
+        private LlmHttpTransport.Exchange exchange;
         private boolean terminal;
-        private volatile boolean dispatched;
 
         Operation(byte[] request, Runnable beforeSend) {
             this.request = request;
@@ -265,53 +224,32 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
 
         @Override
         public boolean wasDispatched() {
-            return dispatched;
-        }
-
-        synchronized void registerDeadline(Cancellable incoming) {
-            deadline = incoming;
-            if (terminal) {
-                incoming.cancel();
-            }
+            LlmHttpTransport.Exchange current = exchange;
+            return current != null && current.wasDispatched();
         }
 
         void dispatch() {
-            CompletableFuture<HttpResponse<byte[]>> sent;
             try {
                 synchronized (HttpLlmClient.this) {
-                    synchronized (this) {
-                        if (terminal || closed) {
-                            return;
-                        }
-                        HttpRequest post = HttpRequest.newBuilder(configuration.endpoint())
-                                .header("Authorization", "Bearer " + configuration.bearerToken())
-                                .header("Content-Type", "application/json").header("Accept", "application/json")
-                                .header("Accept-Encoding", "identity").timeout(REQUEST_TIMEOUT)
-                                .POST(HttpRequest.BodyPublishers.ofByteArray(request)).build();
-                        try {
-                            beforeSend.run();
-                        } catch (RuntimeException failure) {
-                            finish(new Failed(Failure.UNAVAILABLE));
-                            return;
-                        }
-                        if (terminal || closed) {
-                            finish(new Failed(Failure.CLOSED));
-                            return;
-                        }
-                        dispatched = true;
-                        sent = httpClient.sendAsync(post, this::handleBody);
-                        exchange = sent;
-                        if (terminal) {
-                            sent.cancel(true);
-                        }
+                    if (terminal || closed) {
+                        finish(new Failed(Failure.CLOSED));
+                        return;
                     }
                 }
-                sent.whenComplete((response, failure) -> {
+                HttpRequest post = HttpRequest.newBuilder(configuration.endpoint())
+                        .header("Authorization", "Bearer " + configuration.bearerToken())
+                        .header("Content-Type", "application/json").header("Accept", "application/json")
+                        .header("Accept-Encoding", "identity").timeout(REQUEST_TIMEOUT)
+                        .POST(HttpRequest.BodyPublishers.ofByteArray(request)).build();
+                LlmHttpTransport.Exchange started = transport.send(post, REQUEST_TIMEOUT, beforeSend,
+                        this::handleBody);
+                registerExchange(started);
+                started.result().whenComplete((response, failure) -> {
                     if (failure != null) {
                         finish(new Failed(mapFailure(failure)));
                     } else {
                         try {
-                            worker.execute(() -> finish(parseResponse(response.body())));
+                            transport.execute(() -> finish(parseResponse(response.body())));
                         } catch (RuntimeException rejected) {
                             finish(new Failed(Failure.CLOSED));
                         }
@@ -322,22 +260,28 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
             }
         }
 
+        private void registerExchange(LlmHttpTransport.Exchange started) {
+            boolean cancel;
+            synchronized (this) {
+                cancel = terminal;
+                if (!cancel) {
+                    exchange = started;
+                }
+            }
+            if (cancel) {
+                started.cancel();
+            }
+        }
+
         private HttpResponse.BodySubscriber<byte[]> handleBody(HttpResponse.ResponseInfo info) {
             Failure failure = responseFailure(info);
             if (failure != null) {
                 finish(new Failed(failure));
-                return cancelledBody();
+                return LlmHttpTransport.cancelledBody();
             }
             boolean gzip = info.headers().firstValue("Content-Encoding").orElse("identity")
                     .trim().equalsIgnoreCase("gzip");
-            BoundedLlmBodySubscriber incoming = new BoundedLlmBodySubscriber(gzip, worker);
-            synchronized (this) {
-                subscriber = incoming;
-                if (terminal) {
-                    incoming.cancel();
-                }
-            }
-            return incoming;
+            return new BoundedLlmBodySubscriber(gzip, transport.worker());
         }
 
         void finish(LlmClient.Result outcome) {
@@ -356,22 +300,12 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
         }
 
         private void cleanup() {
-            CompletableFuture<HttpResponse<byte[]>> currentExchange;
-            BoundedLlmBodySubscriber currentSubscriber;
-            Cancellable currentDeadline;
+            LlmHttpTransport.Exchange currentExchange;
             synchronized (this) {
                 currentExchange = exchange;
-                currentSubscriber = subscriber;
-                currentDeadline = deadline;
-            }
-            if (currentDeadline != null) {
-                currentDeadline.cancel();
-            }
-            if (currentSubscriber != null) {
-                currentSubscriber.cancel();
             }
             if (currentExchange != null) {
-                currentExchange.cancel(true);
+                currentExchange.cancel();
             }
             synchronized (HttpLlmClient.this) {
                 operations.remove(this);
@@ -385,6 +319,15 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
         }
         if (failure instanceof HttpTimeoutException) {
             return Failure.TIMEOUT;
+        }
+        if (failure instanceof LlmHttpTransport.TransportClosedException) {
+            return Failure.CLOSED;
+        }
+        if (failure instanceof LlmHttpTransport.AdmissionException) {
+            return Failure.UNAVAILABLE;
+        }
+        if (failure instanceof LlmHttpTransport.ApplicationBudgetException) {
+            return Failure.PROVIDER_BUSY;
         }
         return failure instanceof BoundedLlmBodySubscriber.InvalidBodyException
                 ? Failure.INVALID_RESPONSE : Failure.NETWORK;
@@ -423,34 +366,6 @@ public final class HttpLlmClient implements LlmClient, AutoCloseable {
             return Failure.INVALID_RESPONSE;
         }
         return null;
-    }
-
-    private static HttpResponse.BodySubscriber<byte[]> cancelledBody() {
-        return new HttpResponse.BodySubscriber<>() {
-            private final CompletableFuture<byte[]> body = CompletableFuture.completedFuture(new byte[0]);
-
-            @Override
-            public java.util.concurrent.CompletionStage<byte[]> getBody() {
-                return body;
-            }
-
-            @Override
-            public void onSubscribe(java.util.concurrent.Flow.Subscription subscription) {
-                subscription.cancel();
-            }
-
-            @Override
-            public void onNext(List<java.nio.ByteBuffer> item) {
-            }
-
-            @Override
-            public void onError(Throwable failure) {
-            }
-
-            @Override
-            public void onComplete() {
-            }
-        };
     }
 
     /** Parses an already bounded provider response into a safe result. */

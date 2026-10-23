@@ -442,6 +442,194 @@ arbitrary future-completion callbacks. A narrow package-private scheduler seam m
 support a deterministic interleaving regression; keep public constructors/wire
 contract unchanged. No extra retry/live request or UI implementation is included.
 
+## Supabase image storage — ST-T1
+
+Source: owner-approved ST-P1 / ST-01..09, 2026-10-21. Target remains Java25,
+Gradle9.1, JavaFX/JPro2026.3.1 and PostgreSQL. No Next.js/Supabase Auth migration.
+Owner approved ST-T1/ST-PLAN1 execution in chat on2026-10-21 (start work on a new branch and implement). New work is on
+codex/supabase-image-storage; earlier benchmark/delivery snapshots stay unchanged.
+
+### Boundaries and configuration (ST-01,02,08)
+
+Use two private existing buckets, exact IDs listingImages and profileImages. Keep
+flat generated UUID.png/jpeg object keys so existing database filenames/order do
+not change. Map namespace listings/profiles to its fixed configured bucket; never
+accept an arbitrary bucket, path, URL or source filename from a browser.
+
+Proposed process settings: SUPABASE_URL (HTTPS project origin, not JDBC/storage
+endpoint), SUPABASE_SECRET_KEY (server-only opaque secret),
+HOTSHOP_LISTING_IMAGE_BUCKET=listingImages and
+HOTSHOP_PROFILE_IMAGE_BUCKET=profileImages. The trusted JPro server, operator-run
+local development process and importer read these; never embed them in distributed
+clients, resources, image references, URLs, exceptions or Docker build arguments.
+Do not distribute a privileged desktop build/key to end users. Server-side services
+continue enforcing HotShop sessions/ownership; the secret bypasses provider RLS.
+Secret keys go in the apikey header, not as Bearer JWTs. Do not add broad anonymous
+Storage policies or enable public access. Verify exact bucket IDs/private status
+and JPEG/PNG/file-size restrictions during operator setup before activation.
+
+Each environment/dataset needs dedicated buckets and one coordinating application
+PostgreSQL database. Two independent databases must not share writable buckets:
+their reference checks and locks could not protect one another. No silent local
+fallback when remote configuration is missing/invalid. Validate configuration and
+active storage binding safely at startup; never migrate schema or files there.
+
+### Existing components and minimal storage seam (ST-01,03,04)
+
+Keep ImageStorage as validation/filename facade; extract a narrow byte-store backend
+for put/read/delete. Existing ImageStorage(Path) remains for isolated local fixtures,
+not as an automatic hosted fallback. Add a Supabase HTTP backend using existing
+Java HttpClient and Gson, with no new SDK dependency. Inject backends/config into
+ApplicationRuntime/tests. A remote backend has no public local resolve(Path) API.
+
+Retain bounded content validation and copied validated bytes. PROFILE_LIMITS remain
+5MiB/512x512; LISTING_LIMITS10MiB/4096x4096, maximum10 listing images in order. MIME
+is derived from decoded content, never extension/browser metadata. Imports are
+immutable: upload with upsert=false. Apply full request/body deadlines, bounded
+response reads, closed streams, disabled cross-origin redirects and safe fixed error
+categories. Proposed internal defaults reuse10s connection/45s total request bounds;
+these are engineering timeouts, not a product latency guarantee. No blind write
+retry after an unknown outcome; use the reserved object key/recovery protocol.
+
+Use provider Storage REST upload/download/delete through the fixed project origin.
+Private reads are server-side authenticated downloads, not public or signed URLs
+handed to clients. Keep key encoding restricted to generated names and fixed bucket
+IDs. Verify provider status/error semantics against the published Storage API;
+contract tests exercise request paths, headers, binary bodies, MIME and deletion.
+
+### Private display and browser uploads (ST-02,03,04)
+
+Replace UI suppliers of local Paths with asynchronous authorized image reads.
+AccountService reads a profile image only after the existing public/own-profile
+lookup; ListingService requires authenticated getListing access and checks the
+filename belongs to that listing. Pass user/listing identity, not just an unchecked
+filename. Authorize even when cached. ApplicationRuntime must not expose a bypass
+through its old getProfileImagePath/getListingImagePath methods. Validate/bound
+image bytes on download; decode thumbnails in the existing display component and
+retain its missing-image fallback. Network operations run off the JavaFX thread,
+with bounded resources, cancellation and page/session guards; no persistent local
+image directory is required for display. No createPublicFile route or browser
+credential/header exposure. Failures must not clear database references.
+
+UiImages chooses files asynchronously. Desktop uses its current FileChooser on the
+FX thread. Browser mode uses the already-installed WebAPI2026.3.1 upload node and
+JSFile.getUploadedFileFuture() to receive actual bytes in a server-owned temporary
+file. Installed runtime signatures were inspected; a new JPro File SDK is unnecessary.
+Check browser-reported size/type for early UX feedback and recheck actual bytes with
+ImageStorage limits before staging/saving. Apply a server upload cap and do not
+trust uploaded filenames or temp paths. Temp files stay owned by the picker until
+save/cancel/failure/page-close releases them. Ignore stale completion after session
+change and remove any corresponding temporary file. Keep the current Add Photo,
+photo reorder/remove and profile save interactions; do not block FX awaiting upload.
+A real browser upload/download smoke is required beyond JavaFX fixture tests.
+
+### Reference integrity and shared cleanup (ST-05,06)
+
+Do not scan every unreferenced bucket object on startup. Track only application-owned
+objects in a new image_objects manifest: namespace+filename primary key, SHA256,
+byte size, PENDING/ACTIVE/RETIRED state, and application-clock timestamps. Add a
+storage binding per namespace (project origin, bucket ID, cutover state; no keys).
+Provision these using the next PostgreSQL migration and existing migrateDatabase.
+Keep image_cleanup as the durable retirement/retry queue, using namespace/key.
+
+Proposed coordination: one PostgreSQL session advisory lock for image lifecycle
+writes across both namespaces and all app instances. Simpler than timed leases for
+this bounded project; it serializes image mutations while reads stay independent.
+Acquire with a bounded wait, never block FX; a busy lock produces retryable feedback.
+The guard owns one dedicated JDBC connection for its whole lifetime. All protected
+reference/manifest transactions use THAT connection, so lock-connection loss cannot
+be followed by a successful unguarded reference commit on a new connection. Network
+I/O occurs outside SQL transactions while the session lock remains held. Release in
+finally; process death releases the lock. Use connection-owned APIs rather than
+nesting Database.executeTransaction calls that silently acquire fresh connections.
+
+For save: authorize and validate; acquire guard; commit PENDING reservations and
+cleanup ownership BEFORE remote upload; upload immutable bytes; commit entity image
+references plus ACTIVE state and retired old-key queue entries atomically; release.
+For update/delete/profile remove, recheck authorization/current listing state inside
+the guarded reference transaction. Text-only behavior and offer-rejection rules stay
+unchanged. All reference-mutating paths and importer/cleanup obey the same guard.
+
+Cleanup acquires the guard and rechecks live references under current committed
+state before deleting a queued/retired key from its bound bucket. Active in-flight
+uploads cannot be collected. Never delete unknown objects or another namespace.
+Failures retain durable work. If upload outcome is unknown, retain its reservation
+and retirement tombstone for repeated reconciliation: a single absent response must
+not erase tracking while a late remote write could still complete. Cleanup only
+retires unreferenced objects; it cannot restore/reuse their keys. Bound work per
+recovery batch; startup performs safe recovery, not full bucket enumeration. Add
+fenced connection-loss/crash and delayed-remote-completion cases to verification.
+
+Do not remove the existing local directory lock as part of this change. It still
+protects the current runtime/session lifecycle; this image protocol independently
+coordinates shared Storage across processes. Broader JPro multi-browser readiness
+remains separately gated, even if bucket operations and browser uploads pass.
+
+### Import, cutover and rollback (ST-01,07,08)
+
+Provide a separate operator migrateImages command and verify-only mode. Stop all old
+app processes before cutover; old versions do not know the new guard/binding. Run
+migrateDatabase first. Inventory DB-referenced profile/listing UUID names, then resolve
+from BOTH Windows .hotshop/images and Docker hotshop-images/images namespaces.
+Use read-only mounts or a read-only export of the Docker source; never open runtime
+or run startup cleanup against the source directories. No credentials in arguments.
+
+Validate each referenced source and compute SHA256. Identical copies across sources
+coalesce; conflicting copies for one namespace/key or missing referenced files block
+activation with a bounded operator report. Unreferenced local files are left intact,
+not silently promoted or deleted. Upload only referenced objects with original keys;
+existing remote content must match downloaded/hash-verified bytes or cause conflict,
+never overwrite. Register manifest/binding under the lifecycle guard; restartable
+progress and repeat verification must not duplicate or reset records.
+
+After all references in BOTH namespaces verify, activate both bindings transactionally;
+only then start the new app. New runtime refuses wrong/missing/incomplete binding.
+Local originals and source volume are retained. Before any new remote-only writes,
+rollback can restore the old app/source snapshot. After remote writes, rollback
+requires exporting/merging all currently referenced remote images back into the old
+layout; do not claim old local snapshots are a lossless rollback. No bucket reset,
+startup import, database reset, filename rewriting or manual bulk deletion.
+
+### Verification and responsibility map (ST-01..09)
+
+| Requirement | Planned verification / responsibility |
+| --- | --- |
+| ST-01,07 | Storage/importer: Windows+Docker source merge, duplicates/conflicts/missing data, resume/idempotence, remote restart with no image volume, binding activation/rollback boundaries. |
+| ST-02,04 | Services/UI: logged-out/other-owner mutation denial; permitted profile/listing reads; no raw filename bypass, public URLs, leaked keys or sensitive provider errors; stale-page/session fallback. |
+| ST-03 | Validation/picker: PNG/JPEG content, bytes/dimensions/count/order boundaries; malicious metadata/filenames; actual browser-byte upload, cancellation/temp cleanup and save revalidation. |
+| ST-05,06 | Repository/services: two isolated runtimes sharing local Postgres+HTTP fixture; gate upload versus cleanup, DB rollback/connection loss/process interruption, delayed PUT, failed delete, namespace isolation and no live-reference loss. |
+| ST-08 | Provisioning/config: migration atomicity, binding mismatch/incomplete rejection, no implicit fallback or startup migration, operator-safe diagnostics. |
+| ST-09 | Local HTTP fixture plus disposable PostgreSQL; both styles, relevant image/manual UI regressions, full wrapper verification and final independent reviews. No automated real bucket/model calls. |
+
+One implementer owns the approved source/tests/config/guides batch after planning;
+coordinator owns shared specs/PLAN and consolidated logs. No independent handoffs
+mid-implementation by default. Final stable candidate gets specification/coverage
+and security reviews, with at most one explicitly approved shared correction pass.
+No per-agent logs. Real JPro two-browser upload/display and provider smoke are
+separate gated integration evidence, not implied by passing HTTP fixtures.
+
+### Evidence and remaining approval gates
+
+Existing ImageStorage/ManagedImages/ImageCleanupRepository, ApplicationRuntime,
+UiImages and image service/UI tests were inspected. JPro WebAPI2026.3.1 runtime
+signatures confirm makeFileUploadNode(Node), SingleFileUploader and JSFile upload
+futures; browser behavior is not yet executed. Supabase documentation confirms
+private access and server-only secret keys; provider compatibility/visibility still
+requires operator verification before cutover. No schema, source, image or bucket
+was changed while drafting this design.
+
+Owner decisions already settled: preserve both source locations, two private buckets,
+original references and existing behavior, browser upload compatibility and safe
+coordinated cleanup. Proposed technical choices for owner review: server-mediated
+private reads, new manifest/binding migration, single session advisory guard with
+same-connection reference commits, no live-bucket automated tests, explicit importer
+cutover. Owner authorised ST-001..ST-007 implementation; ST-008 live cutover remains separately gated.
+
+References: [Supabase API keys](https://supabase.com/docs/guides/getting-started/api-keys),
+[private buckets](https://supabase.com/docs/guides/storage/buckets/fundamentals),
+[Storage API](https://supabase.github.io/storage/),
+[JPro documentation](https://github.com/JPro-one/JPro-Documentation).
+
 ### AI-MERGE-1 — seller/buyer configuration coexistence,2026-10-22
 
 Owner requested PR11 conflict integration after seller PR18 merged, then selected
@@ -467,3 +655,75 @@ Verify distinct URLs can coexist, misconfiguration stays isolated, ordinary manu
 flows invoke no AI, buyer preview/Apply and seller replace-before-save retain their
 contracts, and session/disposal/resource ownership survives the merge. Use focused
 fixtures then full final-source CI and final independent reviews.
+
+### ST-MERGE-1 / AI-DEDUPE-1 — Storage integration and shared AI connection code, 2026-10-23
+Owner Jonat requests PR12 conflicts/deduplication and explicitly includes buyer/seller
+AI connection consolidation. Baselines: Storage HEAD7cb796e/source4099056, masterd59d6ba
+(includes PR11 integration126fc8c). Preserve ST-T1/ST-P1 plus buyer/seller AI contracts.
+No externally visible behavior, provider protocol, endpoint setting, quota, response
+validation, authorization or cancellation semantics may change merely for reuse.
+Resolve runtime/editor merges preserving shared description-runtime ownership and
+Storage lifecycle/async/browser behavior. Preserve master guide organization and
+owner2026-10-22 workflow; relocate Storage setup guidance into existing topic guides.
+Consolidate only demonstrably shared connection handling; keep Chat Completions and
+Responses encoding/parsing and their public result contracts in their adapters.
+Keep strict TLS/no redirects, request/response byte bounds, whole-response deadlines,
+resource cleanup and shutdown-race protections. No hosted/provider calls, migrations,
+import/activation, deployment, benchmark rewrites or dependency additions.
+Shared transport mechanism and ownership are pending bounded source inventory before
+AI-DEDUPE-1 production edits; conflict resolution can proceed independently.
+
+#### AI-DEDUPE-1 shared transport contract
+Bounded source inventory confirms duplicate client/worker/timer/exchange ownership.
+Use one shared `LlmHttpTransport` in hotshop.llm (new), with asynchronous request
+execution, explicit per-request response policy and cancellable exchange handles.
+Reuse the existing bounded subscriber where applicable; policy preserves buyer
+identity-only encoding and seller bounded identity/gzip,64KiB wire and decoded caps.
+Protocol adapters retain endpoint formation,8KiB request guards, encoding/parsing,
+status/content-type validation and their public failure/result contracts. Preserve
+seller preparation/single-use requests and exact quota/onDispatch admission timing.
+Production transport is process-owned, preferably through existing DescriptionRuntime;
+Main/browser clients borrow it and close only their own exchanges. No new singleton
+or global owner. Standalone clients retain owned transport behavior and existing
+injected test seams. Resource allocation is lazy; owner close is idempotent and
+nonblocking, cancels all exchanges, and finalizes workers/timers/body resources.
+Close-versus-registration races must yield safe CLOSED results; never leak rejected
+scheduling, wait for network, or invoke arbitrary callbacks under a lifecycle lock.
+No requirement to collapse protocol adapters, configuration keys or credential scope.
+Acceptance adds shared-resource evidence and cross-adapter/per-session cancellation
+isolation, joint protocol routing, bounded bodies/deadlines and safe owner shutdown.
+Preserve existing negative/security assertions; add observable regressions where
+sharing introduces new state/ownership partitions. Use no live endpoint or hosted DB.
+
+### BROWSER-READY-1 / AI-CI-FIX-2 — operator and browser readiness, 2026-10-23
+Owner explicitly requests completing Storage/browser/two-session gates and continuing
+PR12 CI fixes until green while offline. Assignment/design evidence is in the concise
+execution record; these amendments capture the already agreed implementation contracts.
+CI39827937755 ran1544 cases and failed2 HttpLlmClient caller-cancellation cleanup
+assertions on Linux. Preserve those assertions. An exchange may be cancelled while
+sendAsync is still returning its future: cancel known subscription/deadline immediately,
+outside lifecycle locks, and cancel the future when registered. Cover this window
+with a deterministic response-future return gate; no sleep-based assertion weakening.
+Main/JPro uses a process-owned canonical-directory registry with reference-counted
+leases, one OS application.lock per real directory and independent runtime sessions/
+workers/services. Public standalone open remains exclusive. Keep other owner/process
+exclusion; release physical lock only after the final runtime's asynchronous drain.
+PostgreSQL image lifecycle fencing, authorization and per-editor staging stay intact.
+Real two-browser identity/persistence acceptance is a distinct gate from unit evidence.
+Owner supplies SoC defaults:90 requests/minute,80,000,000 microdollars/day,
+800,000,000/month;429 on limit exhaustion. Add process-owned shared LlmRequestBudget
+90/minute across production buyer/seller dispatches. Existing seller5/minute,30/hour/
+account and one-in-flight policy remains unchanged. Standalone transport constructors
+have no hidden application budget. Reserve atomically after request preparation and
+before admission callback, rollback proven pre-send failures, timestamp/charge at
+sendAsync invocation. Invoked requests remain charged on synchronous throw or later
+failure; never estimate monetary costs. Injectable monotonic time, boundary/concurrency/
+mixed-feature/refund tests and existing safe PROVIDER_BUSY feedback, no auto retries.
+This per-process ceiling is not a multi-replica/key-wide guarantee; monetary budgets
+remain provider-enforced. Key-specific budget endpoint queries returned404 and no
+specific remaining balance was independently established by the coordinator.
+
+### BROWSER-UPLOAD-FIX-1 — first-click browser image picker
+Actual localhost acceptance on60ad08c proves two distinct concurrent sessions and logout isolation. First profile ReplaceImage click does not open chooser within7s: UiPage disables controls before the late-installed JPro uploader. Install one browser upload binding per trigger before its first click; keep page interactive while chooser is open/cancelled, and start busy upload/save only on actual selection. Native FileChooser remains supported. Abandoned/stale selections cannot upload; page-leave disposal composes with existing listing generation/photo cleanup. Preserve all format/size/copy/deadline/auth bounds. JPro has no published chooser-cancel callback; cancellation must leave the control usable without an invented timeout. Validate first-click/cancel/retry, profile/listing upload/render/remove, relogin and app restart using disposable localPG and only uniquely owned temporary bucket objects; never modify hosted marketplace records.
+
+Installed JPro2026.3.1 FileUploaderImpl initializes selectFileOnClick=false. Prepared image triggers must explicitly setSelectFileOnClick(true); makeFileUploadNode alone does not enable the chooser. Actual browser acceptance must observe a filechooser on the first click, not infer it from successful construction.

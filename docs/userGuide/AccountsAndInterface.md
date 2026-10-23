@@ -30,8 +30,10 @@ within it to reach the remaining links.
 ### Managing profiles and passwords
 
 Use **My Profile** to save your display name and private preferred pickup location.
-Your username cannot be changed. **Replace Image** and **Remove Image** save
-separately from the text fields. **Change Password** requires your current password
+Your username cannot be changed. **Replace Image** opens the image picker; canceling
+it leaves the page available, and upload progress begins after you select a file.
+**Remove Image** and image replacement save separately from the text fields.
+**Change Password** requires your current password
 and matching new passwords; it keeps you logged in. Clicking another participant's
 name/photo opens **Public Profile** with their available listings, newest first.
 If they have none, it shows "No available listings". Your own identity link opens

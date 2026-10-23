@@ -81,7 +81,7 @@ public final class ListingService {
         this.session = session;
         this.clock = clock;
         images = new ManagedImages(database, storage, "listings", ImageStorage.LISTING_LIMITS,
-                listings::getReferencedImages);
+                listings::getReferencedImages, clock);
     }
 
     /**
@@ -113,13 +113,13 @@ public final class ListingService {
         return submit(() -> {
             UUID sellerId = session.requireUserId();
             ListingDetails details = toDetails(draft);
-            return withPhotoRecovery(photos, () -> {
-                List<ListingImage> saved = resolvePhotos(photos, List.of());
+            return withPhotoRecovery(photos, guard -> {
+                List<ListingImage> saved = resolvePhotos(photos, List.of(), guard);
                 Listing listing = new Listing(sellerId, details, saved, ServiceSupport.now(clock));
-                return transaction(connection -> {
+                return imageTransaction(guard, connection -> {
                     listings.insert(connection, listing);
                     return withSeller(connection, listing);
-                });
+                }, saved.stream().map(ListingImage::filename).toList());
             });
         });
     }
@@ -199,6 +199,25 @@ public final class ListingService {
         });
     }
 
+    /** Reads only an image filename attached to a listing the current authenticated user can fetch. */
+    public CompletableFuture<byte[]> getListingImage(UUID id, String filename) {
+        return submit(() -> {
+            session.requireUserId();
+            requireId(id);
+            Listing listing = transaction(connection -> requireListing(connection, id));
+            if (filename == null || listing.getImages().stream()
+                    .noneMatch(image -> image.filename().equals(filename))) {
+                throw ServiceException.notFound("This listing image is not available.");
+            }
+            try {
+                return images.read(filename);
+            } catch (IOException failure) {
+                throw new ServiceException(ServiceException.Code.STORAGE, "Listing image is unavailable right now.",
+                        failure);
+            }
+        });
+    }
+
     /**
      * Buyer search over other sellers' available listings. Reserved, sold, and archived listings
      * and the current user's own listings never appear. Results are not paginated.
@@ -240,24 +259,33 @@ public final class ListingService {
             ListingDetails details = toDetails(draft);
             List<ListingImage> previous = transaction(connection ->
                     requireEditable(connection, id, userId)).getImages();
-            return withPhotoRecovery(photos, () -> {
-                List<ListingImage> saved = resolvePhotos(photos, previous);
+            return withPhotoRecovery(photos, guard -> {
+                List<ListingImage> saved = resolvePhotos(photos, previous, guard);
                 Set<String> keptNames = new HashSet<>();
                 saved.forEach(image -> keptNames.add(image.filename()));
-                return transaction(connection -> {
+                return imageTransaction(guard, connection -> {
                     Listing listing = requireEditable(connection, id, userId);
+                    Set<String> currentNames = new HashSet<>();
+                    listing.getImages().forEach(image -> currentNames.add(image.filename()));
+                    if (photos.stream().filter(ListingPhoto.Existing.class::isInstance)
+                            .map(ListingPhoto.Existing.class::cast)
+                            .anyMatch(existing -> !currentNames.contains(existing.filename()))) {
+                        throw ServiceException.invalidState(
+                                "The listing photos changed. Reload the listing before saving again.");
+                    }
+                    List<ListingImage> currentImages = listing.getImages();
                     Instant time = ServiceSupport.latest(ServiceSupport.now(clock), listing.getUpdatedAt());
                     if (listing.update(details, saved, time)) {
                         listings.update(connection, listing);
                         PendingOffers.rejectAll(connection, offers, id, time);
-                        for (ListingImage image : previous) {
+                        for (ListingImage image : currentImages) {
                             if (!keptNames.contains(image.filename())) {
                                 images.schedule(connection, image.filename());
                             }
                         }
                     }
                     return withSeller(connection, listing);
-                });
+                }, saved.stream().map(ListingImage::filename).toList());
             });
         });
     }
@@ -303,23 +331,28 @@ public final class ListingService {
         return submit(() -> {
             UUID userId = session.requireUserId();
             requireId(id);
-            Listing deleted = transaction(connection -> {
-                Listing listing = requireOwned(connection, id, userId);
-                if (!listing.isDeletable()) {
-                    throw ServiceException.invalidState("This listing is " + ServiceSupport.describe(
-                            listing.getStatus()) + ", so it can't be deleted.");
-                }
-                if (offers.existsForListing(connection, id)) {
-                    throw ServiceException.invalidState(
-                            "This listing has offer history, so it can't be deleted. Archive it instead.");
-                }
-                chats.deleteForListing(connection, id);
-                for (ListingImage image : listing.getImages()) {
-                    images.schedule(connection, image.filename());
-                }
-                listings.delete(connection, id);
-                return listing;
-            });
+            Listing deleted;
+            try (Database.ImageLifecycleGuard guard = database.acquireImageLifecycleGuard()) {
+                deleted = guard.transaction(connection -> {
+                    Listing listing = requireOwned(connection, id, userId);
+                    if (!listing.isDeletable()) {
+                        throw ServiceException.invalidState("This listing is " + ServiceSupport.describe(
+                                listing.getStatus()) + ", so it can't be deleted.");
+                    }
+                    if (offers.existsForListing(connection, id)) {
+                        throw ServiceException.invalidState(
+                                "This listing has offer history, so it can't be deleted. Archive it instead.");
+                    }
+                    chats.deleteForListing(connection, id);
+                    for (ListingImage image : listing.getImages()) {
+                        images.schedule(connection, image.filename());
+                    }
+                    listings.delete(connection, id);
+                    return listing;
+                });
+            } catch (SQLException exception) {
+                throw ServiceSupport.storageFailure(exception, STORAGE_FAILURE);
+            }
             if (!deleted.getImages().isEmpty()) {
                 images.recoverSafely();
             }
@@ -339,10 +372,14 @@ public final class ListingService {
     }
 
     /** Runs work that may import photos, then removes any imported file that did not get saved. */
-    private <T> T withPhotoRecovery(List<ListingPhoto> photos, Callable<T> work) throws Exception {
+    private <T> T withPhotoRecovery(List<ListingPhoto> photos, PhotoOperation<T> work) throws Exception {
         boolean importsFiles = photos != null && photos.stream().anyMatch(ListingPhoto.NewFile.class::isInstance);
         try {
-            return work.call();
+            try (Database.ImageLifecycleGuard guard = database.acquireImageLifecycleGuard()) {
+                return work.apply(guard);
+            } catch (SQLException exception) {
+                throw ServiceSupport.storageFailure(exception, STORAGE_FAILURE);
+            }
         } finally {
             if (importsFiles) {
                 images.recoverSafely();
@@ -350,11 +387,17 @@ public final class ListingService {
         }
     }
 
+    @FunctionalInterface
+    private interface PhotoOperation<T> {
+        T apply(Database.ImageLifecycleGuard guard) throws Exception;
+    }
+
     /**
      * Turns the requested ordered photo list into saved images, importing new files. Kept photos
      * must already belong to the listing, and each photo may appear only once.
      */
-    private List<ListingImage> resolvePhotos(List<ListingPhoto> photos, List<ListingImage> current)
+    private List<ListingImage> resolvePhotos(List<ListingPhoto> photos, List<ListingImage> current,
+            Database.ImageLifecycleGuard guard)
             throws IOException {
         if (photos == null || photos.stream().anyMatch(Objects::isNull)) {
             throw ServiceException.validation("Every photo entry must be a new file or one of this listing's photos.");
@@ -377,7 +420,7 @@ public final class ListingService {
         for (ListingPhoto photo : photos) {
             String name = switch (photo) {
                 case ListingPhoto.Existing existing -> existing.filename();
-                case ListingPhoto.NewFile file -> images.importImage(file.source());
+                case ListingPhoto.NewFile file -> images.importImage(file.source(), guard);
             };
             result.add(new ListingImage(name, result.size()));
         }
@@ -460,5 +503,16 @@ public final class ListingService {
 
     private <T> T transaction(Database.Work<T> work) {
         return ServiceSupport.transaction(database, STORAGE_FAILURE, work);
+    }
+
+    private <T> T imageTransaction(Database.ImageLifecycleGuard guard, Database.Work<T> work,
+            List<String> activeImages) throws SQLException {
+        return guard.transaction(connection -> {
+            T result = work.execute(connection);
+            for (String filename : activeImages) {
+                images.activate(connection, filename, clock.millis());
+            }
+            return result;
+        });
     }
 }

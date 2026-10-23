@@ -4,6 +4,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Durable cleanup queue, partitioned by image namespace so each feature only processes
@@ -53,15 +55,29 @@ public final class ImageCleanupRepository {
      * @throws SQLException if database access fails
      */
     public Set<String> getPending(Connection connection, String namespace) throws SQLException {
-        Set<String> result = new HashSet<>();
-        try (var statement = connection.prepareStatement("SELECT filename FROM image_cleanup WHERE namespace = ?")) {
+        return new HashSet<>(getPendingBatch(connection, namespace, null, 32));
+    }
+
+    /** Reads a bounded slice of the cleanup queue after a fair per-runtime cursor. */
+    public List<String> getPendingBatch(Connection connection, String namespace, String afterFilename, int limit)
+            throws SQLException {
+        List<String> result = new ArrayList<>();
+        String cursorClause = afterFilename == null ? "" : " AND filename > ?";
+        try (var statement = connection.prepareStatement("SELECT filename FROM image_cleanup "
+                + "WHERE namespace = ?" + cursorClause + " ORDER BY filename LIMIT ?")) {
             statement.setString(1, namespace);
+            int limitParameter = 2;
+            if (afterFilename != null) {
+                statement.setString(2, afterFilename);
+                limitParameter++;
+            }
+            statement.setInt(limitParameter, limit);
             try (var rows = statement.executeQuery()) {
                 while (rows.next()) {
                     result.add(rows.getString(1));
                 }
             }
         }
-        return result;
+        return List.copyOf(result);
     }
 }

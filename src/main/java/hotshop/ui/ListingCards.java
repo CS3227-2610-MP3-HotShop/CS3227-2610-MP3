@@ -1,8 +1,6 @@
 package hotshop.ui;
 
-import java.nio.file.Path;
 import java.time.ZoneId;
-import java.util.function.Supplier;
 
 import hotshop.service.ListingWithSeller;
 import hotshop.service.MeetupSummary;
@@ -47,13 +45,14 @@ final class ListingCards {
     /** Seller cards reserve the same meetup area, including listings without a sale. */
     static Button card(MarketplaceUi app, ListingWithSeller value, Integer pending, MeetupSummary meetupSummary) {
         var listing = value.listing();
-        Supplier<Path> image = listing.getImages().isEmpty() ? null
-                : () -> app.runtime.getListingImagePath(listing.getImages().getFirst().filename());
+        var image = listing.getImages().isEmpty() ? null : listing.getImages().getFirst().filename();
         Label title = UiControls.label(listing.getDetails().title(), "listing-card-title");
         fixSize(title, CONTENT_WIDTH, TITLE_HEIGHT);
         title.setAlignment(Pos.TOP_LEFT);
         title.setTextOverrun(OverrunStyle.ELLIPSIS);
-        VBox details = new VBox(DETAILS_GAP, UiImages.display(image, CONTENT_WIDTH, IMAGE_HEIGHT), title,
+        VBox details = new VBox(DETAILS_GAP, UiImages.displayRemote(image == null ? null
+                : () -> app.runtime.getListings().getListingImage(listing.getId(), image), CONTENT_WIDTH,
+                IMAGE_HEIGHT), title,
                 UiControls.label(UiControls.money(listing.getDetails().priceCents()), "price"));
         HBox footer = new HBox(8);
         footer.setAlignment(Pos.CENTER_LEFT);

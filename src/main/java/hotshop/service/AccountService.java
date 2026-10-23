@@ -8,6 +8,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.time.Clock;
 
 import hotshop.database.Database;
 import hotshop.model.User;
@@ -39,11 +40,16 @@ public final class AccountService {
      */
     public AccountService(Database database, UserRepository users, ServiceWorker worker,
             AuthenticatedSession session, ImageStorage storage) {
+        this(database, users, worker, session, storage, Clock.systemUTC());
+    }
+
+    public AccountService(Database database, UserRepository users, ServiceWorker worker,
+            AuthenticatedSession session, ImageStorage storage, Clock clock) {
         this.database = database;
         this.users = users;
         this.worker = worker;
         this.session = session;
-        images = new ProfileImages(database, users, storage);
+        images = new ProfileImages(database, users, storage, clock);
     }
 
     /**
@@ -172,6 +178,22 @@ public final class AccountService {
         });
     }
 
+    /** Reads a profile image only after the profile is available to an authenticated user. */
+    public CompletableFuture<byte[]> getProfileImage(UUID profileId) {
+        return worker.submit(() -> {
+            session.requireUserId();
+            if (profileId == null) {
+                throw new ServiceException(ServiceException.Code.VALIDATION, "Profile ID is required");
+            }
+            try {
+                return images.read(profileId);
+            } catch (SQLException | IOException failure) {
+                throw new ServiceException(ServiceException.Code.STORAGE,
+                        "Profile image is unavailable right now.", failure);
+            }
+        });
+    }
+
     /**
      * Requires login and the current password; saves a validated replacement while retaining the session.
      *
@@ -229,7 +251,7 @@ public final class AccountService {
                 } catch (IllegalArgumentException | NullPointerException exception) {
                     throw new ServiceException(ServiceException.Code.VALIDATION, "Invalid profile details");
                 }
-                users.updateProfile(connection, updated);
+                users.updateProfileDetails(connection, updated);
                 return updated;
             });
         });

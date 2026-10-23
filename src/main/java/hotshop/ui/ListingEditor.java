@@ -1,12 +1,8 @@
 package hotshop.ui;
 
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.List;
 
 import hotshop.model.Category;
@@ -19,6 +15,7 @@ import hotshop.service.ListingDraft;
 import hotshop.service.ListingPhoto;
 import hotshop.storage.ImageStorage;
 import javafx.application.Platform;
+import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
@@ -46,12 +43,16 @@ final class ListingEditor {
     private List<String> initialFields;
     private long formRevision;
     private long generationSequence;
+    private UiImages.PreparedChooser photoChooser;
 
     ListingEditor(MarketplaceUi app, Listing original) {
         this.app = app;
         this.original = original;
         page = app.page(original == null ? "Create Listing" : "Edit Listing");
-        page.setLeaving(() -> generationSequence++);
+        page.setLeaving(() -> {
+            generationSequence++;
+            releaseTemporaryPhotos();
+        });
         if (original == null) {
             page.load(app.runtime.getAccounts()::getOwnProfile,
                     user -> build(user.getPreferredPickupLocation().orElse("")));
@@ -77,9 +78,13 @@ final class ListingEditor {
         form.field("category", "Category", category);
         form.field("condition", "Condition", condition);
         form.text("pickup-location", "Listing pickup location", pickup);
+        var addPhoto = UiControls.button("Add Photo", "add-photo", () -> { });
+        photoChooser = UiImages.prepareChooser(app.stage, addPhoto, ImageStorage.LISTING_LIMITS);
+        page.setLeaving(photoChooser::cancel);
+        addPhoto.setOnAction(event -> addPhoto());
         form.getChildren().addAll(UiControls.label(
                 "Up to 10 JPEG/PNG photos; each at most 10 MiB and 4096 × 4096 pixels. No automatic resizing.", "hint"),
-                photoRows, UiControls.button("Add Photo", "add-photo", this::addPhoto),
+                photoRows, addPhoto,
                 UiControls.actions(UiControls.primary("Save Listing", "save-listing", this::save),
                         UiControls.button("Cancel", "cancel-edit", app::back)));
         page.body.getChildren().add(form);
@@ -200,20 +205,13 @@ final class ListingEditor {
             page.error(new IllegalArgumentException("A listing can have at most 10 photos."));
             return;
         }
-        Path selected = UiImages.choose(app.stage);
-        if (selected != null) {
-            page.perform(() -> CompletableFuture.supplyAsync(() -> {
-                try {
-                    ImageStorage.validateImage(selected, ImageStorage.LISTING_LIMITS);
-                    return selected;
-                } catch (IOException failure) {
-                    throw new CompletionException(failure);
-                }
-            }), valid -> {
-                photos.add(ListingPhoto.add(valid));
-                renderPhotos();
-            });
-        }
+        page.performSelection(photoChooser.choose(),
+                selected -> java.util.concurrent.CompletableFuture.completedFuture(selected), selected -> {
+                    if (selected != null) {
+                        photos.add(ListingPhoto.add(selected));
+                        renderPhotos();
+                    }
+                });
     }
 
     private void renderPhotos() {
@@ -221,18 +219,23 @@ final class ListingEditor {
         for (int index = 0; index < photos.size(); index++) {
             int position = index;
             ListingPhoto photo = photos.get(index);
-            Path source = switch (photo) {
-                case ListingPhoto.Existing existing -> app.runtime.getListingImagePath(existing.filename());
-                case ListingPhoto.NewFile added -> added.source();
+            Node image = switch (photo) {
+                case ListingPhoto.Existing existing -> UiImages.displayRemote(
+                        () -> app.runtime.getListings().getListingImage(original.getId(), existing.filename()),
+                        100, 75);
+                case ListingPhoto.NewFile added -> UiImages.display(() -> added.source(), 100, 75);
             };
             var up = UiControls.button("Move Up", "photo-up-" + index, () -> move(position, -1));
             up.setDisable(index == 0);
             var down = UiControls.button("Move Down", "photo-down-" + index, () -> move(position, 1));
             down.setDisable(index == photos.size() - 1);
-            photoRows.getChildren().add(UiControls.actions(UiImages.display(() -> source, 100, 75),
+            photoRows.getChildren().add(UiControls.actions(image,
                     UiControls.label("Photo " + (index + 1), "muted"), up, down,
                     UiControls.button("Remove", "photo-remove-" + index, () -> {
-                        photos.remove(position);
+                        ListingPhoto removed = photos.remove(position);
+                        if (removed instanceof ListingPhoto.NewFile added) {
+                            UiImages.release(added.source());
+                        }
                         renderPhotos();
                     })));
         }
@@ -287,5 +290,10 @@ final class ListingEditor {
                     page.setDirty(() -> false);
                     app.replace(() -> app.listings.details(saved.listing().getId()));
                 });
+    }
+
+    private void releaseTemporaryPhotos() {
+        photos.stream().filter(ListingPhoto.NewFile.class::isInstance).map(ListingPhoto.NewFile.class::cast)
+                .forEach(photo -> UiImages.release(photo.source()));
     }
 }

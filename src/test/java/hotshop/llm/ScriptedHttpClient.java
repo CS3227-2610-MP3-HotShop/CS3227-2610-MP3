@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Flow;
@@ -31,6 +32,7 @@ final class ScriptedHttpClient extends HttpClient {
     final AtomicInteger calls = new AtomicInteger();
     final AtomicBoolean subscriptionCancelled = new AtomicBoolean();
     final CountDownLatch futureCancelled = new CountDownLatch(1);
+    final List<CompletableFuture<?>> pendingExchanges = new CopyOnWriteArrayList<>();
     volatile HttpRequest request;
     volatile Thread dispatchThread;
     volatile HttpResponse.BodySubscriber<?> subscriber;
@@ -46,6 +48,7 @@ final class ScriptedHttpClient extends HttpClient {
     int stallAfterChunks = Integer.MAX_VALUE;
     boolean deferSubscription;
     boolean combinedBuffers;
+    volatile boolean cancelPeersWithIo;
     volatile boolean bodyDelivered;
     volatile Flow.Subscription subscription;
 
@@ -115,6 +118,7 @@ final class ScriptedHttpClient extends HttpClient {
             receiver.onSubscribe(subscription);
         }
         CompletableFuture<HttpResponse<T>> result = new CompletableFuture<>();
+        pendingExchanges.add(result);
         receiver.getBody().whenComplete((body, error) -> {
             if (error == null) {
                 result.complete(new Response<>(outgoing, status, HttpHeaders.of(headers, (a, b) -> true), body));
@@ -126,6 +130,10 @@ final class ScriptedHttpClient extends HttpClient {
         result.whenComplete((response, error) -> {
             if (result.isCancelled()) {
                 futureCancelled.countDown();
+                if (cancelPeersWithIo) {
+                    pendingExchanges.stream().filter(peer -> peer != result)
+                            .forEach(peer -> peer.completeExceptionally(new IOException("peer connection aborted")));
+                }
             }
         });
         dispatched.countDown();

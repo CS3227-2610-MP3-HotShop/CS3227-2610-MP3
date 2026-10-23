@@ -116,6 +116,19 @@ public final class UserRepository {
         }
     }
 
+    /** Changes only profile text and preferences, so a stale read cannot restore an old image reference. */
+    public void updateProfileDetails(Connection connection, User user) throws SQLException {
+        try (var statement = connection.prepareStatement("UPDATE users SET display_name = ?, "
+                + "preferred_pickup_location = ? WHERE id = ?")) {
+            statement.setString(1, user.getDisplayName());
+            statement.setString(2, user.getPreferredPickupLocation().orElse(null));
+            statement.setString(3, user.getId().toString());
+            if (statement.executeUpdate() != 1) {
+                throw new SQLException("Missing profile during update");
+            }
+        }
+    }
+
     /**
      * Replaces credential metadata and derived key without changing profile or session state.
      *

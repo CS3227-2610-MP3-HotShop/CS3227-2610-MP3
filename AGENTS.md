@@ -54,6 +54,13 @@ and .github/workflows/gradle.yml. Missing old migration artifacts do not mean th
 retained agent workflow is absent; create task-specific specifications and plans
 through the existing skills rather than restoring abandoned migration scope.
 Never run automated tests against hosted/demo data or read credentials into logs.
+JPro runtimes lease one process-owned data-directory lock while retaining separate
+authentication and service state. See the Architecture Overview for lifecycle ownership
+and LLM Implementation for the shared production AI dispatch ceiling; retain standalone
+client ownership and seller account quotas when changing transport code.
+Bind JPro image pickers before the first click and explicitly enable click selection;
+keep chooser cancellation interactive and discard abandoned selections before upload.
+See the manual-testing guide for isolated browser acceptance and temporary-object cleanup.
 
 HotShop is a Java-based e-commerce application.
 
@@ -512,3 +519,7 @@ merely because configuration changed; the coordinator model is selected in the a
 Let an already-running verification finish rather than restart it solely for model
 selection. Final specialist reviews use Luna. Settings persistence is verified by
 file inspection; a new live session's actual model requires runtime confirmation.
+
+## Private image storage integration constraints
+
+Use private listingImages/profileImages REST buckets and the existing storage seam. Preserve authorized reads, create-only writes, bounded staging/recovery, durable tombstones and lifecycle fencing. Provision schema separately and verify/import photos before jointly activating bindings; normal startup validates them. Keep local originals, server keys and deployment certificates outside source control. Automated tests use local fixtures/disposable PostgreSQL; hosted import/activation and browser persistence are separate operator actions. See the Developer Guide storage setup topic for current commands and limits.

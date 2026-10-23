@@ -36,7 +36,7 @@ class DatabaseTest extends PostgresTestSupport {
     void migrate_releasedSchema_createsListingTables() throws Exception {
         Database database = new Database(databaseConfig);
         database.migrate();
-        assertEquals(List.of(1), appliedVersions(database));
+        assertEquals(List.of(1, 2), appliedVersions(database));
         assertTrue(tableExists(database, "listings"));
         assertTrue(tableExists(database, "listing_images"));
     }

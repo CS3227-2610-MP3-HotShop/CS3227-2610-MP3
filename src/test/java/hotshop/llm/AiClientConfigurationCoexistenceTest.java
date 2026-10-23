@@ -7,13 +7,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -28,6 +31,11 @@ class AiClientConfigurationCoexistenceTest {
     private static final String BUYER_TEXT = "bicycle under S$200";
     private static final String SELLER_TITLE = "Wooden chair";
     private static final String DESCRIPTION = "A sturdy wooden chair in good condition.";
+
+    private enum ClosingBorrower {
+        BUYER,
+        SELLER
+    }
 
     @Test
     void clients_buyerAndSellerEndpointsConfigured_dispatchToTheirOwnProtocols() throws Exception {
@@ -52,11 +60,12 @@ class AiClientConfigurationCoexistenceTest {
                 default -> jsonResponse("{}");
             });
 
-            try (SocSearchClient buyer = new SocSearchClient(buyerBase, API_KEY, MODEL,
-                    server.trustedClient(), Duration.ofSeconds(5));
-                    HttpLlmClient seller = new HttpLlmClient(sellerConfiguration, server.trustedClient(),
-                            Executors.newVirtualThreadPerTaskExecutor(), noDeadline())) {
+            try (var worker = Executors.newVirtualThreadPerTaskExecutor();
+                    LlmHttpTransport transport = new LlmHttpTransport(server.trustedClient(), worker, noDeadline());
+                    SocSearchClient buyer = new SocSearchClient(buyerBase, API_KEY, MODEL, transport);
+                    HttpLlmClient seller = new HttpLlmClient(sellerConfiguration, transport)) {
                 var buyerResult = buyer.propose(BUYER_TEXT).get(5, TimeUnit.SECONDS);
+                buyer.close();
                 var sellerResult = seller.generate(SELLER_TITLE, Condition.GOOD).get(5, TimeUnit.SECONDS);
 
                 var proposed = assertInstanceOf(SocSearchClient.Proposed.class, buyerResult);
@@ -100,9 +109,206 @@ class AiClientConfigurationCoexistenceTest {
         }
     }
 
+    @Test
+    void sharedBudget_buyerAndSellerRequests_shareApplicationLimits() throws Exception {
+        try (ControlledHttpsServer server = new ControlledHttpsServer()) {
+            URI buyerBase = server.uri("/buyer/v1");
+            URI sellerEndpoint = server.uri("/seller/responses");
+            LlmConfiguration sellerConfiguration = LlmConfiguration.loadFromEnvironment(null, () -> Map.of(
+                    "SOCLAAS_DESCRIPTION_URL", sellerEndpoint.toString(),
+                    "SOCLAAS_API_KEY", API_KEY,
+                    "SOCLAAS_MODEL", MODEL));
+            server.respondForRequests(request -> request.uri().getPath().equals("/buyer/v1/chat/completions")
+                    ? jsonResponse(chatCompletion("{\"titleText\":\"bicycle\"}"))
+                    : jsonResponse("{\"status\":\"completed\",\"output_text\":"
+                            + new Gson().toJson(DESCRIPTION) + "}"));
+            AtomicLong clock = new AtomicLong();
+            LlmRequestBudget budget = new LlmRequestBudget(clock::get);
+            try (var worker = Executors.newVirtualThreadPerTaskExecutor();
+                    LlmHttpTransport transport = new LlmHttpTransport(server.trustedClient(), worker,
+                            noDeadline(), true, budget);
+                    SocSearchClient buyer = new SocSearchClient(buyerBase, API_KEY, MODEL, transport);
+                    HttpLlmClient seller = new HttpLlmClient(sellerConfiguration, transport)) {
+                var prepared = seller.prepare(SELLER_TITLE, Condition.GOOD).get(5, TimeUnit.SECONDS);
+                var rejected = prepared.dispatch(() -> {
+                    throw new IllegalStateException("synthetic local rejection");
+                });
+                assertEquals(new LlmClient.Failed(LlmClient.Failure.UNAVAILABLE),
+                        rejected.result().get(5, TimeUnit.SECONDS));
+                assertFalse(rejected.wasDispatched());
+                assertEquals(0, server.requestCount());
+
+                for (int index = 0; index < LlmRequestBudget.PRODUCTION_MINUTE_LIMIT; index++) {
+                    if (index % 2 == 0) {
+                        assertInstanceOf(SocSearchClient.Proposed.class,
+                                buyer.propose(BUYER_TEXT).get(5, TimeUnit.SECONDS));
+                    } else {
+                        assertEquals(new LlmClient.Generated(DESCRIPTION),
+                                seller.generate(SELLER_TITLE, Condition.GOOD).get(5, TimeUnit.SECONDS));
+                    }
+                }
+                assertEquals(new SocSearchClient.Failed(SocSearchClient.Failure.PROVIDER_BUSY),
+                        buyer.propose(BUYER_TEXT).get(5, TimeUnit.SECONDS));
+                assertEquals(LlmRequestBudget.PRODUCTION_MINUTE_LIMIT, server.requestCount());
+                clock.addAndGet(TimeUnit.MINUTES.toNanos(1));
+                assertEquals(new LlmClient.Generated(DESCRIPTION),
+                        seller.generate(SELLER_TITLE, Condition.GOOD).get(5, TimeUnit.SECONDS));
+                assertEquals(LlmRequestBudget.PRODUCTION_MINUTE_LIMIT + 1, server.requestCount());
+            }
+        }
+    }
+
+    @Test
+    void clients_sellerUnavailable_buyerStillUsesSharedTransport() throws Exception {
+        try (ControlledHttpsServer server = new ControlledHttpsServer()) {
+            URI buyerBase = server.uri("/buyer/v1");
+            server.respond(200, "application/json", chatCompletion("{\"titleText\":\"bicycle\"}"));
+            try (var worker = Executors.newVirtualThreadPerTaskExecutor();
+                    LlmHttpTransport transport = new LlmHttpTransport(server.trustedClient(), worker, noDeadline());
+                    HttpLlmClient seller = new HttpLlmClient(LlmConfiguration.load(null), transport);
+                    SocSearchClient buyer = new SocSearchClient(buyerBase, API_KEY, MODEL, transport)) {
+                assertEquals(new LlmClient.Failed(LlmClient.Failure.UNAVAILABLE),
+                        seller.generate(SELLER_TITLE, Condition.GOOD).get(5, TimeUnit.SECONDS));
+                var result = buyer.propose(BUYER_TEXT).get(5, TimeUnit.SECONDS);
+
+                assertInstanceOf(SocSearchClient.Proposed.class, result);
+                assertEquals("/buyer/v1/chat/completions", server.takeRequest().uri().getPath());
+                assertEquals(1, server.requestCount());
+            }
+        }
+    }
+
+    @ParameterizedTest
+    @EnumSource(ClosingBorrower.class)
+    void close_pendingBorrowerRequest_otherClientCompletesSuccessfully(ClosingBorrower closingBorrower)
+            throws Exception {
+        try (ControlledHttpsServer server = new ControlledHttpsServer()) {
+            URI buyerBase = server.uri("/buyer/v1");
+            URI sellerEndpoint = server.uri("/seller/responses");
+            LlmConfiguration sellerConfiguration = LlmConfiguration.loadFromEnvironment(null, () -> Map.of(
+                    "SOCLAAS_DESCRIPTION_URL", sellerEndpoint.toString(),
+                    "SOCLAAS_API_KEY", API_KEY,
+                    "SOCLAAS_MODEL", MODEL));
+            var stall = new ControlledHttpsServer.StallGate(new CountDownLatch(2), new CountDownLatch(1));
+            String buyerResponse = chatCompletion("{\"titleText\":\"bicycle\"}");
+            String sellerResponse = "{\"status\":\"completed\",\"output_text\":"
+                    + new Gson().toJson(DESCRIPTION) + "}";
+            server.respondForRequests(request -> switch (request.uri().getPath()) {
+                case "/buyer/v1/chat/completions" -> stalledJsonResponse(buyerResponse, stall);
+                case "/seller/responses" -> stalledJsonResponse(sellerResponse, stall);
+                default -> jsonResponse("{}");
+            });
+
+            try (var worker = Executors.newVirtualThreadPerTaskExecutor();
+                    LlmHttpTransport transport = new LlmHttpTransport(server.trustedClient(), worker, noDeadline());
+                    SocSearchClient buyer = new SocSearchClient(buyerBase, API_KEY, MODEL, transport);
+                    HttpLlmClient seller = new HttpLlmClient(sellerConfiguration, transport)) {
+                var buyerResult = buyer.propose(BUYER_TEXT);
+                var sellerResult = seller.generate(SELLER_TITLE, Condition.GOOD);
+                assertTrue(stall.started().await(5, TimeUnit.SECONDS));
+
+                if (closingBorrower == ClosingBorrower.BUYER) {
+                    buyer.close();
+                    assertEquals(new SocSearchClient.Failed(SocSearchClient.Failure.CLOSED),
+                            buyerResult.get(5, TimeUnit.SECONDS));
+                } else {
+                    seller.close();
+                    assertEquals(new LlmClient.Failed(LlmClient.Failure.CLOSED),
+                            sellerResult.get(5, TimeUnit.SECONDS));
+                }
+                stall.release().countDown();
+
+                if (closingBorrower == ClosingBorrower.BUYER) {
+                    assertEquals(new LlmClient.Generated(DESCRIPTION), sellerResult.get(5, TimeUnit.SECONDS));
+                } else {
+                    var proposed = assertInstanceOf(SocSearchClient.Proposed.class,
+                            buyerResult.get(5, TimeUnit.SECONDS));
+                    assertEquals("bicycle", proposed.search().titleText());
+                }
+                assertEquals(2, server.requestCount());
+            } finally {
+                stall.release().countDown();
+            }
+        }
+    }
+
+    @Test
+    void sharedTransport_ownerClose_cancelsBuyerAndSellerExchanges() throws Exception {
+        try (ControlledHttpsServer server = new ControlledHttpsServer()) {
+            URI buyerBase = server.uri("/buyer/v1");
+            URI sellerEndpoint = server.uri("/seller/responses");
+            LlmConfiguration sellerConfiguration = LlmConfiguration.loadFromEnvironment(null, () -> Map.of(
+                    "SOCLAAS_DESCRIPTION_URL", sellerEndpoint.toString(),
+                    "SOCLAAS_API_KEY", API_KEY,
+                    "SOCLAAS_MODEL", MODEL));
+            var stall = new ControlledHttpsServer.StallGate(new CountDownLatch(2), new CountDownLatch(1));
+            server.respondForRequests(request -> new ControlledHttpsServer.Response(200,
+                    Map.of("Content-Type", "application/json"),
+                    "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx".getBytes(StandardCharsets.UTF_8), true, stall, false));
+
+            try (var worker = Executors.newVirtualThreadPerTaskExecutor();
+                    LlmHttpTransport transport = new LlmHttpTransport(server.trustedClient(), worker, noDeadline());
+                    SocSearchClient buyer = new SocSearchClient(buyerBase, API_KEY, MODEL, transport);
+                    HttpLlmClient seller = new HttpLlmClient(sellerConfiguration, transport)) {
+                var buyerResult = buyer.propose(BUYER_TEXT);
+                var sellerResult = seller.generate(SELLER_TITLE, Condition.GOOD);
+                assertTrue(stall.started().await(5, TimeUnit.SECONDS));
+
+                transport.close();
+
+                assertEquals(new SocSearchClient.Failed(SocSearchClient.Failure.CLOSED),
+                        buyerResult.get(5, TimeUnit.SECONDS));
+                assertEquals(new LlmClient.Failed(LlmClient.Failure.CLOSED),
+                        sellerResult.get(5, TimeUnit.SECONDS));
+                assertEquals(2, server.requestCount());
+            } finally {
+                stall.release().countDown();
+            }
+        }
+    }
+
+    @Test
+    void sharedTransport_oneCancellationAbortsPeer_ownerCloseReturnsClosedForBoth() throws Exception {
+        ScriptedHttpClient http = new ScriptedHttpClient();
+        http.stalled = true;
+        http.cancelPeersWithIo = true;
+        CountDownLatch dispatched = new CountDownLatch(2);
+        http.beforeReturn = dispatched::countDown;
+
+        URI buyerBase = URI.create("https://provider.invalid/buyer/v1");
+        URI sellerEndpoint = URI.create("https://provider.invalid/seller/responses");
+        LlmConfiguration sellerConfiguration = LlmConfiguration.loadFromEnvironment(null, () -> Map.of(
+                "SOCLAAS_DESCRIPTION_URL", sellerEndpoint.toString(),
+                "SOCLAAS_API_KEY", API_KEY,
+                "SOCLAAS_MODEL", MODEL));
+
+        try (var worker = Executors.newVirtualThreadPerTaskExecutor();
+                LlmHttpTransport transport = new LlmHttpTransport(http, worker, noDeadline());
+                SocSearchClient buyer = new SocSearchClient(buyerBase, API_KEY, MODEL, transport);
+                HttpLlmClient seller = new HttpLlmClient(sellerConfiguration, transport)) {
+            var buyerResult = buyer.propose(BUYER_TEXT);
+            var sellerResult = seller.generate(SELLER_TITLE, Condition.GOOD);
+            assertTrue(dispatched.await(5, TimeUnit.SECONDS));
+
+            transport.close();
+
+            assertEquals(new SocSearchClient.Failed(SocSearchClient.Failure.CLOSED),
+                    buyerResult.get(5, TimeUnit.SECONDS));
+            assertEquals(new LlmClient.Failed(LlmClient.Failure.CLOSED),
+                    sellerResult.get(5, TimeUnit.SECONDS));
+            assertEquals(2, http.calls.get());
+        }
+    }
+
     private static ControlledHttpsServer.Response jsonResponse(String body) {
         return new ControlledHttpsServer.Response(200, "application/json", body.getBytes(StandardCharsets.UTF_8),
                 Map.of(), false);
+    }
+
+    private static ControlledHttpsServer.Response stalledJsonResponse(String body,
+            ControlledHttpsServer.StallGate stall) {
+        return new ControlledHttpsServer.Response(200, Map.of("Content-Type", "application/json"),
+                body.getBytes(StandardCharsets.UTF_8), true, stall, false);
     }
 
     private static String chatCompletion(String output) {

@@ -10,21 +10,28 @@ These steps test the listing, offer, sale, meetup, and chat features with two
 accounts. They complement the [User Guide](../UserGuide.html), which explains each
 screen; testing of accounts, profiles, and search is covered separately.
 
-Only one user is logged in at a time, so every "as Bob" step means: choose
-**Log out**, then log in as Bob. Messages and changes made by one user appear
-for the other at their next login.
+This walkthrough changes accounts between steps because the sale depends on
+each participant's previous action. JPro browser sessions have independent
+login state, so account and image-upload checks can also be run in two browser
+sessions without logging either one out.
 
-### Preparing a fresh data folder
+### Preparing isolated local test data
 
-Use a separate folder so tests never touch your own data. Build the JAR, then
-start HotShop on the test folder (PowerShell):
+Use a disposable local PostgreSQL database and a separate HotShop data folder;
+never point manual tests at hosted or demonstration data. Configure
+`HOTSHOP_DB_URL`, `HOTSHOP_DB_USER`, and `HOTSHOP_DB_PASSWORD` for that database
+and provision its schema using the developer setup instructions. Build the JAR,
+then start HotShop on the test folder (PowerShell):
 
 ```powershell
 .\gradlew.bat shadowJar
 java "-Dhotshop.dataDir=$env:TEMP\hotshop-test" -jar release\HotShop.jar
 ```
 
-To start again from nothing, close HotShop and delete that folder.
+The data folder holds the process lock and temporary browser staging; deleting
+it does not reset PostgreSQL. Reset the disposable database separately when a
+clean test run is needed. For independent browser sessions in one process, use
+the same data folder; each session still has separate login and service state.
 
 Register three accounts (see the User Guide's account section). Carol is only
 needed for the refusal checks:
@@ -34,6 +41,34 @@ needed for the refusal checks:
 | `alice` | `Alice` | `Sample1!` |
 | `bobby` | `Bob` | `Sample1!` |
 | `carol` | `Carol` | `Sample1!` |
+
+### Browser sessions and private image storage
+
+Run this acceptance check only with a disposable local PostgreSQL database and
+private test Storage buckets configured as described in [private image storage
+setup](AccountServiceAndLocalPersistence.html#private-image-storage-setup-and-import).
+Use the repository's [local JPro workflow](DevelopmentWorkflow.html#jpro-and-docker-packaging)
+or its Docker/JPro package workflow; the JAR command above is for desktop manual
+testing. Keep provider settings outside the image and open the application at
+`http://localhost:8080` in two separate temporary Chrome contexts.
+
+1. Create two test accounts and log into one in each browser context. Verify that
+   logging out of one session leaves the other session logged in.
+2. In the first context, open **My Profile** and click **Replace Image**. Confirm
+   the chooser opens on the first click, cancel it, then click again and select a
+   small valid JPEG or PNG. Verify that the selected photo appears. On **Create
+   Listing**, repeat the first-click, cancel, retry and selection steps with **Add
+   Photo**, then save and verify the listing photo appears.
+3. Replace the application container without mounting its previous image volume,
+   while preserving the disposable local PostgreSQL database and private test
+   Storage. Log in again and verify the profile and listing photos still load.
+4. In the second context, open the first account's public profile and listing.
+   Verify both photos are readable while the second account remains independent.
+5. Remove the first account's profile photo and delete its test listing. Verify
+   that only those test objects are removed from the private test buckets.
+
+Never point this check at a hosted marketplace database or delete objects beyond
+the test accounts' own objects in the private test buckets.
 
 ### Walkthrough: from listing to completed sale
 

@@ -14,7 +14,7 @@ See [Agreed agent workflow and project evidence](developerGuide/DevelopmentWorkf
 
 Welcome to the HotShop Developer Guide. This guide introduces the architecture,
 codebase, and development workflow of HotShop, a JavaFX desktop marketplace with
-PostgreSQL persistence and local managed image storage.
+PostgreSQL persistence and private Supabase image storage.
 
 Start with [Development Workflow](developerGuide/DevelopmentWorkflow.html) to set
 up your environment, run checks, and build the application, including selecting
@@ -45,3 +45,9 @@ for third-party resources.
 
 For PostgreSQL configuration, provisioning and schema details, read
 [Account Service and PostgreSQL Persistence](developerGuide/AccountServiceAndLocalPersistence.html).
+
+See [Private image storage setup and import](developerGuide/AccountServiceAndLocalPersistence.html#private-image-storage-setup-and-import) for bucket configuration, separate activation, preservation and rollback.
+
+See [Architecture Overview](developerGuide/ArchitectureOverview.html) for process-owned directory leases and isolated browser runtimes, and [LLM Implementation](developerGuide/LLMImplementation.html) for the shared AI request ceiling and cancellation lifecycle.
+
+Browser image chooser lifecycle and isolated two-session/image checks are described in [Architecture Overview](developerGuide/ArchitectureOverview.html) and [Manual testing](developerGuide/ManualTesting.html).

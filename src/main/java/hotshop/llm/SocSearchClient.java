@@ -1,8 +1,6 @@
 package hotshop.llm;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.math.BigInteger;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -18,16 +16,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.gson.Gson;
 import com.google.gson.stream.JsonReader;
@@ -46,9 +40,8 @@ public final class SocSearchClient implements AutoCloseable {
             + "(nonnegative integer SGD cents), sort (one of NEWEST, PRICE_LOW_TO_HIGH, "
             + "PRICE_HIGH_TO_LOW). Do not include actions, identity, status, or extra keys.";
     private static final int MAX_REQUEST_BYTES = 8_192;
-    private static final int MAX_RESPONSE_BYTES = 65_536;
+    private static final int MAX_RESPONSE_BYTES = BoundedLlmBodySubscriber.MAX_BODY_BYTES;
     private static final int MAX_DEPTH = 32;
-    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(10);
     private static final Gson GSON = new Gson();
 
     /** Result of a buyer search proposal request. */
@@ -77,22 +70,20 @@ public final class SocSearchClient implements AutoCloseable {
     private final URI endpoint;
     private final String bearerToken;
     private final String model;
-    private final HttpClient client;
+    private final LlmHttpTransport transport;
+    private final boolean ownsTransport;
     private final Duration deadline;
-    private final ScheduledExecutorService timer;
-    private final ExecutorService workers = Executors.newCachedThreadPool(runnable -> {
-        Thread thread = new Thread(runnable, "soc-search-client");
-        thread.setDaemon(true);
-        return thread;
-    });
     private final Set<Call> calls = ConcurrentHashMap.newKeySet();
     private final AtomicBoolean closed = new AtomicBoolean();
 
     /** Creates a client using the standard HTTP transport. */
     public SocSearchClient(URI endpoint, String bearerToken, String model) {
-        this(endpoint, bearerToken, model, HttpClient.newBuilder()
-                .followRedirects(HttpClient.Redirect.NEVER).connectTimeout(CONNECT_TIMEOUT).build(),
-                Duration.ofSeconds(45), createTimer());
+        this(endpoint, bearerToken, model, new LlmHttpTransport(), Duration.ofSeconds(45), true);
+    }
+
+    /** Borrows the process-owned HTTP resources; close cancels only this client's requests. */
+    public SocSearchClient(URI endpoint, String bearerToken, String model, LlmHttpTransport transport) {
+        this(endpoint, bearerToken, model, transport, Duration.ofSeconds(45), false);
     }
 
     SocSearchClient(URI endpoint, String bearerToken, String model, HttpClient client, Duration deadline) {
@@ -101,17 +92,22 @@ public final class SocSearchClient implements AutoCloseable {
 
     SocSearchClient(URI endpoint, String bearerToken, String model, HttpClient client, Duration deadline,
             ScheduledExecutorService timer) {
+        this(endpoint, bearerToken, model, createTransport(client, timer), deadline, true);
+    }
+
+    private SocSearchClient(URI endpoint, String bearerToken, String model, LlmHttpTransport transport,
+            Duration deadline, boolean ownsTransport) {
         if (!validEndpoint(endpoint) || !validToken(bearerToken) || model == null || model.isBlank()
-                || client == null || client.followRedirects() != HttpClient.Redirect.NEVER
-                || deadline == null || deadline.isZero() || deadline.isNegative() || timer == null) {
+                || transport == null
+                || deadline == null || deadline.isZero() || deadline.isNegative()) {
             throw new IllegalArgumentException(INVALID_CONFIGURATION);
         }
         this.endpoint = chatCompletionsEndpoint(endpoint);
         this.bearerToken = bearerToken;
         this.model = model;
-        this.client = client;
+        this.transport = transport;
+        this.ownsTransport = ownsTransport;
         this.deadline = deadline;
-        this.timer = timer;
     }
 
     private static ScheduledExecutorService createTimer() {
@@ -120,6 +116,29 @@ public final class SocSearchClient implements AutoCloseable {
             thread.setDaemon(true);
             return thread;
         });
+    }
+
+    private static LlmHttpTransport createTransport(HttpClient client, ScheduledExecutorService timer) {
+        if (client == null || client.followRedirects() != HttpClient.Redirect.NEVER || timer == null) {
+            throw new IllegalArgumentException(INVALID_CONFIGURATION);
+        }
+        ExecutorService worker = Executors.newCachedThreadPool(runnable -> {
+            Thread thread = new Thread(runnable, "soc-search-client");
+            thread.setDaemon(true);
+            return thread;
+        });
+        return new LlmHttpTransport(client, worker, new LlmHttpTransport.DeadlineScheduler() {
+            @Override
+            public LlmHttpTransport.Cancellable schedule(Runnable callback, Duration delay) {
+                var scheduled = timer.schedule(callback, delay.toNanos(), java.util.concurrent.TimeUnit.NANOSECONDS);
+                return () -> scheduled.cancel(false);
+            }
+
+            @Override
+            public void close() {
+                timer.shutdownNow();
+            }
+        }, false);
     }
 
     /** Requests a validated search proposal without blocking the caller. */
@@ -153,33 +172,23 @@ public final class SocSearchClient implements AutoCloseable {
             return call.result;
         }
         try {
-            call.timeout = timer.schedule(() -> call.finish(Failure.TIMEOUT), deadline.toNanos(),
-                    TimeUnit.NANOSECONDS);
-        } catch (RejectedExecutionException exception) {
-            call.finish(closed.get() ? Failure.CLOSED : Failure.NETWORK);
-            return call.result;
-        }
-        try {
             HttpRequest request = HttpRequest.newBuilder(endpoint).timeout(deadline)
                     .header("Authorization", "Bearer " + bearerToken)
                     .header("Content-Type", "application/json")
                     .header("Accept", "application/json")
                     .header("Accept-Encoding", "identity")
                     .POST(HttpRequest.BodyPublishers.ofByteArray(requestBytes)).build();
-            CompletableFuture<HttpResponse<InputStream>> pending =
-                    client.sendAsync(request, HttpResponse.BodyHandlers.ofInputStream());
-            call.setHttp(pending);
-            pending.whenComplete((response, failure) -> {
+            call.exchange = transport.send(request, deadline, () -> { }, info -> bodyHandler(call, info));
+            call.exchange.result().whenComplete((response, failure) -> {
                 if (failure != null) {
-                    call.finish(failure instanceof CancellationException ? Failure.NETWORK : Failure.NETWORK);
+                    call.finish(mapFailure(failure));
                     return;
                 }
-                call.body.set(response.body());
-                if (call.finished.get()) {
-                    call.closeBody();
-                    return;
+                try {
+                    transport.execute(() -> process(call, response));
+                } catch (RuntimeException rejected) {
+                    call.finish(Failure.CLOSED);
                 }
-                workers.execute(() -> process(call, response));
             });
         } catch (RuntimeException exception) {
             call.finish(Failure.NETWORK);
@@ -187,7 +196,20 @@ public final class SocSearchClient implements AutoCloseable {
         return call.result;
     }
 
-    private void process(Call call, HttpResponse<InputStream> response) {
+    private HttpResponse.BodySubscriber<byte[]> bodyHandler(Call call, HttpResponse.ResponseInfo response) {
+        Failure failure = responseFailure(response);
+        if (failure != null) {
+            call.responseFailure = failure;
+            return LlmHttpTransport.cancelledBody();
+        }
+        return new BoundedLlmBodySubscriber(false, transport.worker());
+    }
+
+    private void process(Call call, HttpResponse<byte[]> response) {
+        if (call.responseFailure != null) {
+            call.finish(call.responseFailure);
+            return;
+        }
         int status = response.statusCode();
         if (status == 401 || status == 403) {
             call.finish(Failure.PROVIDER_AUTH);
@@ -201,18 +223,8 @@ public final class SocSearchClient implements AutoCloseable {
             call.finish(Failure.INVALID_RESPONSE);
             return;
         }
-        byte[] bytes;
         try {
-            bytes = readBounded(call.body.get());
-        } catch (ResponseTooLargeException exception) {
-            call.finish(Failure.INVALID_RESPONSE);
-            return;
-        } catch (IOException exception) {
-            call.finish(Failure.NETWORK);
-            return;
-        }
-        try {
-            String json = decodeUtf8(bytes);
+            String json = decodeUtf8(response.body());
             Object envelopeValue = parseStrict(json);
             String content = chatContent(envelopeValue);
             Object proposal = parseStrict(content);
@@ -228,25 +240,36 @@ public final class SocSearchClient implements AutoCloseable {
     }
 
     private static boolean identityEncoding(HttpResponse<?> response) {
-        List<String> values = response.headers().allValues("Content-Encoding");
+        return identityEncoding(response.headers().allValues("Content-Encoding"));
+    }
+
+    private static boolean identityEncoding(HttpResponse.ResponseInfo response) {
+        return identityEncoding(response.headers().allValues("Content-Encoding"));
+    }
+
+    private static boolean identityEncoding(List<String> values) {
         return values.isEmpty() || values.size() == 1 && "identity".equalsIgnoreCase(values.get(0).trim());
     }
 
-    private static byte[] readBounded(InputStream input) throws IOException {
-        if (input == null) {
-            throw new IOException();
+    private static Failure responseFailure(HttpResponse.ResponseInfo response) {
+        int status = response.statusCode();
+        if (status == 401 || status == 403) {
+            return Failure.PROVIDER_AUTH;
         }
-        try (InputStream body = input; ByteArrayOutputStream bytes = new ByteArrayOutputStream()) {
-            byte[] buffer = new byte[4_096];
-            int count;
-            while ((count = body.read(buffer)) != -1) {
-                if (bytes.size() + count > MAX_RESPONSE_BYTES) {
-                    throw new ResponseTooLargeException();
-                }
-                bytes.write(buffer, 0, count);
+        if (status == 429 || status >= 500) {
+            return Failure.PROVIDER_BUSY;
+        }
+        if (status != 200 || !identityEncoding(response)) {
+            return Failure.INVALID_RESPONSE;
+        }
+        try {
+            if (response.headers().firstValueAsLong("Content-Length").orElse(0) > MAX_RESPONSE_BYTES) {
+                return Failure.INVALID_RESPONSE;
             }
-            return bytes.toByteArray();
+        } catch (NumberFormatException failure) {
+            return Failure.INVALID_RESPONSE;
         }
+        return null;
     }
 
     private static String decodeUtf8(byte[] bytes) throws CharacterCodingException {
@@ -381,22 +404,41 @@ public final class SocSearchClient implements AutoCloseable {
         return CompletableFuture.completedFuture(new Failed(failure));
     }
 
+    private static Failure mapFailure(Throwable failure) {
+        while (failure instanceof java.util.concurrent.CompletionException && failure.getCause() != null) {
+            failure = failure.getCause();
+        }
+        if (failure instanceof java.net.http.HttpTimeoutException) {
+            return Failure.TIMEOUT;
+        }
+        if (failure instanceof BoundedLlmBodySubscriber.InvalidBodyException) {
+            return Failure.INVALID_RESPONSE;
+        }
+        if (failure instanceof LlmHttpTransport.TransportClosedException) {
+            return Failure.CLOSED;
+        }
+        if (failure instanceof LlmHttpTransport.ApplicationBudgetException) {
+            return Failure.PROVIDER_BUSY;
+        }
+        return Failure.NETWORK;
+    }
+
     /** Closes this client and cancels outstanding requests. */
     @Override
     public void close() {
         if (closed.compareAndSet(false, true)) {
             calls.forEach(call -> call.finish(Failure.CLOSED));
-            timer.shutdownNow();
-            workers.shutdownNow();
+            if (ownsTransport) {
+                transport.close();
+            }
         }
     }
 
     private final class Call {
         private final CompletableFuture<Result> result = new CompletableFuture<>();
         private final AtomicBoolean finished = new AtomicBoolean();
-        private final AtomicReference<InputStream> body = new AtomicReference<>();
-        private volatile CompletableFuture<?> http;
-        private volatile java.util.concurrent.ScheduledFuture<?> timeout;
+        private volatile LlmHttpTransport.Exchange exchange;
+        private volatile Failure responseFailure;
 
         private void finish(Failure failure) {
             finish(new Failed(failure));
@@ -405,44 +447,12 @@ public final class SocSearchClient implements AutoCloseable {
         private void finish(Result value) {
             if (finished.compareAndSet(false, true)) {
                 calls.remove(this);
-                java.util.concurrent.ScheduledFuture<?> scheduled = timeout;
-                if (scheduled != null) {
-                    scheduled.cancel(false);
-                }
-                if (value instanceof Failed failed
-                        && (failed.kind() == Failure.TIMEOUT || failed.kind() == Failure.CLOSED)) {
-                    CompletableFuture<?> pending = http;
-                    if (pending != null) {
-                        pending.cancel(true);
-                    }
-                    closeBody();
-                } else {
-                    closeBody();
+                LlmHttpTransport.Exchange pending = exchange;
+                if (pending != null) {
+                    pending.cancel();
                 }
                 result.complete(value);
             }
         }
-
-        private void setHttp(CompletableFuture<?> pending) {
-            http = pending;
-            if (finished.get()) {
-                pending.cancel(true);
-            }
-        }
-
-        private void closeBody() {
-            InputStream stream = body.getAndSet(null);
-            if (stream != null) {
-                try {
-                    stream.close();
-                } catch (IOException ignored) {
-                    // Closing a cancelled response body is best effort.
-                }
-            }
-        }
-    }
-
-    private static final class ResponseTooLargeException extends IOException {
-        private static final long serialVersionUID = 1L;
     }
 }

@@ -1,6 +1,5 @@
 package hotshop.ui;
 
-import java.nio.file.Path;
 import java.util.UUID;
 
 import hotshop.model.User;
@@ -25,8 +24,8 @@ final class AccountPages {
         page.load(() -> app.runtime.getAccounts().getPublicProfile(id), profile -> {
             var name = UiControls.label(profile.displayName(), "section-title");
             name.setId("profile-name");
-            page.body.getChildren().addAll(name, UiImages.display(profile.profileImage().isEmpty() ? null
-                    : () -> app.runtime.getProfileImagePath(profile.profileImage().orElseThrow()), 128, 128));
+            page.body.getChildren().addAll(name, UiImages.displayRemote(profile.profileImage().isEmpty() ? null
+                    : () -> app.runtime.getAccounts().getProfileImage(profile.id()), 128, 128));
             page.load(() -> app.runtime.getListings().getPublicListings(id), listings -> {
                 if (listings.isEmpty()) {
                     page.body.getChildren().add(UiControls.label("No available listings", "muted"));
@@ -71,15 +70,19 @@ final class AccountPages {
         }));
         VBox image = new VBox(12);
         showProfileImage(image, user);
-        var replace = UiControls.button("Replace Image", "replace-profile-image", () -> {
-            Path selected = UiImages.choose(app.stage);
-            if (selected != null) {
-                page.perform(() -> app.runtime.getAccounts().replaceProfileImage(selected), updated -> {
-                    showProfileImage(image, updated);
-                    page.message("Profile image saved.");
-                });
-            }
-        });
+        var replace = UiControls.button("Replace Image", "replace-profile-image", () -> { });
+        UiImages.PreparedChooser chooser = UiImages.prepareChooser(app.stage, replace,
+                hotshop.storage.ImageStorage.PROFILE_LIMITS);
+        page.setLeaving(chooser::cancel);
+        replace.setOnAction(event -> page.performSelection(chooser.choose(), selected -> selected == null
+                        ? java.util.concurrent.CompletableFuture.completedFuture(null)
+                        : app.runtime.getAccounts().replaceProfileImage(selected)
+                                .whenComplete((updated, failure) -> UiImages.release(selected)), updated -> {
+                                    if (updated != null) {
+                                        showProfileImage(image, updated);
+                                        page.message("Profile image saved.");
+                                    }
+                                }));
         var remove = UiControls.button("Remove Image", "remove-profile-image", () ->
                 page.perform(app.runtime.getAccounts()::removeProfileImage, updated -> {
                     showProfileImage(image, updated);
@@ -93,8 +96,8 @@ final class AccountPages {
     }
 
     private void showProfileImage(VBox image, User user) {
-        image.getChildren().setAll(UiImages.display(user.getProfileImage().isEmpty() ? null
-                : () -> app.runtime.getProfileImagePath(user.getProfileImage().orElseThrow()), 128, 128));
+        image.getChildren().setAll(UiImages.displayRemote(user.getProfileImage().isEmpty() ? null
+                : () -> app.runtime.getAccounts().getProfileImage(user.getId()), 128, 128));
     }
 
     private void changePassword(UiPage page) {

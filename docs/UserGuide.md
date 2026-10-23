@@ -29,17 +29,18 @@ The operator must configure the PostgreSQL connection and run the separate schem
 setup command before launching HotShop; see [PostgreSQL setup](developerGuide/AccountServiceAndLocalPersistence.html#postgresql-operator-setup).
 An internet or local network connection to that database is required. Marketplace
 records persist across application restarts. New installations start empty; old SQLite
-files are not imported or reset. Your local data directory holds images and the
-application lock. Keep it available with the same database when restarting.
+files are not imported or reset. Listing and profile photos use private Supabase buckets. Your local data directory retains the
+application lock and temporary browser staging. The operator must verify/import existing photos and activate both bucket bindings after schema setup; see [private image storage setup](developerGuide/AccountServiceAndLocalPersistence.html#private-image-storage-setup-and-import).
+
+Cancelling the browser file chooser leaves the current page usable; select a file with **Replace Image** or **Add Photo** to begin upload. See the account and listing guides for image limits.
 
 If startup reports a database setup/connectivity problem, ask the operator to check
 connection settings and run compatible provisioning. A folder/lock error means the
-image folder is unavailable or another instance is using it. Data is not reset to
+local working folder is unavailable or another instance is using it. Startup can also fail when private image storage settings or bindings are missing; the operator must verify configuration and activation. Data is not reset to
 recover from either condition. If an operation asks you to retry after a concurrent
 change, refresh the relevant record and submit the action again.
 
-Hosted JPro multi-user sessions and Supabase image storage remain separate integration
-work; this database conversion retains the current single-runtime directory lock.
+JPro browser runtimes have separate login and service state and lease one process-owned data-directory lock. Another independent process remains excluded. Hosted two-browser verification remains a release check. Stored photos persist across application restarts, while reads and writes require network access to Supabase.
 
 ## Optional AI Search
 

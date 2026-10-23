@@ -9,12 +9,15 @@ import java.sql.Statement;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import hotshop.storage.SupabaseStorageConfig;
 
 /** Opens configured connections and groups repository work into one transaction. */
 public final class Database {
-    private static final List<String> POSTGRES_MIGRATIONS = List.of("/db/postgresql/001_initial.sql");
+    private static final List<String> POSTGRES_MIGRATIONS = List.of("/db/postgresql/001_initial.sql",
+            "/db/postgresql/002_image_storage.sql");
     /** Shared across provisioners; transaction-scoped and local to the selected database. */
     private static final long MIGRATION_LOCK = 1213418823L;
+    private static final long IMAGE_LIFECYCLE_LOCK = 1213418824L;
     private final String url;
     private final DatabaseConfig config;
     private final List<String> migrations;
@@ -52,6 +55,43 @@ public final class Database {
         }
     }
 
+    /** Rejects inactive or mismatched storage bindings before the production runtime serves images. */
+    public void validateImageStorageBindings(SupabaseStorageConfig storage) throws SQLException {
+        try (Connection connection = openConnection(); var statement = connection.prepareStatement(
+                "SELECT namespace, project_origin, bucket_id, active FROM image_storage_bindings");
+                var rows = statement.executeQuery()) {
+            java.util.Map<String, String> bindings = new java.util.HashMap<>();
+            while (rows.next()) {
+                if (!rows.getBoolean("active")
+                        || !storage.projectUrl().toString().equals(rows.getString("project_origin"))) {
+                    throw new SQLException("Private image storage is not activated; run image verification first");
+                }
+                bindings.put(rows.getString("namespace"), rows.getString("bucket_id"));
+            }
+            if (!storage.listingBucket().equals(bindings.get("listings"))
+                    || !storage.profileBucket().equals(bindings.get("profiles"))) {
+                throw new SQLException("Private image storage binding does not match operator configuration");
+            }
+        }
+    }
+
+    /** Activates both namespace buckets together after the importer verifies every current reference. */
+    public static void activateImageStorageBindings(Connection connection, SupabaseStorageConfig storage, long now)
+            throws SQLException {
+        for (String namespace : List.of("profiles", "listings")) {
+            try (var statement = connection.prepareStatement("UPDATE image_storage_bindings SET project_origin = ?, "
+                    + "bucket_id = ?, active = TRUE, updated_at = ? WHERE namespace = ?")) {
+                statement.setString(1, storage.projectUrl().toString());
+                statement.setString(2, storage.bucket(namespace));
+                statement.setLong(3, now);
+                statement.setString(4, namespace);
+                if (statement.executeUpdate() != 1) {
+                    throw new SQLException("Image storage binding is unavailable");
+                }
+            }
+        }
+    }
+
     /** Work may pass this connection to any participating repository. */
     @FunctionalInterface
     public interface Work<T> {
@@ -75,6 +115,91 @@ public final class Database {
      */
     public <T> T executeTransaction(Work<T> work) throws SQLException {
         return executeTransaction(work, Connection.TRANSACTION_SERIALIZABLE);
+    }
+
+    /** Acquires the cross-process image lifecycle lock on the connection used by guarded transactions. */
+    public ImageLifecycleGuard acquireImageLifecycleGuard() throws SQLException {
+        Connection connection = openConnection();
+        try {
+            connection.setAutoCommit(true);
+            long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(10);
+            while (System.nanoTime() < deadline) {
+                try (var statement = connection.prepareStatement("SELECT pg_try_advisory_lock(?)")) {
+                    statement.setLong(1, IMAGE_LIFECYCLE_LOCK);
+                    try (var rows = statement.executeQuery()) {
+                        rows.next();
+                        if (rows.getBoolean(1)) {
+                            return new ImageLifecycleGuard(connection);
+                        }
+                    }
+                }
+                try {
+                    Thread.sleep(50);
+                } catch (InterruptedException failure) {
+                    Thread.currentThread().interrupt();
+                    throw new SQLException("Image lifecycle operation was interrupted");
+                }
+            }
+            throw new SQLException("Image lifecycle is busy; retry the operation");
+        } catch (SQLException | RuntimeException failure) {
+            try {
+                connection.close();
+            } catch (SQLException closeFailure) {
+                failure.addSuppressed(closeFailure);
+            }
+            throw failure;
+        }
+    }
+
+    /** One database session lock and the exact connection used for its reference transactions. */
+    public static final class ImageLifecycleGuard implements AutoCloseable {
+        private final Connection connection;
+        private boolean closed;
+
+        private ImageLifecycleGuard(Connection connection) {
+            this.connection = connection;
+        }
+
+        public <T> T transaction(Work<T> work) throws SQLException {
+            if (closed || connection.isClosed()) {
+                throw new SQLException("Image lifecycle connection is unavailable");
+            }
+            connection.setTransactionIsolation(Connection.TRANSACTION_SERIALIZABLE);
+            connection.setAutoCommit(false);
+            try {
+                T result = work.execute(connection);
+                connection.commit();
+                return result;
+            } catch (SQLException | RuntimeException | Error failure) {
+                try {
+                    connection.rollback();
+                } catch (SQLException rollbackFailure) {
+                    failure.addSuppressed(rollbackFailure);
+                }
+                throw failure;
+            } finally {
+                if (!connection.isClosed()) {
+                    connection.setAutoCommit(true);
+                }
+            }
+        }
+
+        public Connection connection() {
+            return connection;
+        }
+
+        @Override
+        public void close() throws SQLException {
+            if (!closed) {
+                closed = true;
+                try (var statement = connection.prepareStatement("SELECT pg_advisory_unlock(?)")) {
+                    statement.setLong(1, IMAGE_LIFECYCLE_LOCK);
+                    statement.execute();
+                } finally {
+                    connection.close();
+                }
+            }
+        }
     }
 
     private <T> T executeTransaction(Work<T> work, Integer isolation) throws SQLException {

@@ -94,6 +94,35 @@ class DescriptionRuntimeTest extends PostgresTestSupport {
     }
 
     @Test
+    void open_sameOwnerDirectoryLeases_keepRuntimeSessionsIndependent() throws Exception {
+        ApplicationRuntimeDirectoryLocks locks = new ApplicationRuntimeDirectoryLocks();
+        try (DescriptionRuntime owner = new DescriptionRuntime(new FakeClient())) {
+            ApplicationRuntime first = ApplicationRuntime.openForApplication(directory, CLOCK, databaseConfig,
+                    owner, locks);
+            ApplicationRuntime second = ApplicationRuntime.openForApplication(directory, CLOCK, databaseConfig,
+                    owner, locks);
+            try {
+                assertNotNull(first.getAccounts());
+                assertNotNull(second.getAccounts());
+                assertFalse(first.getAccounts() == second.getAccounts());
+                loginNew(first);
+                assertTrue(second.getAccounts().getCurrentUserId().join().isEmpty());
+                assertThrows(IOException.class,
+                        () -> new ApplicationRuntimeDirectoryLocks().acquire(directory));
+                first.close();
+                assertThrows(IOException.class,
+                        () -> new ApplicationRuntimeDirectoryLocks().acquire(directory));
+            } finally {
+                second.close();
+                first.close();
+            }
+        }
+        try (var lock = new ApplicationRuntimeDirectoryLocks().acquire(directory)) {
+            assertNotNull(lock);
+        }
+    }
+
+    @Test
     void generateDescription_sameAccountAcrossRuntimes_sharesActiveAdmission() throws Exception {
         seedAccount();
         FakeClient client = new FakeClient();
